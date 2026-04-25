@@ -1,10 +1,17 @@
+from importlib.metadata import PackageNotFoundError, version
+
 from fastapi import FastAPI
+
+try:
+    _version = version("classroom-emotion-system")
+except PackageNotFoundError:
+    _version = "0.1.0"
 
 # Initialize the FastAPI application
 app = FastAPI(
     title="Classroom Emotion Detection API",
     description="Backend API for storing and serving student emotion data",
-    version="1.0.0"
+    version=_version
 )
 
 # Root endpoint
