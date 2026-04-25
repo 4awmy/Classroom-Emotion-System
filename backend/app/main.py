@@ -1,6 +1,13 @@
-from fastapi import FastAPI
+from dotenv import load_dotenv
+import os
+
+# Load environment variables
+load_dotenv()
+
+from fastapi import FastAPI, Depends
+from sqlalchemy.orm import Session
 from . import models
-from .database import engine
+from .database import engine, get_db
 
 # Create tables on startup
 models.Base.metadata.create_all(bind=engine)
