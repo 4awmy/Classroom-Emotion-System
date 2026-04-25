@@ -9,7 +9,9 @@ services:
       - ./backend/app:/app/app
       - classroom_db:/app/data
     environment:
-      - DATABASE_URL=sqlite:///./data/classroom_emotions.db
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///./data/classroom_emotions.db}
+    env_file:
+      - .env
 
   vision:
     build:
@@ -18,7 +20,10 @@ services:
     depends_on:
       - backend
     environment:
-      - API_URL=http://backend:8000
+      - API_URL=${API_URL:-http://backend:8000}
+      - VIDEO_SOURCE=${VIDEO_SOURCE:-0}
+    env_file:
+      - .env
 
   frontend:
     # Path A: R Shiny Dashboard
@@ -29,6 +34,8 @@ services:
       - ./frontend:/srv/shiny-server
     depends_on:
       - backend
+    env_file:
+      - .env
 
 volumes:
   classroom_db:
