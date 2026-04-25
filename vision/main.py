@@ -1,7 +1,10 @@
-import cv2
 import requests
 import os
 import time
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 API_URL = os.getenv("API_URL", "http://backend:8000")
 

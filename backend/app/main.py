@@ -1,3 +1,9 @@
+from dotenv import load_dotenv
+import os
+
+# Load environment variables
+load_dotenv()
+
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 from . import models
