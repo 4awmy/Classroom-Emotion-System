@@ -10,6 +10,7 @@ dependencies = [
     "uvicorn>=0.44.0",
     "python-dotenv>=1.2.2",
     "requests>=2.31.0",
+    "opencv-python>=4.13.0.92",
 ]
 
 [dependency-groups]
