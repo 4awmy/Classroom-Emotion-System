@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import emotion, attendance, session, gemini, exam, roster, upload
+from routers import emotion, attendance, session, gemini, exam, roster, upload, auth
 from database import engine
 import models
 
@@ -10,10 +10,12 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(title="AAST LMS API")
 
 # Configure CORS
+# allow_origins=["*"] is incompatible with allow_credentials=True per the CORS spec.
+# Credentials (cookies/Authorization headers) require explicit origins.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -24,6 +26,7 @@ def health_check():
     return {"status": "ok"}
 
 # Include routers
+app.include_router(auth.router,        prefix="/auth",       tags=["Auth"])
 app.include_router(emotion.router,     prefix="/emotion",    tags=["Emotion"])
 app.include_router(attendance.router,  prefix="/attendance", tags=["Attendance"])
 app.include_router(session.router,     prefix="/session",     tags=["Session"])
