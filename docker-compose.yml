@@ -1,0 +1,29 @@
+services:
+  backend:
+    build: ./python-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./python-api:/app
+    environment:
+      - PORT=8000
+    env_file:
+      - ./python-api/.env
+
+  shiny-dashboard:
+    build: ./shiny-app
+    ports:
+      - "3838:3838"
+    volumes:
+      - ./shiny-app:/srv/shiny-server
+    depends_on:
+      - backend
+
+  react-student-app:
+    build: ./react-app
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./react-app:/app
+    depends_on:
+      - backend

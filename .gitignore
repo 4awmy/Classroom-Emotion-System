@@ -1,0 +1,30 @@
+# Virtual Environments
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+
+# R/Shiny
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+
+# Node/React
+node_modules/
+.expo/
+dist/
+build/
+
+# Environment Variables
+.env
+.env.local
+
+# Data Files (Keep folders, ignore content if large)
+python-api/data/*.csv
+!python-api/data/.gitkeep
+
+# OS specific
+.DS_Store
+Thumbs.db
