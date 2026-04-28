@@ -4,10 +4,15 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# Load environment variables for DB configuration
+# Load environment variables
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data/classroom_emotions.db")
+# Data directory setup
+DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+if not os.path.exists(DATA_DIR):
+    os.makedirs(DATA_DIR)
+
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{os.path.join(DATA_DIR, 'classroom_emotions.db')}")
 
 # Only apply check_same_thread if using SQLite
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
