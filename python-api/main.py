@@ -10,10 +10,12 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(title="AAST LMS API")
 
 # Configure CORS
+# allow_origins=["*"] is incompatible with allow_credentials=True per the CORS spec.
+# Credentials (cookies/Authorization headers) require explicit origins.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

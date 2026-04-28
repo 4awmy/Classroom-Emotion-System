@@ -2,9 +2,11 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
+import logging
 from services.websocket import manager
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 class SessionStartRequest(BaseModel):
     lecture_id: str
@@ -17,6 +19,7 @@ class SessionEndRequest(BaseModel):
 class SessionBroadcastRequest(BaseModel):
     event: str
     question: str
+    lecture_id: str
 
 @router.post("/start")
 async def start_session(request: SessionStartRequest):
@@ -46,7 +49,7 @@ async def broadcast_event(request: SessionBroadcastRequest):
     await manager.broadcast({
         "type": request.event,
         "question": request.question,
-        "lecture_id": "L1",  # Mock lecture_id
+        "lecture_id": request.lecture_id,
         "timestamp": datetime.utcnow().isoformat() + "Z"
     })
     return {"status": "broadcast"}
@@ -77,15 +80,9 @@ async def websocket_endpoint(websocket: WebSocket):
             data = await websocket.receive_json()
             # Handle client -> server messages (e.g., focus_strike)
             if isinstance(data, dict) and data.get("type") == "focus_strike":
-                # Mock handling focus strike
-                print(f"Received focus strike from {data.get('student_id')}")
-                
-            # Echo for testing purposes
-            await websocket.send_json({
-                "type": "echo",
-                "message": f"Received: {data}"
-            })
+                logger.info("Received focus strike from %s", data.get("student_id"))
     except WebSocketDisconnect:
         manager.disconnect(websocket)
-    except Exception:
+    except Exception as exc:
+        logger.exception("WebSocket error: %s", exc)
         manager.disconnect(websocket)
