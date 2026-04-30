@@ -8,6 +8,7 @@ python-dotenv
 # Auth
 python-jose[cryptography]
 python-multipart
+email-validator
 
 # Data processing
 pandas

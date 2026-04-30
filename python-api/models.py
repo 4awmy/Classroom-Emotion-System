@@ -5,11 +5,18 @@ import datetime
 
 class Student(Base):
     __tablename__ = "students"
-    student_id = Column(String, primary_key=True)
+    student_id = Column(String, primary_key=True)  # 9-digit AAST number
     name = Column(String, nullable=False)
     email = Column(String)
     face_encoding = Column(BLOB)  # 128-dim float64 numpy array as bytes
     enrolled_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    # Relationships
+    emotions = relationship("EmotionLog", back_populates="student")
+    attendance = relationship("AttendanceLog", back_populates="student")
+    incidents = relationship("Incident", back_populates="student")
+    notifications = relationship("Notification", back_populates="student")
+    focus_strikes = relationship("FocusStrike", back_populates="student")
 
 class Lecture(Base):
     __tablename__ = "lectures"
@@ -21,6 +28,14 @@ class Lecture(Base):
     end_time = Column(DateTime, nullable=True)
     slide_url = Column(String)
 
+    # Relationships
+    emotions = relationship("EmotionLog", back_populates="lecture")
+    attendance = relationship("AttendanceLog", back_populates="lecture")
+    materials = relationship("Material", back_populates="lecture")
+    transcripts = relationship("Transcript", back_populates="lecture")
+    notifications = relationship("Notification", back_populates="lecture")
+    focus_strikes = relationship("FocusStrike", back_populates="lecture")
+
 class EmotionLog(Base):
     __tablename__ = "emotion_log"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -31,6 +46,10 @@ class EmotionLog(Base):
     confidence = Column(Float, nullable=False)
     engagement_score = Column(Float, nullable=False)
 
+    # Relationships
+    student = relationship("Student", back_populates="emotions")
+    lecture = relationship("Lecture", back_populates="emotions")
+
 class AttendanceLog(Base):
     __tablename__ = "attendance_log"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -40,6 +59,10 @@ class AttendanceLog(Base):
     status = Column(String, nullable=False)  # Present | Absent
     method = Column(String, nullable=False)  # AI | Manual | QR
 
+    # Relationships
+    student = relationship("Student", back_populates="attendance")
+    lecture = relationship("Lecture", back_populates="attendance")
+
 class Material(Base):
     __tablename__ = "materials"
     material_id = Column(String, primary_key=True)
@@ -48,6 +71,9 @@ class Material(Base):
     title = Column(String, nullable=False)
     drive_link = Column(String)
     uploaded_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    # Relationships
+    lecture = relationship("Lecture", back_populates="materials")
 
 class Incident(Base):
     __tablename__ = "incidents"
@@ -59,13 +85,19 @@ class Incident(Base):
     severity = Column(Integer, nullable=False)  # 1 low | 2 medium | 3 high
     evidence_path = Column(String)
 
+    # Relationships
+    student = relationship("Student", back_populates="incidents")
+
 class Transcript(Base):
     __tablename__ = "transcripts"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     lecture_id = Column(String, ForeignKey("lectures.lecture_id"), nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
     chunk_text = Column(String, nullable=False)
-    language = Column(String)
+    language = Column(String)  # ar | en | mixed
+
+    # Relationships
+    lecture = relationship("Lecture", back_populates="transcripts")
 
 class Notification(Base):
     __tablename__ = "notifications"
@@ -77,6 +109,10 @@ class Notification(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     read = Column(Integer, default=0)  # 0 = unread | 1 = read
 
+    # Relationships
+    student = relationship("Student", back_populates="notifications")
+    lecture = relationship("Lecture", back_populates="notifications")
+
 class FocusStrike(Base):
     __tablename__ = "focus_strikes"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -84,3 +120,7 @@ class FocusStrike(Base):
     lecture_id = Column(String, ForeignKey("lectures.lecture_id"), nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
     strike_type = Column(String, nullable=False)  # app_background
+
+    # Relationships
+    student = relationship("Student", back_populates="focus_strikes")
+    lecture = relationship("Lecture", back_populates="focus_strikes")
