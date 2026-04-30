@@ -14,7 +14,7 @@ pandas
 numpy
 openpyxl
 requests
-qrcode
+qrcode[pil]
 
 # Scheduling
 apscheduler

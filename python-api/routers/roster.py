@@ -4,7 +4,7 @@ router = APIRouter()
 
 @router.post("/upload")
 async def upload_roster(
-    roster_file: UploadFile = File(...)
+    roster_xlsx: UploadFile = File(...)
 ):
     """
     Mock roster upload endpoint.
