@@ -1,5 +1,4 @@
 import axios, { AxiosInstance } from "axios";
-import { io, Socket } from "socket.io-client";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8000";
 const WS_URL = process.env.EXPO_PUBLIC_WS_URL || "ws://localhost:8000";
@@ -24,37 +23,46 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// WebSocket client
-let socket: Socket | null = null;
+// Native WebSocket client (compatible with FastAPI standard WS endpoints)
+let wsConnection: WebSocket | null = null;
 
-export const connectWebSocket = (): Socket => {
-  if (socket?.connected) return socket;
+export const connectWebSocket = (): WebSocket => {
+  if (
+    wsConnection &&
+    wsConnection.readyState === WebSocket.OPEN
+  ) {
+    return wsConnection;
+  }
 
-  console.log("[API] Connecting to WebSocket:", WS_URL);
-  socket = io(WS_URL, {
-    transports: ["websocket"],
-    reconnection: true,
-    reconnectionDelay: 1000,
-    reconnectionDelayMax: 5000,
-    reconnectionAttempts: 5,
-  });
+  const wsEndpoint = `${WS_URL}/session/ws`;
+  console.log("[API] Connecting to WebSocket:", wsEndpoint);
+  wsConnection = new WebSocket(wsEndpoint);
 
-  socket.on("connect", () => {
-    console.log("[WebSocket] Connected:", socket?.id);
-  });
+  wsConnection.onopen = () => {
+    console.log("[WebSocket] Connected");
+  };
 
-  socket.on("disconnect", () => {
+  wsConnection.onclose = () => {
     console.log("[WebSocket] Disconnected");
-  });
+  };
 
-  socket.on("connect_error", (error) => {
+  wsConnection.onerror = (error) => {
     console.error("[WebSocket] Connection error:", error);
-  });
+  };
 
-  return socket;
+  wsConnection.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data as string);
+      console.log("[WebSocket] Message received:", data);
+    } catch {
+      console.log("[WebSocket] Raw message:", event.data);
+    }
+  };
+
+  return wsConnection;
 };
 
-export const getWebSocket = (): Socket | null => socket;
+export const getWebSocket = (): WebSocket | null => wsConnection;
 
 /**
  * API Service Methods (P1-S3 stubs)
@@ -105,17 +113,16 @@ export const notesAPI = {
 export const wsAPI = {
   emitStrike: (studentId: string, lectureId: string, type: string) => {
     const ws = getWebSocket();
-    if (ws?.connected) {
-      ws.emit("strike", {
-        student_id: studentId,
-        lecture_id: lectureId,
-        type,
-      });
-      console.log("[WebSocket] Strike emitted:", {
-        studentId,
-        lectureId,
-        type,
-      });
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(
+        JSON.stringify({
+          event: "strike",
+          student_id: studentId,
+          lecture_id: lectureId,
+          type,
+        }),
+      );
+      console.log("[WebSocket] Strike emitted:", { studentId, lectureId, type });
     }
   },
 };

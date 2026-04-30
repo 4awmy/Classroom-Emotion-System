@@ -1,6 +1,4 @@
-"use client";
-
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -22,7 +20,13 @@ export default function FocusScreen() {
   const { studentId, activeLectureId, focusActive, strikes, setStrikes } =
     useStore();
 
-  const [appState, setAppState] = useState<AppStateStatus>("active");
+  // useRef avoids the stale-closure problem: the subscription registered in
+  // useEffect always reads the *current* app state via the ref, regardless of
+  // how many re-renders have occurred since the subscription was created.
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const [appState, setAppState] = useState<AppStateStatus>(
+    AppState.currentState,
+  );
   const [logs, setLogs] = useState<Array<{ time: string; state: string }>>([]);
 
   /**
@@ -45,7 +49,10 @@ export default function FocusScreen() {
   }, [focusActive, activeLectureId]);
 
   const handleAppStateChange = (nextAppState: AppStateStatus) => {
-    const previousAppState = appState;
+    // Read previous state from the ref — always current, never stale.
+    const previousAppState = appStateRef.current;
+    appStateRef.current = nextAppState;
+
     const timestamp = new Date().toLocaleTimeString("en-US", {
       year: "numeric",
       month: "2-digit",
