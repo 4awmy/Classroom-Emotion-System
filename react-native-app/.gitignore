@@ -1,0 +1,55 @@
+# Expo
+.expo/
+.expo-shared/
+dist/
+
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Build outputs
+*.ipa
+*.apk
+build/
+dist/
+
+# Babel
+.babel-cache/
+
+# Metro bundler
+.metro-bundler-cache/
+
+# Cache
+cache/
+*.cache
+
+# Jest
+coverage/
+
+# Misc
+.fusebox/
+.dynamodb/
+*.pem
