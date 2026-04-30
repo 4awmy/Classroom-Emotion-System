@@ -12,9 +12,11 @@ This document defines the precise wiring between the FastAPI live database and t
 ### `students`
 | Column | Type | Description |
 |---|---|---|
-| `student_id` | TEXT (PK) | "S01", "S02", etc. |
+| `student_id` | TEXT (PK) | 9-digit AAST student number or Staff ID |
 | `name` | TEXT | Student full name |
 | `email` | TEXT | AAST email |
+| `role` | TEXT | student | lecturer | admin |
+| `hashed_password` | TEXT | Bcrypt hashed password |
 | `face_encoding` | BLOB | 128-dim float64 numpy array bytes |
 | `enrolled_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP |
 
@@ -123,7 +125,7 @@ Authentication header: `Authorization: Bearer <JWT>`
 
 ```json
 {
-  "student_id": "S01",
+  "student_id": "231006367",
   "role": "student",
   "exp": 1714299333
 }

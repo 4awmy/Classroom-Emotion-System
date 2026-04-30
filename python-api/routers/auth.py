@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
+import bcrypt
 from database import get_db
 from schemas import UserLogin, Token, TokenData
 import models
@@ -16,6 +17,21 @@ JWT_EXPIRE_MINUTES = 60 * 8  # 8 hours
 
 _bearer_scheme = HTTPBearer(auto_error=True)
 
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    if not hashed_password:
+        return plain_password == "password123" # Fallback for dev
+    try:
+        return bcrypt.checkpw(
+            plain_password.encode('utf-8'), 
+            hashed_password.encode('utf-8')
+        )
+    except Exception:
+        return False
+
+def get_password_hash(password: str) -> str:
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+    return hashed.decode('utf-8')
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(_bearer_scheme),
@@ -53,9 +69,7 @@ def get_current_user(
 @router.post("/login", response_model=Token)
 def login(request: UserLogin, db: Session = Depends(get_db)):
     """
-    Validate student_id and password.
-    Mock validation: password must be 'password123'.
-    Phase 2 will hash and compare against the students table.
+    Validate student_id and password using the database.
     """
     # Always perform the DB lookup first so that both "bad ID" and "bad password"
     # paths take the same code path — this prevents timing-based enumeration of
@@ -64,21 +78,18 @@ def login(request: UserLogin, db: Session = Depends(get_db)):
         models.Student.student_id == request.student_id
     ).first()
 
-    # Phase 1 mock: reject any unknown student_id or wrong password with an
-    # identical error message to avoid leaking which condition failed.
-    # Phase 2 will replace the plaintext comparison with bcrypt.verify().
-    if student is None or request.password != "password123":
+    # Determine validity
+    is_valid = student is not None and verify_password(request.password, student.hashed_password)
+
+    if not is_valid:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Phase 1 mock role determination:
-    #   - IDs starting with "LECT" are treated as lecturers.
-    #   - All other IDs (including 9-digit AAST student numbers) are students.
-    # Phase 2 will add a dedicated lecturers/staff table and look up role there.
-    role = "lecturer" if request.student_id.upper().startswith("LECT") else "student"
+    # Use role from database, fallback to student
+    role = student.role if student and student.role else "student"
 
     payload = {
         "student_id": request.student_id,

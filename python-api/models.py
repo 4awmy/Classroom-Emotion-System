@@ -5,9 +5,11 @@ import datetime
 
 class Student(Base):
     __tablename__ = "students"
-    student_id = Column(String, primary_key=True)  # 9-digit AAST number
+    student_id = Column(String, primary_key=True)  # 9-digit AAST number or Staff ID
     name = Column(String, nullable=False)
     email = Column(String)
+    role = Column(String, default="student") # student | lecturer | admin
+    hashed_password = Column(String)
     face_encoding = Column(BLOB)  # 128-dim float64 numpy array as bytes
     enrolled_at = Column(DateTime, default=datetime.datetime.utcnow)
 

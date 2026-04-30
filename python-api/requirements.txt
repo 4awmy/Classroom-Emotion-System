@@ -9,6 +9,7 @@ python-dotenv
 python-jose[cryptography]
 python-multipart
 email-validator
+passlib[bcrypt]
 
 # Data processing
 pandas
@@ -19,3 +20,11 @@ qrcode
 
 # Scheduling
 apscheduler
+
+# Vision & AI
+opencv-python
+face-recognition
+hsemotion-onnx
+ultralytics
+openai
+google-generativeai
