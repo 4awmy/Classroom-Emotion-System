@@ -36,10 +36,10 @@ async def submit_exam(request: ExamSubmitRequest):
 async def get_exam_incidents(exam_id: str):
     return [
         {
-            "student_id": "S01",
+            "student_id": "231006367",
             "timestamp": "2026-04-28T10:15:33",
             "flag_type": "phone_on_desk",
             "severity": 3,
-            "evidence_path": f"data/evidence/{exam_id}_S01_1714299333.jpg"
+            "evidence_path": f"data/evidence/{exam_id}_231006367_1714299333.jpg"
         }
     ]

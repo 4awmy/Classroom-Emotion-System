@@ -11,7 +11,7 @@ def get_live_emotions(lecture_id: str, limit: int = 60):
     """
     return [
         {
-            "student_id": "S01",
+            "student_id": "231006367",
             "lecture_id": lecture_id,
             "timestamp": "2026-04-28T09:05:00",
             "emotion": "Focused",
@@ -19,7 +19,7 @@ def get_live_emotions(lecture_id: str, limit: int = 60):
             "engagement_score": 1.0
         },
         {
-            "student_id": "S02",
+            "student_id": "231006412",
             "lecture_id": lecture_id,
             "timestamp": "2026-04-28T09:05:05",
             "emotion": "Confused",
