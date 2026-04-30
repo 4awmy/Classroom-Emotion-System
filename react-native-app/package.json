@@ -1,0 +1,44 @@
+{
+  "name": "aast-lms-mobile",
+  "version": "0.1.0",
+  "description": "AAST Learning Management System - Student Mobile App",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "build-android": "eas build --platform android --profile preview",
+    "build-ios": "eas build --platform ios",
+    "test": "jest"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "babel-plugin-module-resolver": "^5.0.3",
+    "expo": "~54.0.0",
+    "expo-linking": "~8.0.12",
+    "expo-router": "~6.0.23",
+    "expo-status-bar": "~3.0.9",
+    "react": "19.1.0",
+    "react-dom": "^19.1.0",
+    "react-native": "0.81.5",
+    "react-native-markdown-display": "^7.0.0",
+    "react-native-safe-area-context": "~5.6.0",
+    "socket.io-client": "^4.7.0",
+    "zustand": "^4.4.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.23.0",
+    "@types/jest": "^29.5.0",
+    "@types/react": "~19.1.10",
+    "@types/react-native": "^0.72.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

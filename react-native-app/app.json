@@ -1,0 +1,25 @@
+{
+  "name": "aast-lms-mobile",
+  "displayName": "AAST LMS",
+  "slug": "aast-lms-mobile",
+  "scheme": "aast",
+  "version": "0.1.0",
+  "assetBundlePatterns": ["**/*"],
+  "ios": {
+    "supportsTablet": true,
+    "bundleIdentifier": "com.aast.lms"
+  },
+  "android": {
+    "adaptiveIcon": {
+      "foregroundImage": "./assets/adaptive-icon.png",
+      "backgroundColor": "#002147"
+    },
+    "package": "com.aast.lms",
+    "versionCode": 1
+  },
+  "web": {
+    "favicon": "./assets/favicon.png"
+  },
+  "plugins": ["expo-router"],
+  "owner": "aast"
+}
