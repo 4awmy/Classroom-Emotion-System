@@ -1,0 +1,167 @@
+---
+title: "Student Performance Report"
+subtitle: "AAST Classroom Emotion Analytics System"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: false
+    number_sections: false
+header-includes:
+  - \usepackage{geometry}
+  - \geometry{margin=2cm}
+  - \usepackage{xcolor}
+  - \definecolor{aastnavy}{HTML}{002147}
+  - \definecolor{aastgold}{HTML}{C9A84C}
+  - \usepackage{fancyhdr}
+  - \pagestyle{fancy}
+  - \fancyhf{}
+  - \fancyhead[L]{\textcolor{aastnavy}{\textbf{AAST — Classroom Emotion Analytics}}}
+  - \fancyhead[R]{\textcolor{aastgold}{Confidential}}
+  - \fancyfoot[C]{\thepage}
+params:
+  student_id: "000000000"
+  export_dir: "python-api/data/exports"
+  api_base:   "http://localhost:8000"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE,
+                      fig.width = 7, fig.height = 3.5)
+library(dplyr)
+library(ggplot2)
+library(httr2)
+
+EXPORT_DIR <- params$export_dir
+API_BASE   <- params$api_base
+STUDENT_ID <- params$student_id
+
+# Load emotion data for this student
+emotions_path <- file.path(EXPORT_DIR, "emotions.csv")
+all_emotions  <- if (file.exists(emotions_path)) read.csv(emotions_path) else data.frame()
+student_df    <- all_emotions[all_emotions$student_id == STUDENT_ID, ]
+
+# Load engagement metrics
+source(file.path(dirname(dirname(knitr::current_input())), "modules", "engagement_score.R"))
+eng <- compute_engagement(student_df)
+by_lec <- eng$by_lecture
+by_stu <- eng$by_student
+
+# Load attendance data
+att_path <- file.path(EXPORT_DIR, "attendance.csv")
+att_df   <- if (file.exists(att_path)) {
+  att <- read.csv(att_path)
+  att[att$student_id == STUDENT_ID, ]
+} else data.frame()
+
+# Fetch AI intervention plan from FastAPI
+plan_text <- tryCatch({
+  resp <- request(paste0(API_BASE, "/notes/", STUDENT_ID, "/plan")) |>
+    req_error(is_error = function(r) FALSE) |>
+    req_perform()
+  if (resp_status(resp) == 200) resp_body_json(resp)$plan else "_No plan available._"
+}, error = function(e) "_AI plan unavailable (API offline)._")
+```
+
+---
+
+## 1. Executive Summary
+
+```{r exec-summary}
+if (nrow(by_stu) > 0) {
+  cat(sprintf(
+    "**Student ID:** %s  \n**Average Engagement:** %.2f (%s)  \n**Dominant Emotion:** %s  \n**Avg Cognitive Load:** %.2f  \n**Lectures Attended:** %d",
+    STUDENT_ID,
+    by_stu$avg_engagement[1],
+    ifelse(by_stu$avg_engagement[1] >= 0.75, "High",
+           ifelse(by_stu$avg_engagement[1] >= 0.45, "Moderate",
+                  ifelse(by_stu$avg_engagement[1] >= 0.25, "Low", "Critical"))),
+    if (nrow(by_lec) > 0) names(which.max(table(student_df$emotion))) else "N/A",
+    by_stu$avg_cognitive_load[1],
+    by_stu$lectures_attended[1]
+  ))
+} else {
+  cat("_No data available for this student._")
+}
+```
+
+---
+
+## 2. Engagement Trend Across Lectures
+
+```{r engagement-trend}
+if (nrow(by_lec) > 0) {
+  ggplot(by_lec, aes(x = lecture_id, y = engagement_score, group = 1)) +
+    geom_line(colour = "#002147", size = 1) +
+    geom_point(aes(colour = engagement_level), size = 3) +
+    scale_colour_manual(values = c(High = "#1e7e34", Moderate = "#ffc107",
+                                    Low = "#e67e22", Critical = "#c0392b")) +
+    scale_y_continuous(limits = c(0, 1), labels = scales::percent_format()) +
+    labs(x = "Lecture", y = "Engagement Score", colour = "Level") +
+    theme_minimal(base_size = 11)
+} else {
+  cat("_No engagement data available._")
+}
+```
+
+---
+
+## 3. Emotion Distribution
+
+```{r emotion-dist}
+if (nrow(student_df) > 0) {
+  emotion_colors <- c(Focused="#1e7e34", Engaged="#28a745", Confused="#ffc107",
+                       Anxious="#9b59b6", Frustrated="#e67e22", Disengaged="#c0392b")
+  student_df$emotion <- factor(student_df$emotion,
+                                levels = names(emotion_colors))
+  ggplot(student_df, aes(x = "", fill = emotion)) +
+    geom_bar(width = 1) +
+    coord_polar("y") +
+    scale_fill_manual(values = emotion_colors) +
+    labs(fill = "Emotion") +
+    theme_void(base_size = 11)
+} else {
+  cat("_No emotion data available._")
+}
+```
+
+---
+
+## 4. Cognitive Load Timeline
+
+```{r cog-load}
+if (nrow(by_lec) > 0) {
+  ggplot(by_lec, aes(x = lecture_id, y = cognitive_load, group = 1)) +
+    geom_col(fill = ifelse(by_lec$cognitive_load > 0.50, "#c0392b",
+                            ifelse(by_lec$cognitive_load > 0.30, "#e67e22", "#1e7e34"))) +
+    geom_hline(yintercept = 0.50, linetype = "dashed", colour = "#c0392b") +
+    labs(x = "Lecture", y = "Cognitive Load  (confusion + frustration rate)") +
+    theme_minimal(base_size = 11)
+} else {
+  cat("_No cognitive load data available._")
+}
+```
+
+---
+
+## 5. AI Intervention Plan
+
+`r plan_text`
+
+---
+
+## 6. Attendance Record
+
+```{r attendance}
+if (nrow(att_df) > 0) {
+  knitr::kable(
+    att_df[, intersect(c("lecture_id","timestamp","status","method"), names(att_df))],
+    col.names = c("Lecture", "Timestamp", "Status", "Method")[
+      seq_along(intersect(c("lecture_id","timestamp","status","method"), names(att_df)))
+    ],
+    align = "llcc"
+  )
+} else {
+  cat("_No attendance records available._")
+}
+```

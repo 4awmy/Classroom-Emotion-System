@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AAST Classroom Emotion Analytics</title>
+
+  <!-- AAST Moodle base CSS (university branding) -->
+  <link rel="stylesheet" href="moodle-styles/style_2.css" />
+  <link rel="stylesheet" href="moodle-styles/style_1.css" />
+
+  <!-- AAST Portal theme overrides (navy + gold) -->
+  <link rel="stylesheet" href="custom.css" />
+
+  <!-- Shiny framework CSS/JS — injected by htmlTemplate() -->
+  {{ headContent() }}
+</head>
+<body id="page-dashboard" class="aast-portal">
+
+  <!-- ── Top navigation bar ── -->
+  <nav class="aast-navbar" role="navigation" aria-label="Main navigation">
+    <div class="aast-navbar-brand">
+      <img src="moodle-styles/assets/aast_main_logo.png"
+           alt="AAST Logo" class="aast-logo" />
+      <span class="aast-site-name">Classroom Emotion Analytics</span>
+    </div>
+
+    <div class="aast-navbar-links" id="aast-user-menu">
+      <!-- Shiny reactive: current user name + role badge -->
+      {{ userMenuOutput }}
+    </div>
+  </nav>
+
+  <!-- ── Role-based tab navigation ── -->
+  <div class="aast-subnav" role="tablist">
+    <!-- Shiny renders the correct tab set depending on the logged-in role -->
+    {{ roleTabsOutput }}
+  </div>
+
+  <!-- ── Main content area ── -->
+  <main class="aast-main-content" id="main-content" role="main">
+    {{ mainPanelOutput }}
+  </main>
+
+  <!-- ── Footer ── -->
+  <footer class="aast-footer" role="contentinfo">
+    <div class="aast-footer-inner">
+      <img src="moodle-styles/assets/aast_footer_logo.png"
+           alt="AAST Footer Logo" class="aast-footer-logo" />
+      <span class="aast-footer-text">
+        Arab Academy for Science, Technology &amp; Maritime Transport
+        &copy; {{ format(Sys.Date(), "%Y") }}
+      </span>
+      <img src="moodle-styles/assets/qs_stars.png"
+           alt="QS Stars" class="aast-qs-stars" />
+    </div>
+  </footer>
+
+</body>
+</html>

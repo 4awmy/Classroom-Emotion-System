@@ -1,0 +1,202 @@
+/*
+ * custom.css — AAST portal theme overrides
+ *
+ * Colors:  Navy  #002147  |  Gold  #C9A84C
+ * Font:    Cairo (bilingual, supports Arabic RTL)
+ * Rule:    Override Moodle base styles only — never delete moodle-styles/*.css
+ */
+
+/* ── Google Fonts: Cairo (Latin + Arabic) ── */
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+
+/* ── CSS variables ── */
+:root {
+  --aast-navy:  #002147;
+  --aast-gold:  #C9A84C;
+  --aast-light: #f4f6f9;
+  --aast-text:  #1a1a2e;
+  --aast-muted: #6c757d;
+}
+
+/* ── Base ── */
+body.aast-portal {
+  font-family: 'Cairo', 'Roboto', Arial, sans-serif;
+  background-color: var(--aast-light);
+  color: var(--aast-text);
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Top navigation bar ── */
+.aast-navbar {
+  background-color: var(--aast-navy);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 64px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.aast-navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.aast-logo {
+  height: 44px;
+  object-fit: contain;
+}
+
+.aast-site-name {
+  color: var(--aast-gold);
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+/* ── Role sub-navigation ── */
+.aast-subnav {
+  background-color: var(--aast-navy);
+  border-top: 1px solid rgba(201, 168, 76, 0.4);
+  padding: 0 24px;
+  display: flex;
+  gap: 4px;
+}
+
+.aast-subnav .nav-link,
+.aast-subnav .nav-item > a {
+  color: rgba(255, 255, 255, 0.75) !important;
+  font-size: 0.9rem;
+  padding: 10px 16px;
+  border-bottom: 3px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.aast-subnav .nav-link:hover,
+.aast-subnav .nav-item > a:hover {
+  color: var(--aast-gold) !important;
+  border-bottom-color: var(--aast-gold);
+  background: transparent;
+}
+
+.aast-subnav .nav-link.active,
+.aast-subnav .nav-item > a.active {
+  color: #fff !important;
+  border-bottom-color: var(--aast-gold);
+  background: transparent;
+}
+
+/* ── Main content ── */
+.aast-main-content {
+  padding: 24px;
+  min-height: calc(100vh - 130px);
+}
+
+/* ── Shiny panel / card wrappers ── */
+.aast-card {
+  background: #fff;
+  border-radius: 6px;
+  border: 1px solid #dde3ed;
+  box-shadow: 0 1px 4px rgba(0, 33, 71, 0.08);
+  margin-bottom: 20px;
+}
+
+.aast-card-header {
+  background-color: var(--aast-navy);
+  color: var(--aast-gold);
+  padding: 12px 18px;
+  font-weight: 600;
+  border-radius: 6px 6px 0 0;
+  font-size: 0.95rem;
+}
+
+.aast-card-body {
+  padding: 18px;
+}
+
+/* ── Buttons ── */
+.btn-aast-primary {
+  background-color: var(--aast-navy);
+  border-color: var(--aast-navy);
+  color: #fff;
+}
+
+.btn-aast-primary:hover {
+  background-color: #003166;
+  border-color: #003166;
+}
+
+.btn-aast-gold {
+  background-color: var(--aast-gold);
+  border-color: var(--aast-gold);
+  color: #fff;
+}
+
+.btn-aast-gold:hover {
+  background-color: #b8963e;
+  border-color: #b8963e;
+}
+
+/* ── Footer ── */
+.aast-footer {
+  background-color: var(--aast-navy);
+  color: rgba(255, 255, 255, 0.7);
+  padding: 16px 24px;
+  font-size: 0.8rem;
+}
+
+.aast-footer-inner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: center;
+}
+
+.aast-footer-logo {
+  height: 32px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+  opacity: 0.8;
+}
+
+.aast-qs-stars {
+  height: 28px;
+  object-fit: contain;
+  opacity: 0.8;
+}
+
+/* ── RTL support for Arabic text ── */
+[lang="ar"],
+.rtl {
+  direction: rtl;
+  text-align: right;
+}
+
+/* ── Engagement level color bands ── */
+.level-high       { color: #1e7e34; }
+.level-moderate   { color: #856404; }
+.level-low        { color: #d35400; }
+.level-critical   { color: #c0392b; font-weight: 700; }
+
+/* ── DataTables overrides ── */
+.dataTables_wrapper .dataTables_filter input {
+  border: 1px solid #dde3ed;
+  border-radius: 4px;
+  padding: 4px 8px;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current,
+.dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+  background: var(--aast-navy) !important;
+  color: #fff !important;
+  border-color: var(--aast-navy) !important;
+}
+
+/* ── Plotly chart containers ── */
+.plotly-chart {
+  width: 100%;
+  min-height: 300px;
+}
