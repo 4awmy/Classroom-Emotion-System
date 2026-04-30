@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AAST Moodle Portal</title>
+    
+    <!-- Shiny Assets -->
+    {{ head }}
+    
+    <!-- Fonts -->
+    <link rel="stylesheet" href="moodle-styles/style_2.css">
+    
+    <!-- Main Styles -->
+    <link rel="stylesheet" href="moodle-styles/style_1.css">
+    
+    <style>
+        :root {
+            --primary: #002147;
+            --aast-navy: #002147;
+            --aast-gold: #C9A84C;
+            --aast-white: #ffffff;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f7f9;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Header / Navbar */
+        .navbar.fixed-top {
+            background-color: var(--aast-navy) !important;
+            border-bottom: 4px solid var(--aast-gold);
+            height: 70px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1030;
+        }
+
+        .navbar-brand img {
+            height: 50px;
+        }
+
+        /* Sidebar / Navigation */
+        #nav-drawer {
+            position: fixed;
+            top: 70px;
+            left: 0;
+            width: 250px;
+            height: calc(100vh - 70px);
+            background-color: var(--aast-white);
+            border-right: 1px solid #dee2e6;
+            overflow-y: auto;
+            z-index: 1020;
+            padding-top: 20px;
+        }
+
+        .nav-item {
+            display: block;
+            padding: 12px 20px;
+            color: #495057;
+            text-decoration: none;
+            transition: all 0.2s;
+            border-left: 4px solid transparent;
+        }
+
+        .nav-item:hover {
+            background-color: #f8f9fa;
+            color: var(--aast-navy);
+            border-left: 4px solid var(--aast-gold);
+            text-decoration: none;
+        }
+
+        .nav-item.active {
+            background-color: #e9ecef;
+            color: var(--aast-navy);
+            border-left: 4px solid var(--aast-navy);
+            font-weight: 500;
+        }
+
+        /* Main Content */
+        #page-content {
+            margin-left: 250px;
+            margin-top: 70px;
+            padding: 30px;
+            min-height: calc(100vh - 70px - 200px); /* Adjust for footer */
+        }
+
+        /* Footer */
+        #page-footer {
+            margin-left: 250px;
+            background-color: var(--aast-navy);
+            color: var(--aast-white);
+            padding: 40px 20px;
+            border-top: 4px solid var(--aast-gold);
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            flex-wrap: wrap;
+        }
+
+        .footer-logos {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .footer-logos img {
+            height: 40px;
+            filter: brightness(0) invert(1); /* Make logos white for navy background */
+        }
+
+        .footer-main-logo img {
+            height: 60px;
+        }
+
+        /* Override shinydashboard conflicts */
+        .content-wrapper, .main-footer {
+            margin-left: 0 !important;
+            background-color: transparent !important;
+            border: none !important;
+        }
+        
+        /* Ensure body content is visible */
+        #region-main {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body id="page-wrapper">
+
+    <nav class="navbar fixed-top">
+        <a class="navbar-brand" href="#">
+            <img src="moodle-styles/assets/aast_main_logo.png" alt="AAST Logo">
+        </a>
+    </nav>
+
+    <div id="nav-drawer">
+        {{ navbar }}
+    </div>
+
+    <main id="page-content">
+        <div id="region-main">
+            {{ body }}
+        </div>
+    </main>
+
+    <footer id="page-footer">
+        <div class="footer-content">
+            <div class="footer-main-logo">
+                <img src="moodle-styles/assets/aast_footer_logo.png" alt="AAST Footer Logo">
+            </div>
+            <div class="footer-logos">
+                <img src="moodle-styles/assets/arab_league.png" alt="Arab League">
+                <img src="moodle-styles/assets/qs_stars.png" alt="QS Stars">
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 20px; font-size: 0.8rem; opacity: 0.7;">
+            &copy; 2024 Arab Academy for Science, Technology and Maritime Transport. All Rights Reserved.
+        </div>
+    </footer>
+
+</body>
+</html>
