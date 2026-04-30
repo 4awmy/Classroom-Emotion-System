@@ -1,15 +1,17 @@
 from fastapi import APIRouter, UploadFile, File
-from typing import Optional
 
 router = APIRouter()
 
 @router.post("/upload")
 async def upload_roster(
-    roster_csv: UploadFile = File(...),
-    images_zip: UploadFile = File(...)
+    roster_xlsx: UploadFile = File(...)
 ):
-    # Mock roster processing
+    """
+    Mock roster upload endpoint.
+    Accepts .xlsx file with student IDs, names, and Google Drive photo links.
+    Phase 3 (T029) will implement real XLSX parsing + Drive download + face encoding.
+    """
     return {
-        "students_created": 30,
-        "encodings_saved": 28
+        "students_created": 127,
+        "encodings_saved": 127
     }

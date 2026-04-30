@@ -17,7 +17,7 @@ class SessionEndRequest(BaseModel):
     lecture_id: str
 
 class SessionBroadcastRequest(BaseModel):
-    event: str
+    type: str
     question: str
     lecture_id: str
 
@@ -47,7 +47,7 @@ async def end_session(request: SessionEndRequest):
 async def broadcast_event(request: SessionBroadcastRequest):
     # Broadcast the event (e.g., freshbrainer)
     await manager.broadcast({
-        "type": request.event,
+        "type": request.type,
         "question": request.question,
         "lecture_id": request.lecture_id,
         "timestamp": datetime.utcnow().isoformat() + "Z"

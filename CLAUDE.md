@@ -470,7 +470,7 @@ All 4 members must sign off on this schema via PR before any feature code is wri
 #### `students`
 ```sql
 CREATE TABLE students (
-    student_id    TEXT PRIMARY KEY,        -- e.g. S01
+    student_id    TEXT PRIMARY KEY,        -- e.g. 231006367 (9-digit AAST student number)
     name          TEXT NOT NULL,
     email         TEXT,
     face_encoding BLOB,                    -- 128-dim float64 numpy array as bytes
@@ -622,7 +622,11 @@ def export_all():
         }
         for name, query in queries.items():
             df = pd.read_sql(query, db.bind)
-            df.to_csv(f"{EXPORT_DIR}/{name}.csv", index=False)
+            # Atomic write: write to temp file then os.replace to avoid partial-read
+            import os, tempfile
+            tmp = f"{EXPORT_DIR}/{name}.tmp.csv"
+            df.to_csv(tmp, index=False, encoding="utf-8-sig")  # utf-8-sig for Arabic names
+            os.replace(tmp, f"{EXPORT_DIR}/{name}.csv")
     finally:
         db.close()
 
@@ -690,7 +694,7 @@ Camera frame (every 5s)
 File: `python-api/services/vision_pipeline.py`
 
 ```python
-import cv2, time, os, numpy as np, face_recognition
+import cv2, time, os, numpy as np, face_recognition, threading
 from hsemotion_onnx.facial_emotions import HSEmotionRecognizer
 from ultralytics import YOLO
 from datetime import datetime
@@ -734,16 +738,35 @@ def identify_face(face_enc, known: dict, tolerance=0.5) -> str:
     best = int(np.argmin(distances))
     return ids[best] if distances[best] <= tolerance else "unknown"
 
-def run_pipeline(lecture_id: str, camera_url: str):
-    cap = cv2.VideoCapture(camera_url)
+def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event = None):
+    """Run the live vision pipeline. Pass a threading.Event as stop_event;
+    call stop_event.set() from POST /session/end to gracefully stop the loop."""
+    RECONNECT_RETRIES = 5
+    RECONNECT_BACKOFF = 10  # seconds
+
+    def open_camera(url: str):
+        for attempt in range(RECONNECT_RETRIES):
+            cap = cv2.VideoCapture(url)
+            if cap.isOpened():
+                return cap
+            time.sleep(RECONNECT_BACKOFF)
+        raise RuntimeError(f"Cannot connect to camera after {RECONNECT_RETRIES} attempts")
+
+    cap = open_camera(camera_url)
     db  = SessionLocal()
     known = load_student_encodings(db)
     seen_today = set()  # track attendance per session
 
-    while True:
+    while not (stop_event and stop_event.is_set()):
         ret, frame = cap.read()
         if not ret:
-            break
+            # RTSP dropped — attempt reconnection
+            cap.release()
+            try:
+                cap = open_camera(camera_url)
+            except RuntimeError:
+                break
+            continue
 
         results = yolo_model(frame, classes=[0], verbose=False)
         boxes   = results[0].boxes.xyxy.cpu().numpy().astype(int) if results[0].boxes else []
@@ -951,7 +974,13 @@ async def stream_captions(lecture_id: str):
             db.commit()
 
             # Broadcast to all connected WebSocket clients
-            payload = {"event": "caption", "text": text, "lecture_id": lecture_id}
+            payload = {
+                "type": "caption",
+                "text": text,
+                "lecture_id": lecture_id,
+                "timestamp": datetime.utcnow().isoformat(),
+                "language": "mixed"
+            }
             for ws in active_connections:
                 await ws.send_json(payload)
 
@@ -967,20 +996,26 @@ async def stream_captions(lecture_id: str):
 
 Before any lecture, the lecturer uploads the student roster so the vision pipeline can identify faces. This is a one-time per-course operation performed from the Shiny Lecturer panel.
 
+**Real dataset format:** `StudentPicsDataset.xlsx` — 127 students, 9-digit IDs (e.g. `231006367`), Arabic names, and Google Drive photo links (`https://drive.google.com/open?id=FILE_ID`). There is no ZIP file of images — photos are downloaded from Drive at ingestion time.
+
 ### 10.2 Data Flow
 
 ```
 Lecturer in Shiny → Submodule A (Roster Setup)
-    │  uploads: roster.csv + images.zip
+    │  uploads: StudentPicsDataset.xlsx (or derived XLSX/CSV)
     ▼
 httr2 multipart POST /roster/upload
     │
     ▼
 FastAPI roster.py:
-    │  1. Parse roster.csv → INSERT into students (student_id, name, email)
-    │  2. Unzip images.zip — each file named {student_id}.jpg
-    │  3. face_recognition.face_encodings(image) → 128-dim numpy array
-    │  4. encoding.tobytes() → store as BLOB in students.face_encoding
+    │  1. Parse XLSX → extract student_id (9-digit), name, email, photo_link columns
+    │  2. INSERT into students (student_id, name, email) — skip if already exists
+    │  3. For each student with a Drive photo link:
+    │     a. Extract file_id from URL: url.split("id=")[1]
+    │     b. Download: https://drive.google.com/uc?export=download&id={file_id}
+    │     c. face_recognition.face_encodings(image) → 128-dim numpy array
+    │     d. encoding.tobytes() → store as BLOB in students.face_encoding
+    │  4. Return {students_created: N, encodings_saved: M}
     ▼
 SQLite students table ready — vision pipeline can now identify this cohort
 ```
@@ -990,48 +1025,78 @@ SQLite students table ready — vision pipeline can now identify this cohort
 File: `python-api/routers/roster.py`
 
 ```python
-import face_recognition, numpy as np, zipfile, io, csv
-from fastapi import APIRouter, UploadFile, File, Depends
+import face_recognition, numpy as np, io, requests
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
 from models import Student
+import openpyxl
 
 router = APIRouter()
 
+MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB guard
+
+def download_drive_image(photo_link: str) -> np.ndarray | None:
+    """Download a photo from a Google Drive share link and return as numpy array."""
+    try:
+        file_id = photo_link.split("id=")[1].split("&")[0]
+        download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+        resp = requests.get(download_url, timeout=15)
+        resp.raise_for_status()
+        return face_recognition.load_image_file(io.BytesIO(resp.content))
+    except Exception:
+        return None
+
 @router.post("/upload")
 async def upload_roster(
-    roster_csv: UploadFile = File(...),
-    images_zip: UploadFile = File(...),
+    roster_xlsx: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-    # 1. Parse roster CSV
-    content = (await roster_csv.read()).decode("utf-8").splitlines()
-    students_created = 0
-    for row in csv.DictReader(content):
-        if not db.query(Student).filter_by(student_id=row["student_id"]).first():
-            db.add(Student(student_id=row["student_id"],
-                           name=row["name"], email=row.get("email")))
-            students_created += 1
-    db.commit()
+    # Guard against oversized uploads
+    content = await roster_xlsx.read()
+    if len(content) > MAX_UPLOAD_SIZE:
+        raise HTTPException(status_code=413, detail="File too large (max 10 MB)")
 
-    # 2. Extract images and encode faces
-    zip_bytes = await images_zip.read()
+    # 1. Parse XLSX — expects columns: student_id, name, email, photo_link
+    wb = openpyxl.load_workbook(io.BytesIO(content))
+    ws = wb.active
+    headers = [str(cell.value).strip() for cell in ws[1]]
+
+    students_created = 0
     encodings_saved = 0
-    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
-        for filename in zf.namelist():
-            student_id = filename.split(".")[0]
-            img_array  = face_recognition.load_image_file(io.BytesIO(zf.read(filename)))
-            encs       = face_recognition.face_encodings(img_array)
-            if not encs:
-                continue
-            db.query(Student).filter_by(student_id=student_id).update(
-                {"face_encoding": encs[0].astype(np.float64).tobytes()}
-            )
-            encodings_saved += 1
-    db.commit()
+
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        data = dict(zip(headers, row))
+        student_id = str(data.get("student_id", "")).strip()
+        name       = str(data.get("name", "")).strip()
+        email      = str(data.get("email", "")).strip() or None
+        photo_link = str(data.get("photo_link", "")).strip()
+
+        if not student_id or not name:
+            continue
+
+        # 2. Insert student if not already present
+        if not db.query(Student).filter_by(student_id=student_id).first():
+            db.add(Student(student_id=student_id, name=name, email=email))
+            students_created += 1
+            db.commit()
+
+        # 3. Download photo and encode face
+        if photo_link and "drive.google.com" in photo_link:
+            img_array = download_drive_image(photo_link)
+            if img_array is not None:
+                encs = face_recognition.face_encodings(img_array)
+                if encs:
+                    db.query(Student).filter_by(student_id=student_id).update(
+                        {"face_encoding": encs[0].astype(np.float64).tobytes()}
+                    )
+                    encodings_saved += 1
+                    db.commit()
 
     return {"students_created": students_created, "encodings_saved": encodings_saved}
 ```
+
+**Add `openpyxl` and `requests` to `requirements.txt`** (both are pure-Python, no build deps).
 
 ---
 
@@ -1041,14 +1106,17 @@ async def upload_roster(
 
 ```
 Step 1  Lecturer opens Shiny → Roster Setup tab
-Step 2  Uploads roster.csv (columns: student_id, name, email) + images.zip
-Step 3  Shiny: httr2 multipart POST /roster/upload
+Step 2  Uploads StudentPicsDataset.xlsx (columns: student_id, name, email, photo_link)
+          student_id = 9-digit AAST number (e.g. 231006367)
+          photo_link = Google Drive share URL per student
+Step 3  Shiny: httr2 multipart POST /roster/upload (single XLSX file)
 Step 4  FastAPI:
-          a. Parses CSV → INSERT Student rows into SQLite
-          b. Unzips images → face_recognition.face_encodings() per image
-          c. Serializes 128-dim numpy array → BLOB
-          d. Stores in students.face_encoding
-Step 5  FastAPI returns {students_created: N, encodings_saved: N}
+          a. Parses XLSX → INSERT Student rows into SQLite
+          b. For each student: extract Drive file_id from photo_link
+          c. Download image via https://drive.google.com/uc?export=download&id={file_id}
+          d. face_recognition.face_encodings() → 128-dim numpy array
+          e. Serializes array → BLOB → stores in students.face_encoding
+Step 5  FastAPI returns {students_created: N, encodings_saved: M}
 Step 6  Shiny shows success notification
 Step 7  Next lecture start → load_student_encodings() picks up new encodings
 ```
@@ -1060,7 +1128,7 @@ Step 1  Lecturer clicks "Start Lecture" in Shiny
           httr2 POST /session/start {lecture_id, lecturer_id, slide_url}
 Step 2  FastAPI session.py:
           a. INSERT into lectures table
-          b. Broadcasts WS: {event: "session:start", slideUrl, lectureId}
+          b. Broadcasts WS: {type: "session:start", slideUrl, lectureId}
           c. Spawns background thread → vision_pipeline.run_pipeline()
           d. Spawns background coroutine → whisper_service.stream_captions()
 Step 3  Vision pipeline (every 5 seconds):
@@ -1075,10 +1143,11 @@ Step 4  Whisper loop (every 5 seconds):
           a. Capture 5s audio from classroom mic
           b. Whisper API → transcript text (handles ar-EG/en-US code-switching)
           c. INSERT into transcripts table
-          d. Broadcast WS: {event: "caption", text: "..."}
+          d. Broadcast WS: {type: "caption", text: "...", lecture_id: ..., timestamp: ..., language: "mixed"}
 Step 5  React Native student app:
           a. AppState listener: app goes background → WS emit strike
-             {event: "strike", student_id, lecture_id, type: "app_background"}
+             {type: "focus_strike", student_id, lecture_id, strike_type: "app_background"}
+             (exam context: add context: "exam" → routes to incidents table instead)
           b. FastAPI → INSERT focus_strikes
           c. Caption received → CaptionBar displays for 4s
 Step 6  Shiny live dashboard (reactiveTimer every 10s):
@@ -1090,8 +1159,8 @@ Step 7  Confusion spike check (Shiny observer, every 10s):
           b. If ≥ 0.40 → triggers State 3
 Step 8  Lecturer clicks "End Lecture"
           POST /session/end → updates lectures.end_time
-          Broadcasts {event: "session:end"}
-          Background threads stopped
+          Broadcasts {type: "session:end"}
+          Background threads stopped gracefully via threading.Event stop flag
 Step 9  Nightly 02:00: APScheduler → export_all() → CSV files written
           R/Shiny reactivePoll detects mtime change → analytics dashboards refresh
 ```
@@ -1113,7 +1182,7 @@ Step 6  Shiny: shinyalert() popup
           Buttons: "Ask it" | "Dismiss"
 Step 7  Lecturer clicks "Ask it"
           Shiny: httr2 POST /session/broadcast
-          FastAPI broadcasts WS: {event: "freshbrainer", question: "..."}
+          FastAPI broadcasts WS: {type: "freshbrainer", question: "..."}
 Step 8  React Native: bottom-sheet overlay in focus.tsx
           Shows question to student
 ```
@@ -1147,10 +1216,11 @@ File: `shiny-app/ui/lecturer_ui.R` + `shiny-app/server/lecturer_server.R`
 ---
 
 **Submodule A — Roster Setup**
-- `fileInput("roster_csv")` + `fileInput("images_zip")`
-- Progress bar during upload
-- `httr2 POST /roster/upload` (multipart)
-- Success notification shows `encodings_saved` count
+- `fileInput("roster_xlsx", accept = c(".xlsx"))` — accepts `StudentPicsDataset.xlsx` directly
+- Progress bar during upload (Drive downloads are slow — show spinner)
+- `httr2 POST /roster/upload` (multipart, single XLSX file)
+- Success notification shows `students_created` and `encodings_saved` counts
+- Note: Drive photo download happens server-side; no ZIP file needed
 
 ---
 
@@ -1263,10 +1333,12 @@ import { AppState, AppStateStatus } from 'react-native';
 useEffect(() => {
   const sub = AppState.addEventListener('change', (next: AppStateStatus) => {
     if (next !== 'active' && focusActive) {
-      socket.emit('strike', {
+      socket.emit('focus_strike', {
+        type: 'focus_strike',
         student_id: studentId,
         lecture_id: activeLectureId,
-        type: 'app_background',
+        strike_type: 'app_background',
+        // context: 'exam'  ← add this field during exam sessions to route to incidents table
       });
       setStrikes(s => s + 1);
     }
@@ -1275,12 +1347,12 @@ useEffect(() => {
 }, [focusActive]);
 ```
 - No OS-level locks — AppState API only
-- Receives `session:start` → shows slide URL + locks focus
-- Receives `session:end` → releases focus
-- Receives `freshbrainer` → renders bottom-sheet question
+- Receives `{type: "session:start"}` → shows slide URL + locks focus
+- Receives `{type: "session:end"}` → releases focus
+- Receives `{type: "freshbrainer"}` → renders bottom-sheet question
 
 **CaptionBar** (`components/CaptionBar.tsx`)
-- WS event `caption` → display text overlay, auto-clear after 4s
+- WS event `{type: "caption"}` → display text overlay, auto-clear after 4s
 - RTL-aware for Arabic text
 
 **Smart Notes** (`app/(student)/notes.tsx`)
@@ -1316,16 +1388,23 @@ All incidents saved to SQLite `incidents` table with screenshot in `data/evidenc
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import emotion, attendance, session, gemini, exam, roster, upload
+from routers import auth  # real JWT auth router
 from services.export_service import scheduler
 from database import engine
+from sqlalchemy import text
 import models
 
 models.Base.metadata.create_all(bind=engine)
+
+# Enable WAL mode for concurrent reads (vision pipeline thread + API)
+with engine.connect() as conn:
+    conn.execute(text("PRAGMA journal_mode=WAL"))
 
 app = FastAPI(title="AAST LMS API")
 app.add_middleware(CORSMiddleware, allow_origins=["*"],
                   allow_methods=["*"], allow_headers=["*"])
 
+app.include_router(auth.router,        prefix="/auth")
 app.include_router(emotion.router,     prefix="/emotion")
 app.include_router(attendance.router,  prefix="/attendance")
 app.include_router(session.router,     prefix="/session")
@@ -1354,6 +1433,8 @@ google-api-python-client  # Google Drive uploads
 apscheduler             # nightly CSV export cron
 python-multipart        # file upload
 pandas
+openpyxl                # XLSX parsing for roster upload
+requests                # Drive photo download in roster.py
 sounddevice             # microphone capture
 numpy
 python-jose[cryptography]  # JWT
@@ -1437,8 +1518,8 @@ EXPO_PUBLIC_WS_URL=wss://your-app.railway.app
 @router.get("/live")
 def get_live_emotions():
     return [
-        {"student_id": "S01", "emotion": "Focused", "confidence": 1.0, "engagement_score": 1.0},
-        {"student_id": "S02", "emotion": "Confused", "confidence": 0.55, "engagement_score": 0.55},
+        {"student_id": "231006367", "emotion": "Focused", "confidence": 1.0, "engagement_score": 1.0},
+        {"student_id": "231006368", "emotion": "Confused", "confidence": 0.55, "engagement_score": 0.55},
     ]
 
 # Deploy to Railway after each router is stubbed
@@ -1453,7 +1534,7 @@ railway up
 - `GET /emotion/live?lecture_id=L1` → array of emotion rows
 - `POST /session/start` → `{"status": "started"}`
 - `GET /session/upcoming` → array of lecture objects
-- `POST /roster/upload` → `{"students_created": 5, "encodings_saved": 5}`
+- `POST /roster/upload` (XLSX file) → `{"students_created": 127, "encodings_saved": 127}`
 - `GET /notes/{student_id}/{lecture_id}` → markdown string
 - `GET /notes/{student_id}/plan` → markdown string
 - `POST /gemini/question` → `{"question": "What is the difference between X and Y?"}`
@@ -1668,7 +1749,7 @@ print(result)
 ```r
 # Test confusion alert with synthetic high-confusion data
 high_confusion <- data.frame(
-  student_id = "S01",
+  student_id = "231006367",
   lecture_id = "L1",
   timestamp  = Sys.time(),
   emotion    = rep("Confused", 50),
@@ -1686,9 +1767,9 @@ curl -X POST https://railway-url/gemini/question \
   -H "Content-Type: application/json" \
   -d '{"lecture_id": "L1"}'
 
-curl https://railway-url/notes/S01/L1
+curl https://railway-url/notes/231006367/L1
 
-curl https://railway-url/notes/S01/plan
+curl https://railway-url/notes/231006367/plan
 ```
 
 ---
@@ -1986,7 +2067,7 @@ jobs:
 | P1-S1-01 | Python environment | All packages in `requirements.txt` installed | `python -c "import ultralytics, face_recognition, hsemotion_onnx, openai"` succeeds |
 | P1-S1-02 | Camera connectivity | Script opens RTSP stream, saves frame | `test_frame.jpg` created without error |
 | P1-S1-03 | Vision pipeline stub | `vision_pipeline.py` with correct structure, no models | File imports cleanly, placeholder functions defined |
-| P1-S1-04 | Synthetic data seeder | `notebooks/generate_synthetic_data.py` inserts 1000+ rows into all tables | S2 can run `compute_engagement()` against it |
+| P1-S1-04 | Synthetic data seeder | `notebooks/generate_synthetic_data.py` inserts 1000+ rows using 9-digit student IDs (e.g. 231006367) | S2 can run `compute_engagement()` against it |
 | P1-S1-05 | YOLO test | Script runs YOLO on sample classroom photo | Bounding boxes drawn on output image |
 
 #### S2 — R/Shiny UI Lead (Week 1–3, uses mock endpoints from S3)
@@ -2008,7 +2089,7 @@ jobs:
 | P1-S4-01 | Expo scaffold | `react-native-app/` with Expo Router, NativeWind, Zustand, socket.io-client | `npx expo start` launches without errors |
 | P1-S4-02 | Auth screen | `login.tsx` calls `POST /auth/login`, stores JWT | Login works against mock endpoint |
 | P1-S4-03 | Home screen stub | `home.tsx` renders after login | Screen shows placeholder lecture cards |
-| P1-S4-04 | WebSocket client | `api.ts` connects to mock WS, logs events | `session:start` appears in console |
+| P1-S4-04 | WebSocket client | `api.ts` connects to mock WS, logs events | `{type: "session:start"}` payload appears in console |
 | P1-S4-05 | AppState stub | `focus.tsx` logs AppState changes | Background/foreground transitions logged |
 
 ---
@@ -2024,9 +2105,10 @@ jobs:
 | P2-S1-02 | face_recognition ID match | Crop ROI → encoding → SQLite match | Correct student_id returned |
 | P2-S1-03 | HSEmotion integration | Full 3-step pipeline, fixed confidence lookup | Educational state + confidence written to SQLite |
 | P2-S1-04 | 5-second loop | `run_pipeline()` loops continuously | `emotion_log` grows during 1-min test run |
-| P2-S1-05 | Roster encoding | `roster.py` processes ZIP, writes BLOBs | 10 test images → 10 encodings in DB |
+| P2-S1-05 | Roster encoding | `roster.py` processes XLSX, downloads Drive photos, writes BLOBs | 10 test rows → 10 encodings in DB (student_id = 9-digit format) |
 | P2-S1-06 | Auto attendance | First detection per lecture → INSERT attendance_log | `attendance_log` populated after test |
 | P2-S1-07 | Whisper integration | Captures mic, transcribes via Whisper API | Arabic + English phrases transcribed correctly |
+| P2-S1-08 | RTSP reconnection | `run_pipeline()` retries camera connection 5× with 10s backoff; stop_event halts on session end | Pipeline survives 30s camera dropout; stops cleanly on POST /session/end |
 
 #### S2 (Weeks 4–8)
 
@@ -2052,20 +2134,24 @@ jobs:
 |---|---|---|---|
 | P2-S3-01 | Real emotion endpoints | `POST /emotion/frame` writes; `GET /emotion/live` reads | Vision pipeline and Shiny both work |
 | P2-S3-02 | Attendance endpoints | `POST /attendance/start`, `/manual`, `GET /qr/{id}` | All 3 functional |
-| P2-S3-03 | Roster endpoint | `POST /roster/upload` parses CSV + ZIP | Encodings saved to DB |
+| P2-S3-03 | Roster endpoint | `POST /roster/upload` parses XLSX, downloads Drive photos | Encodings saved to DB (9-digit IDs) |
 | P2-S3-04 | Materials + Drive | `POST /upload/material` → Drive → materials table | Drive link in DB |
 | P2-S3-05 | Session WS (real) | `POST /session/start` → DB row + broadcast + threads | S4 and Shiny receive events |
-| P2-S3-06 | Nightly export | APScheduler at 02:00 → CSVs written | Manual `export_all()` produces correct CSVs |
+| P2-S3-06 | Nightly export | APScheduler at 02:00 → CSVs written atomically (os.replace pattern) | Manual `export_all()` produces correct CSVs; no partial-read race condition |
 | P2-S3-07 | Notify endpoint | `POST /notify/lecturer` → notifications table | Returns 200, row in DB |
+| P2-S3-08 | Confusion rate endpoint | `GET /emotion/confusion-rate?lecture_id=&window=120` → float 0.0–1.0 | Shiny live dashboard confusion observer uses this (moved here from Phase 3) |
+| P2-S3-09 | Session broadcast endpoint | `POST /session/broadcast {type, payload}` → WS broadcast to all clients | Freshbrainer question reaches all React Native clients |
+| P2-S3-10 | Real JWT auth | `POST /auth/login` validates credentials, issues signed JWT; middleware protects routes | Token verified with JWT_SECRET; invalid tokens return 401 |
 
 #### S4 (Weeks 4–8)
 
 | ID | Task | Deliverable | Done when |
 |---|---|---|---|
 | P2-S4-01 | Home screen (real) | Fetches `GET /session/upcoming`, renders cards | Real lectures displayed |
-| P2-S4-02 | AppState focus mode | Background → WS strike → FastAPI logs to focus_strikes | Strike appears in SQLite |
+| P2-S4-02 | AppState focus mode | Background → WS `{type: "focus_strike", strike_type: "app_background"}` → FastAPI logs to focus_strikes | Strike appears in SQLite |
 | P2-S4-03 | CaptionBar | WS caption events → RTL overlay → auto-clears 4s | Arabic + English display correctly |
 | P2-S4-04 | Strike counter | FocusOverlay shows count, warns at 3 | Counter increments on each strike |
+| P2-S4-05 | Offline strike cache | Queue strikes locally (AsyncStorage) when WS disconnected; drain queue on reconnect | No strikes lost during brief network interruptions |
 
 ---
 
@@ -2097,8 +2183,7 @@ jobs:
 | P3-S3-01 | `/gemini/question` | Fetches slide text → Gemini → returns question | Shiny receives question string |
 | P3-S3-02 | `/notes/{sid}/{lid}` | Reads transcripts → smart notes → returns markdown | Markdown correct |
 | P3-S3-03 | `/notes/{sid}/plan` | Reads latest plan .md → returns content | Plan markdown returned |
-| P3-S3-04 | Confusion rate endpoint | `GET /emotion/confusion-rate?lecture_id=&window=120` | Returns float 0.0–1.0 |
-| P3-S3-05 | Strike WS handler | WS `strike` event → INSERT focus_strikes | Strike in DB |
+| P3-S3-04 | Strike WS handler | WS `focus_strike` event → INSERT focus_strikes (or incidents if context=exam) | Strike in DB; exam strikes in incidents table |
 
 #### S4 (Weeks 9–12)
 
@@ -2119,7 +2204,7 @@ jobs:
 |---|---|---|---|
 | P4-S1-01 | YOLO phone detection | `proctor_service.py` detects phones on desks | Test image → `phone_on_desk` in incidents |
 | P4-S1-02 | Head posture | MediaPipe FaceMesh → extreme rotation flagged | Rotated face → `head_rotation` in incidents |
-| P4-S1-03 | Auto-submit trigger | 3 × Severity-3 in 10 min → `POST /exam/submit` | Fires in integration test |
+| P4-S1-03 | Auto-submit trigger | 3 × Severity-3 in 10 min → `POST /exam/submit`; implemented as 60-second polling loop that queries `incidents` table for recent sev-3 count | Fires in integration test; does not double-submit |
 | P4-S1-04 | Evidence screenshot | Each incident saves frame to `data/evidence/` | Screenshot file present |
 
 #### S2 (Weeks 13–16)
@@ -2173,3 +2258,16 @@ jobs:
 14. **SQLite column names locked after Week 1** — never rename any column
 15. **S3 mock endpoints live by end of Week 2** — S2 and S4 must never be blocked on AI models
 16. **All tooling free or low-cost** — Railway/shinyapps.io/Expo free tiers + Gemini 1.5 Flash + Whisper pay-per-use
+
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan at:
+specs/aast-lms-validation/plan.md
+
+Also read:
+- specs/aast-lms-validation/research.md  — gap analysis, timeline assessment, hosting decision
+- specs/aast-lms-validation/data-model.md — entity summary, CSV schemas
+- specs/aast-lms-validation/contracts/http-api.md — all HTTP endpoint contracts
+- specs/aast-lms-validation/contracts/websocket.md — all WebSocket payload contracts
+- .specify/memory/constitution.md — 16 non-negotiable project principles
+<!-- SPECKIT END -->
