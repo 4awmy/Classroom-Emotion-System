@@ -25,21 +25,46 @@ apiClient.interceptors.request.use((config) => {
 
 // Native WebSocket client (compatible with FastAPI standard WS endpoints)
 let wsConnection: WebSocket | null = null;
+type FocusStrikeMessage = {
+  type: "focus_strike";
+  student_id: string;
+  lecture_id: string;
+  strike_type: string;
+  timestamp: string;
+};
+
+const pendingStrikeMessages: FocusStrikeMessage[] = [];
+
+const sendJson = (message: FocusStrikeMessage) => {
+  wsConnection?.send(JSON.stringify(message));
+};
 
 export const connectWebSocket = (): WebSocket => {
   if (
     wsConnection &&
-    wsConnection.readyState === WebSocket.OPEN
+    (wsConnection.readyState === WebSocket.OPEN ||
+      wsConnection.readyState === WebSocket.CONNECTING)
   ) {
     return wsConnection;
   }
 
-  const wsEndpoint = `${WS_URL}/session/ws`;
+  const wsEndpoint = WS_URL.endsWith("/session/ws")
+    ? WS_URL
+    : `${WS_URL.replace(/\/$/, "")}/session/ws`;
   console.log("[API] Connecting to WebSocket:", wsEndpoint);
   wsConnection = new WebSocket(wsEndpoint);
 
   wsConnection.onopen = () => {
     console.log("[WebSocket] Connected");
+    while (
+      pendingStrikeMessages.length > 0 &&
+      wsConnection?.readyState === WebSocket.OPEN
+    ) {
+      const message = pendingStrikeMessages.shift();
+      if (message) {
+        sendJson(message);
+      }
+    }
   };
 
   wsConnection.onclose = () => {
@@ -111,18 +136,29 @@ export const notesAPI = {
 
 // WebSocket events wrapper
 export const wsAPI = {
-  emitStrike: (studentId: string, lectureId: string, type: string) => {
+  emitStrike: (
+    studentId: string,
+    lectureId: string,
+    strikeType: string,
+  ): boolean => {
     const ws = getWebSocket();
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(
-        JSON.stringify({
-          event: "strike",
-          student_id: studentId,
-          lecture_id: lectureId,
-          type,
-        }),
-      );
-      console.log("[WebSocket] Strike emitted:", { studentId, lectureId, type });
+    const message: FocusStrikeMessage = {
+      type: "focus_strike",
+      student_id: studentId,
+      lecture_id: lectureId,
+      strike_type: strikeType,
+      timestamp: new Date().toISOString(),
+    };
+
+    if (ws?.readyState === WebSocket.OPEN) {
+      sendJson(message);
+      console.log("[WebSocket] Strike emitted:", message);
+      return true;
     }
+
+    pendingStrikeMessages.push(message);
+    connectWebSocket();
+    console.log("[WebSocket] Strike queued:", message);
+    return false;
   },
 };

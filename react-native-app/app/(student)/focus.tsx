@@ -8,6 +8,7 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
+import { wsAPI } from "@/services/api";
 import { useStore } from "@/store/useStore";
 
 /**
@@ -24,10 +25,15 @@ export default function FocusScreen() {
   // useEffect always reads the *current* app state via the ref, regardless of
   // how many re-renders have occurred since the subscription was created.
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const strikesRef = useRef(strikes);
   const [appState, setAppState] = useState<AppStateStatus>(
     AppState.currentState,
   );
   const [logs, setLogs] = useState<Array<{ time: string; state: string }>>([]);
+
+  useEffect(() => {
+    strikesRef.current = strikes;
+  }, [strikes]);
 
   /**
    * Monitor AppState changes
@@ -105,20 +111,22 @@ export default function FocusScreen() {
       timestamp,
     });
 
-    // Increment strike counter
-    setStrikes((prev) => prev + 1);
+    const nextStrikeCount = strikesRef.current + 1;
+    strikesRef.current = nextStrikeCount;
 
-    // TODO: Phase 2 - Emit WebSocket strike event
-    // socket.emit('strike', {
-    //   student_id: studentId,
-    //   lecture_id: activeLectureId,
-    //   type: 'app_background',
-    // });
+    // Increment strike counter
+    setStrikes(nextStrikeCount);
+
+    if (studentId && activeLectureId) {
+      wsAPI.emitStrike(studentId, activeLectureId, "app_background");
+    } else {
+      console.warn("[FocusMode] Strike not emitted: missing student/lecture id");
+    }
 
     // Show local alert (can be removed in production)
     Alert.alert(
       "Focus Mode Alert",
-      `App went to ${state}. Strike #${strikes + 1} recorded.`,
+      `App went to ${state}. Strike #${nextStrikeCount} recorded.`,
       [{ text: "OK", onPress: () => {} }],
       { cancelable: false },
     );
