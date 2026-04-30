@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import List, Optional
 from datetime import datetime
 
@@ -11,8 +11,8 @@ class TokenData(BaseModel):
     role: Optional[str] = None
 
 class UserLogin(BaseModel):
-    student_id: str = Field(..., example="231006367")
-    password: str = Field(..., example="password123")
+    student_id: str = Field(..., json_schema_extra={"example": "231006367"})
+    password: str = Field(..., json_schema_extra={"example": "password123"})
 
 class StudentBase(BaseModel):
     student_id: str
@@ -24,22 +24,19 @@ class StudentCreate(StudentBase):
 
 class StudentResponse(StudentBase):
     enrolled_at: datetime
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class LectureBase(BaseModel):
     lecture_id: str
     lecturer_id: str
     title: str
     subject: str
-    start_time: datetime
+    start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
     slide_url: Optional[str] = None
 
 class LectureResponse(LectureBase):
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class EmotionLogBase(BaseModel):
     student_id: str
@@ -54,9 +51,7 @@ class EmotionLogCreate(EmotionLogBase):
 class EmotionLogResponse(EmotionLogBase):
     id: int
     timestamp: datetime
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class AttendanceLogBase(BaseModel):
     student_id: str
@@ -67,13 +62,12 @@ class AttendanceLogBase(BaseModel):
 class AttendanceLogResponse(AttendanceLogBase):
     id: int
     timestamp: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        from_attributes = True
-
+# student_id and exam_id are nullable in the DB (incident can precede identity match)
 class IncidentBase(BaseModel):
-    student_id: str
-    exam_id: str
+    student_id: Optional[str] = None
+    exam_id: Optional[str] = None
     flag_type: str
     severity: int
     evidence_path: Optional[str] = None
@@ -81,6 +75,36 @@ class IncidentBase(BaseModel):
 class IncidentResponse(IncidentBase):
     id: int
     timestamp: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        from_attributes = True
+class TranscriptBase(BaseModel):
+    lecture_id: str
+    chunk_text: str
+    language: Optional[str] = None  # ar | en | mixed
+
+class TranscriptResponse(TranscriptBase):
+    id: int
+    timestamp: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+class NotificationBase(BaseModel):
+    student_id: str
+    lecturer_id: str
+    lecture_id: Optional[str] = None
+    reason: str
+
+class NotificationResponse(NotificationBase):
+    id: int
+    created_at: datetime
+    read: int  # 0 = unread | 1 = read
+    model_config = ConfigDict(from_attributes=True)
+
+class FocusStrikeBase(BaseModel):
+    student_id: str
+    lecture_id: str
+    strike_type: str  # app_background
+
+class FocusStrikeResponse(FocusStrikeBase):
+    id: int
+    timestamp: datetime
+    model_config = ConfigDict(from_attributes=True)
