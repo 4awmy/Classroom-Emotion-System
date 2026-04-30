@@ -1,21 +1,21 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 from pydantic import BaseModel
 
-router = APIRouter()
+router = APIRouter(tags=["Gemini / AI"])
 
 class GeminiQuestionRequest(BaseModel):
     lecture_id: str
 
-@router.post("/question")
+@router.post("/gemini/question")
 async def get_gemini_question(request: GeminiQuestionRequest):
-    return {"question": "Can you clarify what Big O notation means for nested loops?"}
+    return {"question": "What is the key difference between recursion and iteration?"}
 
-# NOTE: /notes/{student_id}/plan must be registered BEFORE /notes/{student_id}/{lecture_id}
-# so that FastAPI does not capture "plan" as the lecture_id path parameter.
 @router.get("/notes/{student_id}/plan")
 async def get_intervention_plan(student_id: str):
-    return {"markdown": "1. Schedule office hours to discuss recursion concepts.\n2. Review the recorded lecture for Week 3 specifically between 10:05 and 10:15.\n3. Complete the supplementary exercises on merge sort complexity."}
+    markdown_content = "## Intervention Plan\n\n1. Review lecture recordings for weeks 3–4...\n2. ..."
+    return Response(content=markdown_content, media_type="text/markdown")
 
 @router.get("/notes/{student_id}/{lecture_id}")
 async def get_smart_notes(student_id: str, lecture_id: str):
-    return {"markdown": f"## Lecture Notes for {lecture_id}\n\nThis lecture covered Big O notation and common complexity classes. \n\n✱ You missed the section on logarithmic time complexity while distracted."}
+    markdown_content = "## Lecture Notes\n\n### Key Concepts\n...\n\n✱ **You missed this part:** ..."
+    return Response(content=markdown_content, media_type="text/markdown")

@@ -1,31 +1,36 @@
 from fastapi import APIRouter
 from typing import List
+from pydantic import BaseModel
 
-router = APIRouter()
+router = APIRouter(tags=["Attendance"])
+
+class ManualAttendanceRecord(BaseModel):
+    student_id: str
+    status: str
+
+class ManualAttendanceRequest(BaseModel):
+    lecture_id: str
+    records: List[ManualAttendanceRecord]
 
 @router.post("/start")
 def start_attendance(lecture_id: str):
     """
-    Mock endpoint to trigger AI attendance scanning.
-    As per ARCHITECTURE.md 3.6
+    Trigger AI attendance scanning.
     """
-    return {"status": "scanning", "lecture_id": lecture_id}
+    return {"status": "ai_scanning"}
 
 @router.post("/manual")
-def submit_manual_attendance(data: List[dict]):
+def submit_manual_attendance(request: ManualAttendanceRequest):
     """
-    Mock endpoint for manual attendance overrides.
-    As per ARCHITECTURE.md 3.6
+    Manual attendance overrides.
     """
-    return {"updated": len(data), "status": "success"}
+    return {"updated": len(request.records)}
 
 @router.get("/qr/{lecture_id}")
 def get_attendance_qr(lecture_id: str):
     """
-    Mock endpoint for QR code fallback.
-    As per ARCHITECTURE.md 3.6
+    Returns QR code PNG as base64 string.
     """
     return {
-        "qr_image_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
-        "lecture_id": lecture_id
+        "qr_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
     }

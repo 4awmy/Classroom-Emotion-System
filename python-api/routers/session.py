@@ -5,7 +5,7 @@ from datetime import datetime
 import logging
 from services.websocket import manager
 
-router = APIRouter()
+router = APIRouter(tags=["Session"])
 logger = logging.getLogger(__name__)
 
 class SessionStartRequest(BaseModel):
@@ -19,7 +19,6 @@ class SessionEndRequest(BaseModel):
 class SessionBroadcastRequest(BaseModel):
     type: str
     question: str
-    lecture_id: str
 
 @router.post("/start")
 async def start_session(request: SessionStartRequest):
@@ -41,7 +40,7 @@ async def end_session(request: SessionEndRequest):
         "lecture_id": request.lecture_id,
         "timestamp": datetime.utcnow().isoformat() + "Z"
     })
-    return {"status": "ended", "lecture_id": request.lecture_id}
+    return {"status": "ended"}
 
 @router.post("/broadcast")
 async def broadcast_event(request: SessionBroadcastRequest):
@@ -49,18 +48,18 @@ async def broadcast_event(request: SessionBroadcastRequest):
     await manager.broadcast({
         "type": request.type,
         "question": request.question,
-        "lecture_id": request.lecture_id,
         "timestamp": datetime.utcnow().isoformat() + "Z"
     })
-    return {"status": "broadcast"}
+    return {"delivered_to": len(manager.active_connections)}
 
 @router.get("/upcoming")
 async def get_upcoming_sessions():
     return [
         {
             "lecture_id": "L1",
-            "title": "Introduction to Algorithms",
-            "start_time": "2026-04-28T09:00:00Z",
+            "title": "Data Structures",
+            "start_time": "2026-05-01T09:00:00",
+            "subject": "CS201",
             "slide_url": "https://drive.google.com/file/d/abc123/view"
         }
     ]

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, Form
 
-router = APIRouter()
+router = APIRouter(tags=["Upload"])
 
 @router.post("/material")
 async def upload_material(
