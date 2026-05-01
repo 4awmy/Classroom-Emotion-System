@@ -19,7 +19,7 @@ _bearer_scheme = HTTPBearer(auto_error=True)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     if not hashed_password:
-        return plain_password == "password123" # Fallback for dev
+        return False
     try:
         return bcrypt.checkpw(
             plain_password.encode('utf-8'), 
