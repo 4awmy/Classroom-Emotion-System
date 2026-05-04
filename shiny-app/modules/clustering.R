@@ -21,15 +21,18 @@ cluster_lecturers <- function(les_df, k = 3) {
   # K-means clustering
   km <- stats::kmeans(features, centers = k, nstart = 10)
 
+  # Assign labels by centroid LES value (deterministic, not by cluster index)
+  centroid_les <- km$centers[, "LES_norm"]
+  rank_order   <- rank(centroid_les, ties.method = "first")  # 1=lowest, k=highest
+  label_map    <- character(k)
+  label_map[rank_order == k]          <- "High Performers"
+  label_map[rank_order == 1]          <- "Needs Support"
+  label_map[rank_order != k & rank_order != 1] <- "Consistent"
+
   result <- les_df |>
-    dplyr::mutate(cluster = km$cluster) |>
     dplyr::mutate(
-      cluster_label = dplyr::case_when(
-        .data$cluster == 1 ~ "High Performers",
-        .data$cluster == 2 ~ "Consistent",
-        .data$cluster == 3 ~ "Needs Support",
-        TRUE ~ "Unclassified"
-      )
+      cluster       = km$cluster,
+      cluster_label = label_map[km$cluster]
     )
 
   result

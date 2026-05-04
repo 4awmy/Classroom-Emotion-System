@@ -66,14 +66,14 @@ admin_server <- function(input, output, session) {
       return(data.frame())
     }
 
-    data |>
-      dplyr::filter(
-        if (input$admin_dept_filter != "All") {
-          .data$department == input$admin_dept_filter
-        } else {
-          TRUE
-        }
-      ) |>
+    # Note: department column not in locked schema (§6.3) — filter by lecture_id prefix instead
+    filtered <- if (input$admin_dept_filter != "All") {
+      data |> dplyr::filter(grepl(input$admin_dept_filter, .data$lecture_id, ignore.case = TRUE))
+    } else {
+      data
+    }
+
+    filtered |>
       dplyr::select(
         .data$student_id, .data$lecture_id, .data$status, .data$method,
         .data$timestamp
@@ -101,16 +101,20 @@ admin_server <- function(input, output, session) {
       return(plotly::plot_ly() |> plotly::add_text(text = "No data"))
     }
 
+    # Group by lecture_id prefix as proxy for department (department not in locked schema)
     trend_data <- emotions |>
-      dplyr::mutate(week = lubridate::floor_date(.data$timestamp, "week")) |>
-      dplyr::group_by(.data$week, .data$department) |>
+      dplyr::mutate(
+        week       = lubridate::floor_date(.data$timestamp, "week"),
+        lecture_group = substr(.data$lecture_id, 1, 2)
+      ) |>
+      dplyr::group_by(.data$week, .data$lecture_group) |>
       dplyr::summarise(
         avg_engagement = mean(.data$engagement_score, na.rm = TRUE),
         .groups = "drop"
       )
 
-    plotly::plot_ly(trend_data, x = ~week, y = ~avg_engagement, color = ~department, mode = "lines+markers") |>
-      plotly::layout(title = "Weekly Engagement by Department", xaxis = list(title = "Week"), yaxis = list(title = "Avg Engagement"))
+    plotly::plot_ly(trend_data, x = ~week, y = ~avg_engagement, color = ~lecture_group, mode = "lines+markers") |>
+      plotly::layout(title = "Weekly Engagement Trend", xaxis = list(title = "Week"), yaxis = list(title = "Avg Engagement"))
   })
 
   # ========================================================================
@@ -124,15 +128,18 @@ admin_server <- function(input, output, session) {
     }
 
     heatmap_data <- emotions |>
-      dplyr::mutate(week = lubridate::floor_date(.data$timestamp, "week")) |>
-      dplyr::group_by(.data$department, .data$week) |>
+      dplyr::mutate(
+        week          = lubridate::floor_date(.data$timestamp, "week"),
+        lecture_group = substr(.data$lecture_id, 1, 2)
+      ) |>
+      dplyr::group_by(.data$lecture_group, .data$week) |>
       dplyr::summarise(avg_eng = mean(.data$engagement_score, na.rm = TRUE), .groups = "drop")
 
-    ggplot2::ggplot(heatmap_data, ggplot2::aes(x = .data$week, y = .data$department, fill = .data$avg_eng)) +
+    ggplot2::ggplot(heatmap_data, ggplot2::aes(x = .data$week, y = .data$lecture_group, fill = .data$avg_eng)) +
       ggplot2::geom_tile() +
       ggplot2::scale_fill_gradient(low = "red", high = "green", limits = c(0, 1)) +
       ggplot2::theme_minimal() +
-      ggplot2::labs(title = "Department Engagement Heatmap", fill = "Avg Engagement")
+      ggplot2::labs(title = "Lecture Group Engagement Heatmap", y = "Lecture Group", fill = "Avg Engagement")
   })
 
   # ========================================================================
@@ -152,14 +159,17 @@ admin_server <- function(input, output, session) {
     at_risk <- eng_metrics |>
       dplyr::group_by(.data$student_id) |>
       dplyr::mutate(
-        lag_score = dplyr::lag(.data$engagement_score),
-        drop = .data$lag_score - .data$engagement_score,
-        consecutive_drops = cumsum(is.na(.data$drop) | .data$drop <= 0.20)
+        lag_score  = dplyr::lag(.data$engagement_score),
+        drop       = .data$lag_score - .data$engagement_score,
+        is_drop    = !is.na(.data$drop) & .data$drop > 0.20,
+        # reset streak counter whenever the streak breaks
+        streak_id  = cumsum(!.data$is_drop),
+        consec_run = ave(as.integer(.data$is_drop), .data$student_id, .data$streak_id, FUN = cumsum)
       ) |>
-      dplyr::filter(.data$drop > 0.20) |>
+      dplyr::filter(.data$consec_run >= 3) |>
+      dplyr::slice_tail(n = 1) |>
       dplyr::ungroup() |>
-      dplyr::select(.data$student_id, .data$engagement_score, .data$drop, .data$lecture_id) |>
-      dplyr::distinct()
+      dplyr::select(.data$student_id, .data$engagement_score, .data$drop, .data$lecture_id, .data$consec_run)
 
     DT::datatable(at_risk, options = list(pageLength = 10))
   })
@@ -205,12 +215,13 @@ admin_server <- function(input, output, session) {
     }
 
     emotion_dist <- emotions |>
-      dplyr::group_by(.data$department, .data$emotion) |>
+      dplyr::mutate(lecture_group = substr(.data$lecture_id, 1, 2)) |>
+      dplyr::group_by(.data$lecture_group, .data$emotion) |>
       dplyr::summarise(count = dplyr::n(), .groups = "drop") |>
-      dplyr::group_by(.data$department) |>
+      dplyr::group_by(.data$lecture_group) |>
       dplyr::mutate(pct = .data$count / sum(.data$count))
 
-    ggplot2::ggplot(emotion_dist, ggplot2::aes(x = .data$department, y = .data$pct, fill = .data$emotion)) +
+    ggplot2::ggplot(emotion_dist, ggplot2::aes(x = .data$lecture_group, y = .data$pct, fill = .data$emotion)) +
       ggplot2::geom_col(position = "fill") +
       ggplot2::scale_fill_manual(
         values = c(
@@ -232,15 +243,35 @@ admin_server <- function(input, output, session) {
       return(plotly::plot_ly() |> plotly::add_text(text = "No data"))
     }
 
+    attendance <- attendance_data()
+
+    # Compute real LES per lecture then average per lecturer
+    att_rates <- if (nrow(attendance) > 0) {
+      attendance |>
+        dplyr::mutate(present = .data$status == "Present") |>
+        dplyr::group_by(.data$lecture_id) |>
+        dplyr::summarise(attendance_rate = mean(.data$present, na.rm = TRUE), .groups = "drop")
+    } else {
+      data.frame(lecture_id = character(), attendance_rate = numeric())
+    }
+
     eng_metrics <- compute_engagement(emotions)$by_lecture |>
+      dplyr::left_join(att_rates, by = "lecture_id") |>
+      dplyr::mutate(
+        attendance_rate = dplyr::coalesce(.data$attendance_rate, 0.8),
+        LES_lecture = 0.5 * .data$engagement_score +
+          0.3 * (1 - .data$confusion_rate) +
+          0.2 * .data$attendance_rate
+      ) |>
       dplyr::group_by(.data$lecturer_id) |>
       dplyr::summarise(
-        LES = mean(.data$engagement_score, na.rm = TRUE),
-        attendance_variance = sd(.data$engagement_score, na.rm = TRUE),
+        LES                 = round(mean(.data$LES_lecture, na.rm = TRUE), 3),
+        attendance_variance = round(sd(.data$attendance_rate, na.rm = TRUE), 3),
         .groups = "drop"
-      )
+      ) |>
+      dplyr::mutate(attendance_variance = dplyr::coalesce(.data$attendance_variance, 0))
 
-    clustered <- cluster_lecturers(eng_metrics, k = 3)
+    clustered <- cluster_lecturers(eng_metrics, k = min(3, nrow(eng_metrics)))
 
     plotly::plot_ly(clustered, x = ~LES, y = ~attendance_variance, color = ~cluster_label, mode = "markers", marker = list(size = 10)) |>
       plotly::layout(

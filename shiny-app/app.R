@@ -28,18 +28,14 @@ ui <- shiny::navbarPage(
   # ========================================================================
   shiny::tabPanel(
     "Admin Portal",
-    shiny::uiOutput("admin_panel_guard", {
-      admin_ui()
-    })
+    shiny::uiOutput("admin_panel_guard")
   ),
   # ========================================================================
   # Lecturer Portal
   # ========================================================================
   shiny::tabPanel(
     "Lecturer Portal",
-    shiny::uiOutput("lecturer_panel_guard", {
-      lecturer_ui()
-    })
+    shiny::uiOutput("lecturer_panel_guard")
   ),
   # ========================================================================
   # Help/Documentation

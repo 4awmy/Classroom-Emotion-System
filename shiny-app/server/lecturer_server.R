@@ -29,10 +29,19 @@ lecturer_server <- function(input, output, session) {
   shiny::observeEvent(input$lecturer_roster_upload, {
     req(input$lecturer_roster_xlsx)
 
-    file <- input$lecturer_roster_xlsx
-    body <- list(roster_file = httr2::curl_translate(file$datapath, from = "upload")$body)
+    file_info <- input$lecturer_roster_xlsx
 
-    result <- api_call("/roster/upload", method = "POST", body = body)
+    result <- tryCatch({
+      httr2::request(paste0(FASTAPI_BASE, "/roster/upload")) |>
+        httr2::req_body_multipart(
+          roster_xlsx = curl::form_file(file_info$datapath, type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        ) |>
+        httr2::req_perform() |>
+        httr2::resp_body_json()
+    }, error = function(e) {
+      shinyalert::shinyalert("Upload Failed", as.character(e), type = "error")
+      NULL
+    })
 
     if (!is.null(result)) {
       output$lecturer_roster_status <- shiny::renderUI({
@@ -224,6 +233,58 @@ lecturer_server <- function(input, output, session) {
     DT::datatable(struggle, options = list(pageLength = 10))
   })
 
+  # D4: Class Valence Meter (-1.0 to +1.0)
+  output$lecturer_d4_valence <- plotly::renderPlotly({
+    live_reactive()
+    emotions <- emotions_data()
+    if (nrow(emotions) == 0) return(plotly::plot_ly())
+
+    valence <- mean(
+      (emotions$emotion %in% c("Focused", "Engaged")) -
+        (emotions$emotion %in% c("Frustrated", "Disengaged", "Anxious")),
+      na.rm = TRUE
+    )
+    plotly::plot_ly(
+      type = "indicator", mode = "gauge+number",
+      value = round(valence, 2),
+      domain = list(x = c(0, 1), y = c(0, 1)),
+      gauge = list(
+        axis  = list(range = list(-1, 1)),
+        bar   = list(color = if (valence >= 0) "green" else "red"),
+        steps = list(
+          list(range = c(-1, 0), color = "lightyellow"),
+          list(range = c(0, 1),  color = "lightgreen")
+        )
+      )
+    )
+  })
+
+  # D7: Peak Confusion Moment
+  output$lecturer_d7_peak <- shiny::renderUI({
+    live_reactive()
+    emotions <- emotions_data()
+    if (nrow(emotions) == 0) return(shiny::div("No data"))
+
+    peak <- emotions |>
+      dplyr::mutate(time_bucket = lubridate::floor_date(.data$timestamp, "2 minutes")) |>
+      dplyr::group_by(.data$time_bucket) |>
+      dplyr::summarise(
+        confused_pct = mean(.data$emotion %in% c("Confused", "Frustrated"), na.rm = TRUE),
+        .groups = "drop"
+      ) |>
+      dplyr::slice_max(.data$confused_pct, n = 1)
+
+    if (nrow(peak) == 0) return(shiny::div("No data"))
+
+    shiny::div(
+      class = "alert alert-info",
+      shiny::strong("Most confusing moment:"),
+      format(peak$time_bucket[1], "%I:%M %p"),
+      shiny::br(),
+      sprintf("%.0f%% of class showed Confused/Frustrated", peak$confused_pct[1] * 100)
+    )
+  })
+
   # ========================================================================
   # Submodule E: Student Reports
   # ========================================================================
@@ -255,6 +316,49 @@ lecturer_server <- function(input, output, session) {
       dplyr::summarise(count = dplyr::n(), .groups = "drop")
 
     plotly::plot_ly(emotion_counts, x = ~emotion, y = ~count, type = "bar")
+  })
+
+  output$lecturer_student_load <- plotly::renderPlotly({
+    req(input$lecturer_student_select)
+    emotions <- emotions_data()
+    if (nrow(emotions) == 0) return(plotly::plot_ly())
+
+    load_data <- emotions |>
+      dplyr::filter(.data$student_id == input$lecturer_student_select) |>
+      dplyr::mutate(time_bucket = lubridate::floor_date(.data$timestamp, "5 minutes")) |>
+      dplyr::group_by(.data$time_bucket) |>
+      dplyr::summarise(
+        cognitive_load = mean(.data$emotion %in% c("Confused", "Frustrated"), na.rm = TRUE),
+        .groups = "drop"
+      )
+
+    plotly::plot_ly(load_data, x = ~time_bucket, y = ~cognitive_load,
+                   type = "scatter", mode = "lines+markers",
+                   line = list(color = "orange")) |>
+      plotly::layout(
+        title = "Cognitive Load Timeline",
+        yaxis = list(range = c(0, 1), title = "Load"),
+        shapes = list(
+          list(type = "line", x0 = min(load_data$time_bucket), x1 = max(load_data$time_bucket),
+               y0 = 0.5, y1 = 0.5, line = list(color = "red", dash = "dot"))
+        )
+      )
+  })
+
+  output$lecturer_student_plan_ui <- shiny::renderUI({
+    req(input$lecturer_student_select)
+    result <- tryCatch({
+      api_call(paste0("/notes/", input$lecturer_student_select, "/plan"))
+    }, error = function(e) NULL)
+
+    if (is.null(result) || is.null(result$plan)) {
+      return(shiny::div(class = "alert alert-info", "No AI plan available yet for this student."))
+    }
+
+    shiny::div(
+      class = "card p-3",
+      shiny::markdown(result$plan)
+    )
   })
 
   output$lecturer_student_pdf <- shiny::downloadHandler(
