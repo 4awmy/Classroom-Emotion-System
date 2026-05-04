@@ -1,9 +1,12 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
 import logging
+from sqlalchemy.orm import Session
 from services.websocket import manager
+from database import get_db
+from models import FocusStrike
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -78,9 +81,33 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             # Keep connection alive and handle incoming messages
             data = await websocket.receive_json()
-            # Handle client -> server messages (e.g., focus_strike)
+            # T058: Handle focus_strike — persist to DB and broadcast
             if isinstance(data, dict) and data.get("type") == "focus_strike":
-                logger.info("Received focus strike from %s", data.get("student_id"))
+                student_id = data.get("student_id")
+                lecture_id = data.get("lecture_id")
+                strike_type = data.get("strike_type", "app_background")
+                logger.info("Focus strike: student=%s lecture=%s type=%s", student_id, lecture_id, strike_type)
+                # Persist to database
+                db: Session = next(get_db())
+                try:
+                    db.add(FocusStrike(
+                        student_id=student_id,
+                        lecture_id=lecture_id,
+                        timestamp=datetime.utcnow(),
+                        strike_type=strike_type
+                    ))
+                    db.commit()
+                except Exception as e:
+                    logger.error("Failed to persist focus strike: %s", e)
+                    db.rollback()
+                finally:
+                    db.close()
+                # Acknowledge back to sender
+                await websocket.send_json({
+                    "type": "strike_ack",
+                    "student_id": student_id,
+                    "timestamp": datetime.utcnow().isoformat() + "Z"
+                })
     except WebSocketDisconnect:
         manager.disconnect(websocket)
     except Exception as exc:
