@@ -1,21 +1,49 @@
-from fastapi import APIRouter
+"""
+Gemini Router — mounted at /gemini prefix
+POST /gemini/question  → fresh-brainer question (T061)
+
+Notes endpoints are in routers/notes.py mounted at /notes prefix.
+"""
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from sqlalchemy import text
+from database import get_db
+from services.gemini_service import generate_fresh_brainer
+import logging
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
 
 class GeminiQuestionRequest(BaseModel):
     lecture_id: str
 
+
 @router.post("/question")
-async def get_gemini_question(request: GeminiQuestionRequest):
-    return {"question": "Can you clarify what Big O notation means for nested loops?"}
+async def get_gemini_question(request: GeminiQuestionRequest, db: Session = Depends(get_db)):
+    """T061: Generate a fresh-brainer question from the current lecture's slide content."""
+    lecture = db.execute(
+        text("SELECT slide_url, title FROM lectures WHERE lecture_id = :lid"),
+        {"lid": request.lecture_id}
+    ).fetchone()
 
-# NOTE: /notes/{student_id}/plan must be registered BEFORE /notes/{student_id}/{lecture_id}
-# so that FastAPI does not capture "plan" as the lecture_id path parameter.
-@router.get("/notes/{student_id}/plan")
-async def get_intervention_plan(student_id: str):
-    return {"markdown": "1. Schedule office hours to discuss recursion concepts.\n2. Review the recorded lecture for Week 3 specifically between 10:05 and 10:15.\n3. Complete the supplementary exercises on merge sort complexity."}
+    recent_transcript = db.execute(
+        text("""
+            SELECT chunk_text FROM transcripts
+            WHERE lecture_id = :lid
+            ORDER BY timestamp DESC
+            LIMIT 10
+        """),
+        {"lid": request.lecture_id}
+    ).fetchall()
 
-@router.get("/notes/{student_id}/{lecture_id}")
-async def get_smart_notes(student_id: str, lecture_id: str):
-    return {"markdown": f"## Lecture Notes for {lecture_id}\n\nThis lecture covered Big O notation and common complexity classes. \n\n✱ You missed the section on logarithmic time complexity while distracted."}
+    if recent_transcript:
+        slide_text = " ".join(r.chunk_text for r in recent_transcript)
+    elif lecture and lecture.title:
+        slide_text = f"Lecture: {lecture.title}"
+    else:
+        slide_text = f"Lecture: {request.lecture_id}"
+
+    question = generate_fresh_brainer(slide_text)
+    return {"question": question}

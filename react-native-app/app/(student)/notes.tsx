@@ -7,19 +7,23 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Share,
+  RefreshControl,
 } from "react-native";
 import { useStore } from "@/store/useStore";
 import { notesAPI } from "@/services/api";
+import NotesViewer from "@/components/NotesViewer";
 
 /**
- * Smart Notes Screen (P1-S4 stub)
- * Displays generated study notes with highlights
- * Phase 2: Fetch from /notes/{student_id}/{lecture_id}
+ * Smart Notes Screen — Phase 3 (T056)
+ * Fetches AI-generated notes from GET /notes/{student_id}/{lecture_id}
+ * Uses NotesViewer component with markdown rendering + ✱ highlights
  */
 export default function NotesScreen() {
   const { studentId, activeLectureId } = useStore();
-  const [notes, setNotes] = useState("");
+  const [notes, setNotes] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (studentId && activeLectureId) {
@@ -27,85 +31,111 @@ export default function NotesScreen() {
     }
   }, [studentId, activeLectureId]);
 
-  const loadNotes = async () => {
+  const loadNotes = async (isRefresh = false) => {
+    if (!studentId || !activeLectureId) {
+      setError("No active lecture session.");
+      return;
+    }
+
     try {
-      setLoading(true);
-      console.log("[Notes] Loading notes for:", studentId, activeLectureId);
+      isRefresh ? setRefreshing(true) : setLoading(true);
+      setError(null);
 
-      // Phase 1: Mock notes
-      const mockNotes = `# Study Notes
-
-## Key Concepts
-- **Algorithms**: Step-by-step procedures for solving problems
-- **Time Complexity**: Measure of how fast an algorithm runs
-
-✱ **Important**: This section was covered when you were briefly distracted.
-Pay close attention to Big O notation - it's crucial for the exam.
-
-## Examples
-1. Linear Search: O(n)
-2. Binary Search: O(log n)
-3. Bubble Sort: O(n²)
-
-## Practice Problems
-- Implement a binary search function
-- Analyze time complexity of nested loops
-- Design an efficient sorting algorithm
-`;
-      setNotes(mockNotes);
-
-      // Phase 2: Uncomment for real API
-      // if (activeLectureId) {
-      //   const response = await notesAPI.get(studentId, activeLectureId);
-      //   setNotes(response);
-      // }
-    } catch (error) {
-      console.error("[Notes] Error loading notes:", error);
-      setNotes("Failed to load notes. Please try again.");
+      const response = await notesAPI.get(studentId, activeLectureId);
+      const markdown = response?.markdown ?? response;
+      setNotes(typeof markdown === "string" ? markdown : JSON.stringify(markdown));
+    } catch (err) {
+      console.error("[Notes] Error loading notes:", err);
+      setError("Could not load notes. The lecture may still be in progress.");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   const handleShare = async () => {
+    if (!notes) return;
     try {
       await Share.share({
         message: notes,
-        title: "My Study Notes",
+        title: `Lecture Notes — ${activeLectureId}`,
       });
-    } catch (error) {
-      console.error("[Notes] Share error:", error);
+    } catch (err) {
+      console.error("[Notes] Share error:", err);
     }
   };
 
+  // ── Loading State ──────────────────────────────────────────────────────────
   if (loading) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#002147" />
-        <Text style={styles.loadingText}>Loading notes...</Text>
+        <Text style={styles.loadingText}>Generating your personalised notes...</Text>
+        <Text style={styles.loadingSubtext}>This may take a few seconds</Text>
       </View>
     );
   }
 
+  // ── Error State ────────────────────────────────────────────────────────────
+  if (error) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.errorTitle}>Notes Unavailable</Text>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={() => loadNotes()}>
+          <Text style={styles.retryButtonText}>Try Again</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // ── Empty State ────────────────────────────────────────────────────────────
+  if (!notes) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.errorTitle}>No Notes Yet</Text>
+        <Text style={styles.errorText}>
+          Notes are generated after the lecture ends. Check back shortly.
+        </Text>
+        {studentId && activeLectureId && (
+          <TouchableOpacity style={styles.retryButton} onPress={() => loadNotes()}>
+            <Text style={styles.retryButtonText}>Refresh</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  }
+
+  // ── Notes View ─────────────────────────────────────────────────────────────
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Smart Notes</Text>
+        <View>
+          <Text style={styles.title}>Smart Notes</Text>
+          {activeLectureId && (
+            <Text style={styles.subtitle}>Lecture: {activeLectureId}</Text>
+          )}
+        </View>
         <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
-          <Text style={styles.shareButtonText}>📤 Share</Text>
+          <Text style={styles.shareButtonText}>Share</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Notes Content */}
-      <ScrollView style={styles.content}>
-        <Text style={styles.notesText}>{notes}</Text>
+      {/* Scrollable Notes */}
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentPadding}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => loadNotes(true)}
+            colors={["#002147"]}
+          />
+        }
+      >
+        <NotesViewer markdown={notes} />
       </ScrollView>
-
-      {/* Legend */}
-      <View style={styles.legend}>
-        <Text style={styles.legendTitle}>✱ = Key content when distracted</Text>
-      </View>
     </View>
   );
 }
@@ -119,11 +149,46 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    padding: 24,
+    backgroundColor: "#f5f5f5",
   },
   loadingText: {
-    marginTop: 12,
+    marginTop: 16,
+    fontSize: 15,
+    color: "#002147",
+    fontWeight: "500",
+    textAlign: "center",
+  },
+  loadingSubtext: {
+    marginTop: 6,
+    fontSize: 12,
+    color: "#888",
+    textAlign: "center",
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#002147",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  errorText: {
     fontSize: 14,
     color: "#666",
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  retryButton: {
+    marginTop: 20,
+    backgroundColor: "#002147",
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 14,
   },
   header: {
     backgroundColor: "#002147",
@@ -139,36 +204,27 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#fff",
   },
+  subtitle: {
+    fontSize: 11,
+    color: "#C9A84C",
+    marginTop: 2,
+  },
   shareButton: {
-    backgroundColor: "#c9a84c",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    backgroundColor: "#C9A84C",
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     borderRadius: 6,
   },
   shareButtonText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "600",
     color: "#002147",
   },
   content: {
     flex: 1,
+  },
+  contentPadding: {
     padding: 16,
-  },
-  notesText: {
-    fontSize: 14,
-    lineHeight: 22,
-    color: "#333",
-    fontFamily: "system",
-  },
-  legend: {
-    backgroundColor: "#fff9e6",
-    padding: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#ffe0b2",
-  },
-  legendTitle: {
-    fontSize: 12,
-    color: "#f57f17",
-    fontStyle: "italic",
+    paddingBottom: 32,
   },
 });
