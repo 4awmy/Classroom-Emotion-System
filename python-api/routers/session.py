@@ -5,7 +5,7 @@ from datetime import datetime
 import logging
 from sqlalchemy.orm import Session
 from services.websocket import manager
-from database import get_db
+from database import SessionLocal
 from models import FocusStrike
 
 router = APIRouter()
@@ -87,27 +87,33 @@ async def websocket_endpoint(websocket: WebSocket):
                 lecture_id = data.get("lecture_id")
                 strike_type = data.get("strike_type", "app_background")
                 logger.info("Focus strike: student=%s lecture=%s type=%s", student_id, lecture_id, strike_type)
-                # Persist to database
-                db: Session = next(get_db())
-                try:
-                    db.add(FocusStrike(
-                        student_id=student_id,
-                        lecture_id=lecture_id,
-                        timestamp=datetime.utcnow(),
-                        strike_type=strike_type
-                    ))
-                    db.commit()
-                except Exception as e:
-                    logger.error("Failed to persist focus strike: %s", e)
-                    db.rollback()
-                finally:
-                    db.close()
-                # Acknowledge back to sender
-                await websocket.send_json({
-                    "type": "strike_ack",
-                    "student_id": student_id,
-                    "timestamp": datetime.utcnow().isoformat() + "Z"
-                })
+                # Bug 5 fix: validate required fields before DB write
+                persisted = False
+                if student_id and lecture_id:
+                    db: Session = SessionLocal()
+                    try:
+                        db.add(FocusStrike(
+                            student_id=student_id,
+                            lecture_id=lecture_id,
+                            timestamp=datetime.utcnow(),
+                            strike_type=strike_type
+                        ))
+                        db.commit()
+                        persisted = True
+                    except Exception as e:
+                        logger.error("Failed to persist focus strike: %s", e)
+                        db.rollback()
+                    finally:
+                        db.close()
+                else:
+                    logger.warning("Ignoring focus_strike with missing student_id or lecture_id")
+                # Bug 5 fix: only ack when persisted
+                if persisted:
+                    await websocket.send_json({
+                        "type": "strike_ack",
+                        "student_id": student_id,
+                        "timestamp": datetime.utcnow().isoformat() + "Z"
+                    })
     except WebSocketDisconnect:
         manager.disconnect(websocket)
     except Exception as exc:

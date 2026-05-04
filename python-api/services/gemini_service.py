@@ -51,7 +51,8 @@ def generate_smart_notes(transcript: str, distraction_timestamps: list[str]) -> 
 You are a study assistant. Generate concise study notes from this lecture transcript.
 Format as clean markdown with headers and bullet points.
 For any content taught at timestamps [{ts}] when the student was distracted,
-add a ✱ marker before that section and provide a brief plain-English re-explanation.
+start that section's heading or paragraph with the ✱ character at the very beginning of the line
+(e.g. "✱ ## Section Title" or "✱ This topic was...") and add a plain-English re-explanation below it.
 
 TRANSCRIPT:
 {transcript}
