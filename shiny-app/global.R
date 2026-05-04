@@ -17,7 +17,7 @@ library(lubridate)
 library(httr2)
 library(openxlsx)
 library(rmarkdown)
-library(rsconnect)
+library(bslib)
 
 # ============================================================================
 # Configuration

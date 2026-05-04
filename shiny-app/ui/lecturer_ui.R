@@ -16,31 +16,15 @@ lecturer_ui <- function() {
       "Roster Setup",
       br(),
       h2("Student Roster & Face Encoding"),
-      p("Upload student roster (CSV) and face images (ZIP) for identity recognition"),
+      p("Upload the student roster XLSX file (StudentPicsDataset.xlsx). Face images are fetched automatically from Google Drive links in the sheet."),
       br(),
-      fluidRow(
-        column(
-          6,
-          h3("Upload Roster"),
-          fileInput("lecturer_roster_csv", "Select CSV File",
-                   accept = c(".csv")),
-          helpText("CSV columns: student_id, name, email")
-        ),
-        column(
-          6,
-          h3("Upload Face Images"),
-          fileInput("lecturer_images_zip", "Select ZIP File",
-                   accept = c(".zip")),
-          helpText("ZIP contains images named: {student_id}.jpg")
-        )
-      ),
+      fileInput("lecturer_roster_xlsx", "Select Roster XLSX File",
+               accept = c(".xlsx")),
+      helpText("XLSX columns: student_id, name, email, drive_photo_link"),
       br(),
       actionButton("lecturer_roster_upload", "Upload Roster", class = "btn-primary"),
       br(), br(),
-      uiOutput("lecturer_roster_status"),
-      br(),
-      h3("Upload Progress"),
-      progressBar("lecturer_roster_progress", 0, "0%")
+      uiOutput("lecturer_roster_status")
     ),
     # ========================================================================
     # Submodule B: Material Upload
@@ -157,7 +141,7 @@ lecturer_ui <- function() {
         column(
           12,
           h3("D5: Per-Student Emotion Heatmap"),
-          plotly::plotlyOutput("lecturer_d5_heatmap", height = "400px")
+          plotOutput("lecturer_d5_heatmap", height = "400px")
         )
       ),
       hr(),

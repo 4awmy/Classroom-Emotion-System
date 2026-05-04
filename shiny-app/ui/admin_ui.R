@@ -54,7 +54,7 @@ admin_ui <- function() {
       "Dept Engagement Heatmap",
       br(),
       h2("Department Engagement Heatmap"),
-      plotly::plotlyOutput("admin_dept_heatmap"),
+      plotOutput("admin_dept_heatmap"),
       br(),
       p("Heatmap shows engagement by department and week")
     ),
@@ -89,7 +89,7 @@ admin_ui <- function() {
       "Emotion Distribution",
       br(),
       h2("Emotion State Distribution by Department"),
-      plotly::plotlyOutput("admin_emotion_dist"),
+      plotOutput("admin_emotion_dist"),
       br(),
       p("Stacked bar chart showing all 6 emotion states across departments")
     ),
@@ -111,7 +111,7 @@ admin_ui <- function() {
       "Time-of-Day Analysis",
       br(),
       h2("Engagement by Time of Day & Weekday"),
-      plotly::plotlyOutput("admin_tod_heatmap"),
+      plotOutput("admin_tod_heatmap"),
       br(),
       p("Heatmap showing peak/low engagement times")
     )
