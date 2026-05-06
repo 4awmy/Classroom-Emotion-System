@@ -78,9 +78,9 @@ services:
       - key: DATABASE_URL
         scope: RUN_TIME
         value: ${db.DATABASE_URL}
-      - key: VIDEO_SOURCE
+      - key: CLASSROOM_CAMERA_URL
         scope: RUN_TIME
-        value: "0"
+        type: SECRET
 
 databases:
   - name: db
@@ -88,5 +88,4 @@ databases:
     version: "15"
     size: db-s-dev-database
     num_nodes: 1
-atabase
     num_nodes: 1

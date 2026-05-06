@@ -107,21 +107,27 @@ def seed_data():
         db.commit()
         print("Seeded attendance logs.")
 
-        # 5. Create Emotion Logs
-        emotions = ["Focused", "Engaged", "Confused", "Anxious", "Frustrated", "Disengaged"]
+        # 5. Create Emotion Logs — use locked fixed confidence values (CLAUDE.md §8.2)
+        EMOTION_CONFIDENCE = {
+            "Focused": 1.00, "Engaged": 0.85, "Confused": 0.55,
+            "Anxious": 0.35, "Frustrated": 0.25, "Disengaged": 0.00,
+        }
+        emotions = list(EMOTION_CONFIDENCE.keys())
         count = 0
         for lecture in lectures:
             for student in students:
                 # Generate 35-45 logs per student per lecture to reach 1000+ total
                 num_logs = random.randint(35, 45)
                 for _ in range(num_logs):
+                    emotion = random.choice(emotions)
+                    confidence = EMOTION_CONFIDENCE[emotion]
                     log = models.EmotionLog(
                         student_id=student.student_id,
                         lecture_id=lecture.lecture_id,
                         timestamp=lecture.start_time + datetime.timedelta(minutes=random.randint(0, 120)),
-                        emotion=random.choice(emotions),
-                        confidence=random.uniform(0.7, 0.99),
-                        engagement_score=random.uniform(0.0, 1.0)
+                        emotion=emotion,
+                        confidence=confidence,
+                        engagement_score=confidence  # engagement_score == confidence (locked)
                     )
                     db.add(log)
                     count += 1

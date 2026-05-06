@@ -11,15 +11,14 @@ The core backend is now a production-ready FastAPI application using SQLAlchemy 
 - **Location**: `/python-api`
 
 ## Database Schema
-We have implemented **9 core tables** to support the full system lifecycle:
+We have implemented **9 core tables** to support the full system lifecycle (snapshot storage uses a column on `attendance_log`, not a separate table):
 
 | Table | Purpose | Key Fields |
 |-------|---------|------------|
 | `students` | Student Registry | ID, Name, Email, Face Encodings (BLOB) |
 | `lectures` | Session Management | ID, Title, Lecturer, Start/End Time |
 | `emotion_log` | Time-series FER Data | StudentID, Emotion, Confidence, Engagement Score |
-| `attendance_log` | Attendance Tracking | StudentID, Status (Present/Absent), Method (AI/QR) |
-| `attendance_evidence` | Visual Proof | AttendanceID, Snapshot Path |
+| `attendance_log` | Attendance Tracking | StudentID, Status (Present/Absent), Method (AI/QR), snapshot_path |
 | `materials` | Content Distribution | Title, Drive Link, LecturerID |
 | `incidents` | Exam Proctoring | Flag Type, Severity (1-3), Evidence Path |
 | `transcripts` | Lecture Transcription | Chunk Text, Language (AR/EN), Timestamp |
@@ -29,10 +28,10 @@ We have implemented **9 core tables** to support the full system lifecycle:
 ## Synthetic Data Generation
 To facilitate immediate development for frontend and AI leads, a seeding script is provided:
 - **Script**: `python-api/scripts/seed_mock_data.py`
-- **Current Volume**: 
+- **Current Volume**:
     - 10 Mock Students
     - 3 Active Lectures
-    - ~240 Emotion Logs (simulating 2-hour sessions)
+    - 1050–1350 Emotion Logs (35–45 per student per lecture, 1000+ total as required)
     - Full Attendance & Material records.
 - **Process**: The script uses `random` distributions to simulate realistic engagement scores and emotion transitions.
 
@@ -41,7 +40,7 @@ The environment has been updated to support the heavy-lifting AI requirements:
 - **AI Libraries**: 
     - `ultralytics`: YOLOv8 for person/object detection.
     - `face-recognition`: Dlib-based student identification.
-    - `hsemotion`: High-speed emotion recognition.
+    - `hsemotion-onnx`: High-speed ONNX emotion recognition (AffectNet-trained).
     - `google-generativeai`: Gemini Pro integration for smart notes.
 - **Containerization**: Updated `docker-compose.yml` now orchestrates the `backend`, `vision` pipeline, and `shiny-app` dashboard.
 
