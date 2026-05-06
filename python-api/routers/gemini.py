@@ -24,29 +24,12 @@ async def get_gemini_question(request: GeminiQuestionRequest, db: Session = Depe
         slide_text = f"General concepts for {request.lecture_id}"
     else:
         slide_text = f"Subject: {lecture.subject}, Title: {lecture.title}"
-    
+
     question = generate_fresh_brainer(slide_text)
     return {"question": question}
 
-@router.get("/notes/{student_id}/{lecture_id}")
-async def get_smart_notes(student_id: str, lecture_id: str, db: Session = Depends(get_db)):
-    """
-    Returns smart notes with highlight markers for a specific student and lecture.
-    """
-    # Fetch all transcript chunks for this lecture
-    transcripts = db.query(Transcript).filter(Transcript.lecture_id == lecture_id).order_by(Transcript.timestamp.asc()).all()
-    combined_transcript = " ".join([t.chunk_text for t in transcripts]) if transcripts else "No transcript available."
-    
-    # Fetch focus strikes for this student during this lecture
-    strikes = db.query(FocusStrike).filter(
-        FocusStrike.student_id == student_id,
-        FocusStrike.lecture_id == lecture_id
-    ).all()
-    distraction_timestamps = [s.timestamp.strftime("%H:%M:%S") for s in strikes]
-    
-    notes = generate_smart_notes(combined_transcript, distraction_timestamps)
-    return Response(content=notes, media_type="text/markdown")
-
+# NOTE: /notes/{student_id}/plan MUST be registered BEFORE /notes/{student_id}/{lecture_id}
+# so that FastAPI does not capture "plan" as the lecture_id path parameter.
 @router.get("/notes/{student_id}/plan")
 async def get_intervention_plan(student_id: str):
     """
@@ -58,5 +41,24 @@ async def get_intervention_plan(student_id: str):
             markdown_content = f.read()
     else:
         markdown_content = "## Intervention Plan\n\n1. Review lecture recordings for previous weeks.\n2. Participate in office hours.\n3. Complete practice exercises."
-        
+
     return Response(content=markdown_content, media_type="text/markdown")
+
+@router.get("/notes/{student_id}/{lecture_id}")
+async def get_smart_notes(student_id: str, lecture_id: str, db: Session = Depends(get_db)):
+    """
+    Returns smart notes with highlight markers for a specific student and lecture.
+    """
+    # Fetch all transcript chunks for this lecture
+    transcripts = db.query(Transcript).filter(Transcript.lecture_id == lecture_id).order_by(Transcript.timestamp.asc()).all()
+    combined_transcript = " ".join([t.chunk_text for t in transcripts]) if transcripts else "No transcript available."
+
+    # Fetch focus strikes for this student during this lecture
+    strikes = db.query(FocusStrike).filter(
+        FocusStrike.student_id == student_id,
+        FocusStrike.lecture_id == lecture_id
+    ).all()
+    distraction_timestamps = [s.timestamp.strftime("%H:%M:%S") for s in strikes]
+
+    notes = generate_smart_notes(combined_transcript, distraction_timestamps)
+    return Response(content=notes, media_type="text/markdown")
