@@ -2,10 +2,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import emotion, attendance, session, gemini, notes, exam, roster, upload, auth
 from database import engine
+from sqlalchemy import text
 import models
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
+
+# Enable WAL mode for concurrent reads (vision pipeline thread + API requests)
+with engine.connect() as conn:
+    conn.execute(text("PRAGMA journal_mode=WAL"))
+    conn.commit()
 
 app = FastAPI(title="AAST LMS API")
 

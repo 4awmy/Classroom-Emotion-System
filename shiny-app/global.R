@@ -15,6 +15,7 @@ library(ggplot2)
 library(dplyr)
 library(lubridate)
 library(httr2)
+library(curl)             # curl::form_file() for multipart roster/material uploads
 library(openxlsx)
 library(rmarkdown)
 library(bslib)
