@@ -1,0 +1,73 @@
+/* AAST Navy and Gold palette */
+:root {
+    --aast-navy: #002147;
+    --aast-gold: #C9A84C;
+    --aast-gold-light: #FFF3CD;
+}
+
+.attendance-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+    padding: 16px 0;
+}
+
+.student-card {
+    background: white;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-align: center;
+    border-left: 5px solid #ccc;
+    transition: transform 0.2s;
+}
+
+.student-card:hover {
+    transform: translateY(-2px);
+}
+
+.student-card.present {
+    border-left-color: #28a745;
+}
+
+.student-card.absent {
+    border-left-color: #dc3545;
+}
+
+.student-photo {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 60px;
+    margin-bottom: 12px;
+    border: 2px solid var(--aast-navy);
+}
+
+.student-id {
+    font-size: 0.9em;
+    color: #666;
+}
+
+.student-name {
+    font-weight: bold;
+    font-size: 1.1em;
+    margin-bottom: 8px;
+    color: var(--aast-navy);
+}
+
+.card-actions {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.reason-input {
+    font-size: 0.8em;
+    width: 100%;
+}
+
+/* Confidence Rate formatting */
+.confidence-high { color: #28a745; font-weight: bold; }
+.confidence-med { color: #ffc107; font-weight: bold; }
+.confidence-low { color: #dc3545; font-weight: bold; }

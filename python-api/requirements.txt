@@ -4,6 +4,7 @@ uvicorn[standard]
 sqlalchemy
 alembic
 python-dotenv
+psycopg2-binary
 
 # Auth
 python-jose[cryptography]
@@ -16,6 +17,15 @@ numpy
 openpyxl
 requests
 qrcode[pil]
+boto3
 
 # Scheduling
 apscheduler
+
+# AI/ML
+ultralytics
+hsemotion-onnx
+face-recognition
+google-generativeai
+pdfplumber
+sounddevice

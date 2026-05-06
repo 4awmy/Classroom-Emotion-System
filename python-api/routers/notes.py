@@ -14,6 +14,8 @@ from services.gemini_service import generate_smart_notes, generate_intervention_
 import os
 import logging
 from datetime import datetime
+import models
+from schemas import NotificationBase, NotificationResponse
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

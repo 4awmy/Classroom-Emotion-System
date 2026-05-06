@@ -9,6 +9,7 @@ library(shiny)
 library(shinydashboard)
 library(shinyalert)
 library(shinyjs)
+library(shinyWidgets)
 library(DT)
 library(plotly)
 library(ggplot2)
@@ -19,6 +20,7 @@ library(curl)             # curl::form_file() for multipart roster/material uplo
 library(openxlsx)
 library(rmarkdown)
 library(bslib)
+library(aws.s3)
 
 # ============================================================================
 # Configuration
@@ -30,6 +32,18 @@ FASTAPI_BASE <- "http://localhost:8000"
 
 # Production (after Railway deployment):
 # FASTAPI_BASE <- "https://your-railway-app.railway.app"
+
+# S3 Configuration (Digital Ocean Spaces)
+SPACES_BUCKET <- Sys.getenv("SPACES_BUCKET")
+SPACES_REGION <- Sys.getenv("SPACES_REGION")
+SPACES_ENDPOINT <- Sys.getenv("SPACES_ENDPOINT")
+
+# Set AWS credentials for aws.s3 package
+Sys.setenv(
+  "AWS_ACCESS_KEY_ID" = Sys.getenv("SPACES_KEY"),
+  "AWS_SECRET_ACCESS_KEY" = Sys.getenv("SPACES_SECRET"),
+  "AWS_DEFAULT_REGION" = SPACES_REGION
+)
 
 # ============================================================================
 # API Client Helper Function
@@ -103,16 +117,58 @@ get_emotion_color <- function(emotion) {
 # Data Loading Utilities
 # ============================================================================
 
-# Load CSV with error handling
-load_csv <- function(filepath) {
-  if (!file.exists(filepath)) {
-    return(data.frame())
+# Get file modification time (local or S3)
+get_file_mtime <- function(filepath) {
+  if (SPACES_BUCKET != "") {
+    filename <- basename(filepath)
+    tryCatch({
+      meta <- aws.s3::head_object(
+        object = paste0("exports/", filename),
+        bucket = SPACES_BUCKET,
+        base_url = SPACES_ENDPOINT
+      )
+      return(as.numeric(attr(meta, "last-modified")))
+    }, error = function(e) {
+      return(0)
+    })
+  } else {
+    if (file.exists(filepath)) {
+      return(as.numeric(file.info(filepath)$mtime))
+    } else {
+      return(0)
+    }
   }
-  tryCatch({
-    read.csv(filepath, stringsAsFactors = FALSE)
-  }, error = function(e) {
-    return(data.frame())
-  })
+}
+
+# Load CSV with error handling (local or S3)
+load_csv <- function(filepath) {
+  if (SPACES_BUCKET != "") {
+    filename <- basename(filepath)
+    tryCatch({
+      aws.s3::s3read_using(
+        FUN = read.csv,
+        object = paste0("exports/", filename),
+        bucket = SPACES_BUCKET,
+        base_url = SPACES_ENDPOINT,
+        stringsAsFactors = FALSE,
+        encoding = "UTF-8"
+      )
+    }, error = function(e) {
+      if (!file.exists(filepath)) {
+        return(data.frame())
+      }
+      read.csv(filepath, stringsAsFactors = FALSE)
+    })
+  } else {
+    if (!file.exists(filepath)) {
+      return(data.frame())
+    }
+    tryCatch({
+      read.csv(filepath, stringsAsFactors = FALSE)
+    }, error = function(e) {
+      return(data.frame())
+    })
+  }
 }
 
 # ============================================================================

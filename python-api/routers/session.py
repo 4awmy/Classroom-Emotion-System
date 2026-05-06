@@ -3,17 +3,30 @@ from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
 import logging
+import threading
+import asyncio
 from sqlalchemy.orm import Session
 from services.websocket import manager
-from database import SessionLocal
+from database import get_db, SessionLocal
+import models
 from models import FocusStrike
+from schemas import LectureResponse
+from services.vision_pipeline import run_pipeline
+from services.whisper_service import stream_captions
+import os
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+# Global tracking for active lecture tasks
+# lecture_id -> {"stop_event": threading.Event, "async_stop_event": asyncio.Event}
+active_lecture_tasks = {}
+
 class SessionStartRequest(BaseModel):
     lecture_id: str
     lecturer_id: str
+    title: Optional[str] = None
+    subject: Optional[str] = None
     slide_url: str
 
 class SessionEndRequest(BaseModel):
@@ -25,8 +38,50 @@ class SessionBroadcastRequest(BaseModel):
     lecture_id: str
 
 @router.post("/start")
-async def start_session(request: SessionStartRequest):
-    # Broadcast session:start to all clients
+async def start_session(request: SessionStartRequest, db: Session = Depends(get_db)):
+    # 1. Persist lecture to DB
+    lecture = db.query(models.Lecture).filter(models.Lecture.lecture_id == request.lecture_id).first()
+    if not lecture:
+        lecture = models.Lecture(
+            lecture_id=request.lecture_id,
+            lecturer_id=request.lecturer_id,
+            title=request.title,
+            subject=request.subject,
+            slide_url=request.slide_url,
+            start_time=datetime.utcnow()
+        )
+        db.add(lecture)
+    else:
+        lecture.start_time = datetime.utcnow()
+        lecture.end_time = None
+        lecture.slide_url = request.slide_url
+    
+    db.commit()
+
+    # 2. Spawn background tasks
+    if request.lecture_id not in active_lecture_tasks:
+        stop_event = threading.Event()
+        async_stop_event = asyncio.Event()
+        
+        # Vision Pipeline (Thread)
+        camera_url = os.getenv("CLASSROOM_CAMERA_URL", "0") # Default to webcam
+        vision_thread = threading.Thread(
+            target=run_pipeline, 
+            args=(request.lecture_id, camera_url, stop_event),
+            daemon=True
+        )
+        vision_thread.start()
+        
+        # Whisper Pipeline (Async Task)
+        whisper_task = asyncio.create_task(stream_captions(request.lecture_id, async_stop_event))
+        
+        active_lecture_tasks[request.lecture_id] = {
+            "stop_event": stop_event,
+            "async_stop_event": async_stop_event,
+            "whisper_task": whisper_task
+        }
+
+    # 3. Broadcast session:start to all clients
     await manager.broadcast({
         "type": "session:start",
         "lecture_id": request.lecture_id,
@@ -37,8 +92,22 @@ async def start_session(request: SessionStartRequest):
     return {"status": "started", "lecture_id": request.lecture_id}
 
 @router.post("/end")
-async def end_session(request: SessionEndRequest):
-    # Broadcast session:end to all clients
+async def end_session(request: SessionEndRequest, db: Session = Depends(get_db)):
+    # 1. Update lecture end_time in DB
+    lecture = db.query(models.Lecture).filter(models.Lecture.lecture_id == request.lecture_id).first()
+    if lecture:
+        lecture.end_time = datetime.utcnow()
+        db.commit()
+
+    # 2. Stop background tasks
+    if request.lecture_id in active_lecture_tasks:
+        tasks = active_lecture_tasks.pop(request.lecture_id)
+        tasks["stop_event"].set()
+        tasks["async_stop_event"].set()
+        # Optionally wait for whisper task or cancel
+        # tasks["whisper_task"].cancel()
+
+    # 3. Broadcast session:end to all clients
     await manager.broadcast({
         "type": "session:end",
         "lecture_id": request.lecture_id,
@@ -57,37 +126,26 @@ async def broadcast_event(request: SessionBroadcastRequest):
     })
     return {"status": "broadcast"}
 
-@router.get("/upcoming")
-async def get_upcoming_sessions():
-    return [
-        {
-            "lecture_id": "L1",
-            "title": "Introduction to Algorithms",
-            "start_time": "2026-04-28T09:00:00Z",
-            "slide_url": "https://drive.google.com/file/d/abc123/view"
-        }
-    ]
+@router.get("/upcoming", response_model=List[LectureResponse])
+async def get_upcoming_sessions(db: Session = Depends(get_db)):
+    return db.query(models.Lecture).filter(models.Lecture.end_time == None).all()
 
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     try:
-        # Send initial connection confirmation
         await websocket.send_json({
             "type": "connection_established",
             "message": "Connected to Classroom Emotion System WebSocket"
         })
         
         while True:
-            # Keep connection alive and handle incoming messages
             data = await websocket.receive_json()
-            # T058: Handle focus_strike — persist to DB and broadcast
             if isinstance(data, dict) and data.get("type") == "focus_strike":
                 student_id = data.get("student_id")
                 lecture_id = data.get("lecture_id")
                 strike_type = data.get("strike_type", "app_background")
-                logger.info("Focus strike: student=%s lecture=%s type=%s", student_id, lecture_id, strike_type)
-                # Bug 5 fix: validate required fields before DB write
+                
                 persisted = False
                 if student_id and lecture_id:
                     db: Session = SessionLocal()
@@ -105,9 +163,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         db.rollback()
                     finally:
                         db.close()
-                else:
-                    logger.warning("Ignoring focus_strike with missing student_id or lecture_id")
-                # Bug 5 fix: only ack when persisted
+                
                 if persisted:
                     await websocket.send_json({
                         "type": "strike_ack",

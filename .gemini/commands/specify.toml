@@ -1,0 +1,17 @@
+description = "Run a SpecKit orchestration based on the .specify folder"
+
+prompt = """Activate Maestro orchestration mode using the project's SpecKit configuration.
+
+Ground your task in these files:
+- .specify/spec.md (Vision and Architecture)
+- .specify/tasks.md (Current Task Breakdown)
+- .specify/memory/constitution.md (Non-negotiable principles)
+
+<user-request>
+{{args}}
+</user-request>
+
+Follow the Maestro orchestration protocol. If no specific task is provided in the user request, analyze .specify/tasks.md to identify the next incomplete task and propose starting it.
+
+Always ensure that any plan or implementation adheres to the project's Constitution.
+"""

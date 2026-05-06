@@ -2,11 +2,20 @@ FROM astral-sh/uv:python3.13-slim
 
 WORKDIR /app
 
-# Copy the pyproject.toml and lock file if exists
-COPY pyproject.toml ./
+# Install system dependencies for OpenCV and AI
+RUN apt-get update && apt-get install -y \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    build-essential \
+    cmake \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install dependencies
-RUN uv sync --no-dev
+COPY requirements.txt ./
+RUN uv pip install --system -r requirements.txt
 
 # Copy the backend source
 COPY . .
@@ -15,4 +24,4 @@ COPY . .
 EXPOSE 8000
 
 # Start uvicorn
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

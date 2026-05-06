@@ -61,24 +61,20 @@ lecturer_ui <- function() {
       "Attendance",
       br(),
       h2("Class Attendance Management"),
+      p("Verify student presence with visual proof from the live vision pipeline."),
       br(),
       tabsetPanel(
         tabPanel(
-          "Manual Entry",
+          "Visual Verification",
           br(),
-          actionButton("lecturer_attendance_edit", "Edit Attendance", class = "btn-warning"),
-          br(), br(),
-          DT::dataTableOutput("lecturer_attendance_table"),
+          fluidRow(
+            column(12,
+              actionButton("lecturer_attendance_save", "Save Changes", class = "btn-success"),
+              actionButton("lecturer_attendance_refresh", "Refresh List", class = "btn-info")
+            )
+          ),
           br(),
-          actionButton("lecturer_attendance_save", "Save Changes", class = "btn-success")
-        ),
-        tabPanel(
-          "AI Mode",
-          br(),
-          p("Automatically detect attendance using vision pipeline"),
-          actionButton("lecturer_attendance_start", "Start AI Detection", class = "btn-primary"),
-          br(), br(),
-          uiOutput("lecturer_ai_attendance_status")
+          uiOutput("lecturer_attendance_grid")
         ),
         tabPanel(
           "QR Code",

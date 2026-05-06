@@ -1,7 +1,11 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from typing import List
 from datetime import datetime
+from sqlalchemy.orm import Session
+from database import get_db
+import models
+from schemas import IncidentResponse
 from services.websocket import manager
 
 router = APIRouter()
@@ -32,14 +36,6 @@ async def submit_exam(request: ExamSubmitRequest):
         })
     return {"status": "submitted", "exam_id": request.exam_id}
 
-@router.get("/incidents/{exam_id}")
-async def get_exam_incidents(exam_id: str):
-    return [
-        {
-            "student_id": "231006367",
-            "timestamp": "2026-04-28T10:15:33",
-            "flag_type": "phone_on_desk",
-            "severity": 3,
-            "evidence_path": f"data/evidence/{exam_id}_231006367_1714299333.jpg"
-        }
-    ]
+@router.get("/incidents/{exam_id}", response_model=List[IncidentResponse])
+async def get_exam_incidents(exam_id: str, db: Session = Depends(get_db)):
+    return db.query(models.Incident).filter(models.Incident.exam_id == exam_id).all()

@@ -17,6 +17,7 @@
 9. [Flow C — The Gemini AI Intervention Trigger](#9-flow-c--the-gemini-ai-intervention-trigger)
 10. [Flow D — The Nightly Data Handoff](#10-flow-d--the-nightly-data-handoff)
 11. [Edge Case Handling & Fail-Safes](#11-edge-case-handling--fail-safes)
+12. [Flow E — Live Attendance Snapshots](#12-flow-e--live-attendance-snapshots)
 
 ---
 
@@ -34,7 +35,7 @@
                 │ RTSP stream                                             │
                 ▼                                                         ▼
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                       FASTAPI BACKEND  (Railway.app)                         │
+│                FASTAPI BACKEND  (Railway.app or Digital Ocean)               │
 │                                                                              │
 │  ┌─────────────────────────────────────────────────────────────────────┐    │
 │  │                    vision_pipeline.py (Thread 1)                    │    │
@@ -64,7 +65,7 @@
            ▼                               ▼
 ┌─────────────────────┐        ┌─────────────────────────┐
 │  R/Shiny Web Portal │        │  React Native Mobile App│
-│  (shinyapps.io)     │        │  (Expo — Android only)  │
+│  (shinyapps.io)     │        │  (Expo — Moodle Style)  │
 │                     │        │                         │
 │  Admin + Lecturer   │        │  Students ONLY          │
 │  Reads: CSV exports │        │  Sends: JSON over WS    │
@@ -165,7 +166,7 @@ Side-effects:
   - Broadcasts WebSocket: session:end
 
 POST /session/broadcast
-Body:    {"event": "freshbrainer", "question": "Can you explain the difference between X and Y?"}
+Body:    {"type": "freshbrainer", "question": "Can you explain the difference between X and Y?"}
 Response 200: {"status": "broadcast"}
 
 GET /session/upcoming
@@ -184,6 +185,7 @@ Response 200: [
     "timestamp": "2026-04-28T09:05:00",
     "emotion": "Focused",
     "confidence": 1.0,
+    "confidence_rate": 1.0,
     "engagement_score": 1.0
   },
   ...
@@ -199,10 +201,16 @@ Response 200: {"lecture_id": "L1", "confusion_rate": 0.42, "window_seconds": 120
 POST /roster/upload
 Content-Type: multipart/form-data
 Fields:
-  roster_csv: <file>   — CSV with columns: student_id, name, email
-  images_zip: <file>   — ZIP where each file is named {student_id}.jpg
+  roster_xlsx: <file>   — StudentPicsDataset.xlsx (student_id, name, email, photo_link)
 Response 200: {"students_created": 30, "encodings_saved": 28}
-Response 422: {"detail": "No face detected in image for student_id S05"}
+Response 422: {"detail": "No face detected in image for student_id 231006367"}
+
+POST /roster/student
+Body:    {"student_id": "231006367", "name": "...", "email": "...", "photo_link": "..."}
+Response 200: {"student_id": "231006367", "name": "...", "encoding_saved": true}
+
+GET /roster/students
+Response 200: [{"student_id": "...", "name": "...", "email": "..."}]
 ```
 
 ### 3.6 Attendance
@@ -213,11 +221,14 @@ Body:    {"lecture_id": "L1"}
 Response 200: {"status": "scanning"}
 
 POST /attendance/manual
-Body:    [{"student_id": "S01", "status": "Present"}, {"student_id": "S02", "status": "Absent"}]
+Body:    [{"student_id": "S01", "status": "Present", "reason": "..."}, {"student_id": "S02", "status": "Absent"}]
 Response 200: {"updated": 2}
 
 GET /attendance/qr/{lecture_id}
 Response 200: {"qr_image_base64": "<base64 PNG>"}
+
+GET /attendance/snapshot/{lecture_id}/{student_id}
+Response 200: <image/jpeg> (Face ROI crop captured at detection time)
 ```
 
 ### 3.7 Gemini Endpoints
@@ -232,6 +243,10 @@ Response 200: {"markdown": "## Lecture Notes\n\n...✱ You missed this part..."}
 
 GET /notes/{student_id}/plan
 Response 200: {"markdown": "1. Schedule office hours...\n2. ..."}
+
+POST /notify/lecturer
+Body:    {"student_id": "S01", "lecture_id": "L1", "reason": "..."}
+Response 200: {"status": "notified"}
 ```
 
 ### 3.8 Exam
@@ -414,15 +429,18 @@ CREATE TABLE emotion_log (
 ### `attendance_log`
 ```sql
 CREATE TABLE attendance_log (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    student_id  TEXT NOT NULL REFERENCES students(student_id),
-    lecture_id  TEXT NOT NULL REFERENCES lectures(lecture_id),
-    timestamp   DATETIME DEFAULT CURRENT_TIMESTAMP,
-    status      TEXT NOT NULL,
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    student_id    TEXT NOT NULL REFERENCES students(student_id),
+    lecture_id    TEXT NOT NULL REFERENCES lectures(lecture_id),
+    timestamp     DATETIME DEFAULT CURRENT_TIMESTAMP,
+    status        TEXT NOT NULL,
     -- Allowed values: "Present" | "Absent"
     -- AI inserts "Present" on first face recognition. Manual overrides insert "Absent" or "Present".
-    method      TEXT NOT NULL
+    method        TEXT NOT NULL,
     -- Allowed values: "AI" | "Manual" | "QR"
+    snapshot_path TEXT
+    -- Path to face ROI crop captured at detection time (JPEG)
+    -- e.g. "data/snapshots/L1/231006367.jpg"
 );
 ```
 
@@ -566,59 +584,61 @@ notifications.csv:
 
 **Purpose:** Before any live lecture can run, the system must know who is in the class. This flow populates `students.face_encoding` so the vision pipeline can perform identity matching.
 
-**Actors:** Lecturer (Shiny UI), FastAPI `/roster/upload`, SQLite
+**Actors:** Lecturer (Shiny UI), FastAPI `/roster/upload`, Google Drive, SQLite
 
 ```
-┌─────────────────┐         ┌──────────────────┐         ┌─────────────┐
-│  Shiny Lecturer │         │  FastAPI          │         │   SQLite    │
-│  Submodule A    │         │  routers/roster.py│         │  students   │
-└────────┬────────┘         └────────┬─────────┘         └──────┬──────┘
-         │                          │                            │
- 1. Lecturer selects                │                            │
-    roster.csv + images.zip         │                            │
-         │                          │                            │
- 2. Shiny httr2:                    │                            │
-    POST /roster/upload             │                            │
-    multipart/form-data ──────────▶ │                            │
-                                    │                            │
-                          3. Parse roster.csv                    │
-                             DictReader → rows                   │
-                             For each row:                       │
-                             IF student_id not in DB:            │
-                               INSERT students(                  │
-                                 student_id, name, email)  ────▶ │
-                             COMMIT                              │
-                                    │                            │
-                          4. Unzip images.zip                    │
-                             For each file in ZIP:               │
-                               filename = "S01.jpg"              │
-                               student_id = "S01"                │
-                               Load image bytes                  │
-                               face_recognition                  │
-                               .face_encodings(image)            │
-                                    │                            │
-                          5. Encoding found?                     │
-                             YES:                                │
-                               enc.astype(np.float64).tobytes()  │
-                               UPDATE students SET               │
-                               face_encoding = <BLOB>      ────▶ │
-                             NO:                                 │
-                               Log warning, skip student         │
-                               (face_encoding remains NULL)      │
-                                    │                            │
-                          6. Return response:                    │
-                             {students_created: N,              │
-                              encodings_saved: M}                │
-                                    │                            │
-         │◀───────────────────────── │                            │
- 7. Shiny shows:                    │                            │
-    "28 of 30 students encoded"     │                            │
-    (2 students had no face found)  │                            │
+┌─────────────────┐         ┌──────────────────┐         ┌─────────────┐         ┌─────────────┐
+│  Shiny Lecturer │         │  FastAPI          │         │ Google Drive│         │   SQLite    │
+│  Submodule A    │         │  routers/roster.py│         │ (Public UC) │         │  students   │
+└────────┬────────┘         └────────┬─────────┘         └──────┬──────┘         └──────┬──────┘
+         │                          │                            │                      │
+ 1. Lecturer selects                │                            │                      │
+    roster.xlsx                     │                            │                      │
+         │                          │                            │                      │
+ 2. Shiny httr2:                    │                            │                      │
+    POST /roster/upload             │                            │                      │
+    multipart/form-data ──────────▶ │                            │                      │
+                                    │                            │                      │
+                          3. Parse roster.xlsx                   │                      │
+                             pandas.read_excel()                 │                      │
+                             For each student row:               │                      │
+                             a. Extract student_id, name, email  │                      │
+                             b. Get photo_link (Drive URL)       │                      │
+                             c. Extract file_id from URL         │                      │
+                                    │                            │                      │
+                          4. Download Photo                      │                      │
+                             requests.get(drive_uc_url) ───────▶ │                      │
+                             ◀────────────────────────────────── │                      │
+                                    │                            │                      │
+                          5. Generate Encoding                   │                      │
+                             face_recognition                    │                      │
+                             .face_encodings(image_bytes)        │                      │
+                                    │                            │                      │
+                          6. Encoding found?                     │                      │
+                             YES:                                │                      │
+                               enc.astype(np.float64).tobytes()  │                      │
+                               UPSERT students(                  │                      │
+                                 student_id, name, email,  ──────┼────────────────────▶ │
+                                 face_encoding = <BLOB>)         │                      │
+                             NO:                                 │                      │
+                               Log warning, skip encoding        │                      │
+                               (face_encoding remains NULL)      │                      │
+                                    │                            │                      │
+                          7. Return response:                    │                      │
+                             {students_created: N,               │                      │
+                              encodings_saved: M}                │                      │
+                                    │                            │                      │
+         │◀───────────────────────── │                            │                      │
+ 8. Shiny shows:                    │                            │                      │
+    "28 of 30 students encoded"     │                            │                      │
+    (2 students had no face found)  │                            │                      │
 ```
 
 **After this flow:** `load_student_encodings(db)` in `vision_pipeline.py` queries all rows where `face_encoding IS NOT NULL`. The pipeline now has a dictionary `{student_id → 128-dim numpy array}` for identity matching.
 
-**Failure mode:** If `images.zip` contains a group photo or a blank image, `face_recognition.face_encodings()` returns an empty list. The row is skipped silently and logged. The lecturer must re-upload corrected images for those students via the same endpoint.
+**Google Drive Integration:** The system uses the "UC" (User Content) endpoint for direct downloads: `https://drive.google.com/uc?export=download&id={file_id}`. This avoids the need for complex Service Account authentication for publicly shared (with link) images.
+
+**Failure mode:** If a student's `photo_link` is invalid or private, `requests.get()` fails. If no face is detected in the downloaded image, `face_recognition.face_encodings()` returns an empty list. The encoding step is skipped, and the lecturer must manually fix the link or photo via the "Student Management" tab.
 
 ---
 
@@ -1112,6 +1132,26 @@ except Exception:
 ```
 
 No row is written. The exception is silently swallowed per-student per-frame. This is intentional — one bad crop must not crash the entire lecture pipeline.
+
+---
+
+## 12. Flow E — Live Attendance Snapshots
+
+**Purpose:** Provide visual proof of student presence by capturing and storing a cropped image of the student's face at the moment they are first detected by the vision pipeline.
+
+**Actors:** Vision Pipeline, FastAPI, SQLite, R/Shiny Lecturer
+
+1. **Detection**: During the 5-second vision loop, if a student is identified and is *not* in the `seen_today` set.
+2. **Capture**: The pipeline crops the ROI (Region of Interest) from the current frame.
+3. **Storage**:
+   - The crop is saved as a JPEG file in `python-api/data/snapshots/{lecture_id}/{student_id}.jpg`.
+   - The relative path is stored in the `attendance_log.snapshot_path` column.
+4. **Retrieval**:
+   - The Lecturer clicks a student's name in the Shiny Attendance dashboard.
+   - Shiny calls `GET /attendance/snapshot/{lecture_id}/{student_id}`.
+   - FastAPI reads the file from disk and returns the image bytes with `image/jpeg` content type.
+
+**Design Note:** Snapshots are stored locally on the server. They are *not* exported to CSV (CSV only contains the path string). If the server is redeployed without persistent storage, snapshots from previous sessions will be lost, but the `attendance_log` records remain.
 
 ---
 
