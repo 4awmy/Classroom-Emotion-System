@@ -6,7 +6,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./python-api/app:/app/app
+      - ./python-api:/app
       - classroom_db:/app/data
     environment:
       - DATABASE_URL=${DATABASE_URL:-sqlite:///./data/classroom_emotions.db}

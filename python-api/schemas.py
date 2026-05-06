@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, model_validator
 from typing import List, Optional
 from datetime import datetime
 
@@ -52,7 +52,13 @@ class EmotionLogBase(BaseModel):
     lecture_id: str
     emotion: str
     confidence: float
+    confidence_rate: Optional[float] = None # Alias for Shiny compatibility
     engagement_score: float
+
+    @model_validator(mode='after')
+    def set_confidence_rate(self) -> 'EmotionLogBase':
+        self.confidence_rate = self.confidence
+        return self
 
 class EmotionLogCreate(EmotionLogBase):
     timestamp: Optional[datetime] = None

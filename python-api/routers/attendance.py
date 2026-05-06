@@ -22,15 +22,14 @@ def start_attendance(lecture_id: str):
     return {"status": "scanning", "lecture_id": lecture_id}
 
 @router.post("/manual")
-def submit_manual_attendance(data: List[dict], db: Session = Depends(get_db)):
+def submit_manual_attendance(lecture_id: str, data: List[dict], db: Session = Depends(get_db)):
     """
     Manual attendance overrides.
-    Expected data: [{"student_id": "...", "status": "Present"|"Absent", "reason": "..."}]
+    Expected data: [{"student_id": "...", "status": "Present"|"Absent"}]
     """
     updated = 0
     for item in data:
         sid = item.get("student_id")
-        lid = item.get("lecture_id") # Should be passed or part of data
         status = item.get("status")
         
         if not sid or not status: continue
@@ -38,14 +37,14 @@ def submit_manual_attendance(data: List[dict], db: Session = Depends(get_db)):
         # Upsert manual entry
         entry = db.query(AttendanceLog).filter(
             AttendanceLog.student_id == sid,
-            AttendanceLog.lecture_id == lid,
+            AttendanceLog.lecture_id == lecture_id,
             AttendanceLog.method == "Manual"
         ).first()
         
         if not entry:
             entry = AttendanceLog(
                 student_id=sid,
-                lecture_id=lid,
+                lecture_id=lecture_id,
                 status=status,
                 method="Manual",
                 timestamp=datetime.utcnow()

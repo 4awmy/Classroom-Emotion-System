@@ -112,8 +112,8 @@ def seed_data():
         count = 0
         for lecture in lectures:
             for student in students:
-                # Generate 5-10 logs per student per lecture
-                num_logs = random.randint(5, 10)
+                # Generate 35-45 logs per student per lecture to reach 1000+ total
+                num_logs = random.randint(35, 45)
                 for _ in range(num_logs):
                     log = models.EmotionLog(
                         student_id=student.student_id,

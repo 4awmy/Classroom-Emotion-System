@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh issue:*)",
+      "Bash(ls:*)",
+      "Bash(gh pr:*)",
+      "Bash(gh api:*)",
+      "Bash(git:*)",
+      "WebSearch",
+      "Bash(npm install:*)",
+      "Bash(uvx:*)",
+      "Bash(export:*)",
+      "Bash(gh label:*)",
+      "Bash(do gh:*)"
+    ]
+  }
+}

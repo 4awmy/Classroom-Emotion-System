@@ -3,7 +3,7 @@ region: nyc
 services:
   - name: backend
     github:
-      repo: omarh/Classroom-Emotion-System
+      repo: 4awmy/Classroom-Emotion-System
       branch: main
       deploy_on_push: true
     dockerfile_path: python-api/Dockerfile
@@ -35,7 +35,7 @@ services:
 
   - name: frontend
     github:
-      repo: omarh/Classroom-Emotion-System
+      repo: 4awmy/Classroom-Emotion-System
       branch: main
       deploy_on_push: true
     source_dir: shiny-app
@@ -64,7 +64,7 @@ services:
 
   - name: vision
     github:
-      repo: omarh/Classroom-Emotion-System
+      repo: 4awmy/Classroom-Emotion-System
       branch: main
       deploy_on_push: true
     dockerfile_path: vision/Dockerfile
@@ -87,4 +87,6 @@ databases:
     engine: PG
     version: "15"
     size: db-s-dev-database
+    num_nodes: 1
+atabase
     num_nodes: 1

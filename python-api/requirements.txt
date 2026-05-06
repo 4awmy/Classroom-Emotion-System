@@ -24,7 +24,8 @@ apscheduler
 
 # AI/ML
 ultralytics
-hsemotion
+hsemotion-onnx
 face-recognition
 google-generativeai
 pdfplumber
+sounddevice

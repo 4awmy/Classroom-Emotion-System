@@ -288,9 +288,66 @@ admin_server <- function(input, output, session) {
       dplyr::summarise(avg_eng = mean(.data$engagement_score, na.rm = TRUE), .groups = "drop")
 
     ggplot2::ggplot(tod_data, ggplot2::aes(x = .data$hour, y = .data$weekday, fill = .data$avg_eng)) +
-      ggplot2::geom_tile() +
       ggplot2::scale_fill_gradient(low = "red", high = "green", limits = c(0, 1)) +
       ggplot2::theme_minimal() +
       ggplot2::labs(title = "Engagement by Time of Day & Weekday", x = "Hour", y = "Weekday", fill = "Avg Engagement")
-  })
+    })
+
+    # ========================================================================
+    # Panel 9: Student Management
+    # ========================================================================
+
+    # Trigger table refresh
+    student_refresh <- shiny::reactiveVal(0)
+
+    output$admin_student_table <- DT::renderDataTable({
+    student_refresh() # Dependency
+    data <- api_call("/roster/students")
+    if (is.null(data) || length(data) == 0) return(data.frame())
+
+    # Convert list of lists to data frame
+    df <- dplyr::bind_rows(lapply(data, as.data.frame))
+
+    DT::datatable(df, options = list(pageLength = 10), selection = "single")
+    })
+
+    shiny::observeEvent(input$admin_student_submit, {
+    req(input$admin_student_id, input$admin_student_name, input$admin_student_photo)
+
+    # Validate 9-digit student_id
+    if (!grepl("^\\d{9}$", input$admin_student_id)) {
+      shinyalert::shinyalert("Invalid ID", "Student ID must be exactly 9 digits.", type = "error")
+      return()
+    }
+
+    result <- tryCatch({
+      httr2::request(paste0(FASTAPI_BASE, "/roster/student")) |>
+        httr2::req_body_multipart(
+          student_id = input$admin_student_id,
+          name = input$admin_student_name,
+          email = input$admin_student_email,
+          photo = curl::form_file(input$admin_student_photo$datapath)
+        ) |>
+        httr2::req_perform() |>
+        httr2::resp_body_json()
+    }, error = function(e) {
+      # Handle specific status codes if possible, or generic error
+      shinyalert::shinyalert("Error", as.character(e), type = "error")
+      NULL
+    })
+
+    if (!is.null(result)) {
+      shinyalert::shinyalert("Success", 
+                             paste("Student", result$name, "added and face encoded successfully."), 
+                             type = "success")
+      # Clear inputs
+      shiny::updateTextInput(session, "admin_student_id", value = "")
+      shiny::updateTextInput(session, "admin_student_name", value = "")
+      shiny::updateTextInput(session, "admin_student_email", value = "")
+      # Refresh table
+      student_refresh(student_refresh() + 1)
+    }
+    })
+    }
+
 }

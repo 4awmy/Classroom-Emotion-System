@@ -1,46 +1,61 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func
-from typing import List
 from database import get_db
-import models
+from models import EmotionLog
 from schemas import EmotionLogResponse
+from typing import List, Optional
+from datetime import datetime, timedelta
+from sqlalchemy import func
 
 router = APIRouter()
 
 @router.get("/live", response_model=List[EmotionLogResponse])
-def get_live_emotions(lecture_id: str, limit: int = 60, db: Session = Depends(get_db)):
+def get_live_emotions(
+    lecture_id: str,
+    limit: int = Query(60, ge=1, le=1000),
+    db: Session = Depends(get_db)
+):
     """
-    Endpoint for live emotion stream.
-    As per ARCHITECTURE.md 3.4
+    Returns the last N emotion logs for a lecture.
+    Includes confidence_rate alias for R/Shiny compatibility.
     """
-    return db.query(models.EmotionLog).filter(
-        models.EmotionLog.lecture_id == lecture_id
-    ).order_by(models.EmotionLog.timestamp.desc()).limit(limit).all()
+    logs = db.query(EmotionLog).filter(
+        EmotionLog.lecture_id == lecture_id
+    ).order_by(EmotionLog.timestamp.desc()).limit(limit).all()
+    
+    # confidence_rate is added by the schema or manually if needed
+    # Since our schema doesn't have it yet, I should probably add it there
+    return logs
 
 @router.get("/confusion-rate")
-def get_confusion_rate(lecture_id: str, window: int = 120, db: Session = Depends(get_db)):
+def get_confusion_rate(
+    lecture_id: str,
+    window: int = Query(120, ge=10, le=3600),
+    db: Session = Depends(get_db)
+):
     """
-    Endpoint for class confusion rate.
-    As per ARCHITECTURE.md 3.4
+    Computes the percentage of 'Confused' emotions in the last X seconds.
+    Used by Shiny confusion observer.
     """
-    # In a real scenario, we would filter by the last 'window' seconds
-    # For Phase 1, we'll just calculate it from all logs for this lecture
-    total = db.query(models.EmotionLog).filter(models.EmotionLog.lecture_id == lecture_id).count()
+    since = datetime.utcnow() - timedelta(seconds=window)
+    
+    total = db.query(func.count(EmotionLog.id)).filter(
+        EmotionLog.lecture_id == lecture_id,
+        EmotionLog.timestamp >= since
+    ).scalar()
+    
     if total == 0:
-        return {
-            "lecture_id": lecture_id,
-            "confusion_rate": 0.0,
-            "window_seconds": window
-        }
+        return {"lecture_id": lecture_id, "confusion_rate": 0.0, "window_seconds": window}
     
-    confused = db.query(models.EmotionLog).filter(
-        models.EmotionLog.lecture_id == lecture_id,
-        models.EmotionLog.emotion == "Confused"
-    ).count()
+    confused = db.query(func.count(EmotionLog.id)).filter(
+        EmotionLog.lecture_id == lecture_id,
+        EmotionLog.emotion == "Confused",
+        EmotionLog.timestamp >= since
+    ).scalar()
     
+    rate = confused / total
     return {
         "lecture_id": lecture_id,
-        "confusion_rate": confused / total,
+        "confusion_rate": round(rate, 2),
         "window_seconds": window
     }

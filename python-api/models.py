@@ -58,11 +58,20 @@ class AttendanceLog(Base):
     timestamp     = Column(DateTime, default=datetime.datetime.utcnow)
     status        = Column(String, nullable=False)  # Present | Absent
     method        = Column(String, nullable=False)  # AI | Manual | QR
-    snapshot_path = Column(String, nullable=True)  # Path to face ROI crop
 
     # Relationships
     student = relationship("Student", back_populates="attendance")
     lecture = relationship("Lecture", back_populates="attendance")
+    evidence = relationship("AttendanceEvidence", back_populates="attendance", uselist=False)
+
+class AttendanceEvidence(Base):
+    __tablename__ = "attendance_evidence"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    attendance_id = Column(Integer, ForeignKey("attendance_log.id"), nullable=False)
+    snapshot_path = Column(String, nullable=False)  # Path to face ROI crop
+
+    # Relationships
+    attendance = relationship("AttendanceLog", back_populates="evidence")
 
 class Material(Base):
     __tablename__ = "materials"

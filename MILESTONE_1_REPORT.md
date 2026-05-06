@@ -19,6 +19,7 @@ We have implemented **9 core tables** to support the full system lifecycle:
 | `lectures` | Session Management | ID, Title, Lecturer, Start/End Time |
 | `emotion_log` | Time-series FER Data | StudentID, Emotion, Confidence, Engagement Score |
 | `attendance_log` | Attendance Tracking | StudentID, Status (Present/Absent), Method (AI/QR) |
+| `attendance_evidence` | Visual Proof | AttendanceID, Snapshot Path |
 | `materials` | Content Distribution | Title, Drive Link, LecturerID |
 | `incidents` | Exam Proctoring | Flag Type, Severity (1-3), Evidence Path |
 | `transcripts` | Lecture Transcription | Chunk Text, Language (AR/EN), Timestamp |
@@ -65,10 +66,10 @@ python python-api/scripts/seed_mock_data.py
 ```
 
 ### 3. Verification by Subsystem
-- **S1 (Attendance)**: Access `http://localhost:8000/attendance/stats/L001` to see seeded attendance.
-- **S2 (Emotion)**: Access `http://localhost:8000/session/L001/analytics` for engagement charts.
-- **S3 (Exam)**: Check `/exam/incidents` for proctoring flags.
-- **S4 (Notes)**: Use `/notes/upload` to test Gemini-powered summarization.
+- **S1 (Vision)**: Access `http://localhost:8000/emotion/live` to see real-time data stream.
+- **S2 (R/Shiny)**: Access `http://localhost:8000/session/L001/analytics` for engagement charts.
+- **S3 (Backend)**: Verify `http://localhost:8000/health` and database seeding.
+- **S4 (Mobile)**: Test JWT login and `/notes` delivery.
 
 ## Branch Information
 All Milestone 1 work is consolidated in the **`milestone-1-completion`** branch. Please ensure you pull the latest changes before starting Milestone 2.

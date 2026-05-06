@@ -114,6 +114,30 @@ admin_ui <- function() {
       plotOutput("admin_tod_heatmap"),
       br(),
       p("Heatmap showing peak/low engagement times")
+    ),
+    # ========================================================================
+    # Panel 9: Student Management
+    # ========================================================================
+    tabPanel(
+      "Student Management",
+      br(),
+      h2("Manage Student Enrolment"),
+      p("Manually add a student or view the existing roster with face encoding status."),
+      br(),
+      fluidRow(
+        column(4,
+          wellPanel(
+            textInput("admin_student_id", "Student ID (9 digits)", placeholder = "231006367"),
+            textInput("admin_student_name", "Full Name"),
+            textInput("admin_student_email", "Email (Optional)"),
+            fileInput("admin_student_photo", "Face Photo (Max 5MB)", accept = c("image/jpeg", "image/png")),
+            actionButton("admin_student_submit", "Add Student", class = "btn-primary")
+          )
+        ),
+        column(8,
+          DT::dataTableOutput("admin_student_table")
+        )
+      )
     )
   )
 }

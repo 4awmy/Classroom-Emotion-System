@@ -81,30 +81,84 @@ lecturer_server <- function(input, output, session) {
   })
 
   # ========================================================================
-  # Submodule C: Attendance (3 modes)
+  # Submodule C: Attendance (Visual Proof)
   # ========================================================================
 
-  attendance_data <- shiny::reactiveVal(data.frame())
+  attendance_list <- shiny::reactiveVal(list())
 
-  output$lecturer_attendance_table <- DT::renderDataTable({
-    data <- attendance_data()
-    if (nrow(data) == 0) {
-      return(data.frame())
+  # Helper to fetch latest student list with attendance
+  refresh_attendance <- function() {
+    students <- api_call("/roster/students")
+    if (is.null(students)) return()
+
+    # Get live attendance from export/memory or API?
+    # For MVP, we'll fetch from API if lecture is active, or use CSV
+    # Simplified: fetch all students and current status
+    # In real app: students <- api_call(paste0("/attendance/status/", lecture_id))
+    
+    # Mock statuses for UI demo
+    for (i in seq_along(students)) {
+        students[[i]]$status <- "Absent"
+        students[[i]]$reason <- ""
     }
-    DT::datatable(data, editable = TRUE, options = list(pageLength = 25))
-  })
+    attendance_list(students)
+  }
 
-  shiny::observeEvent(input$lecturer_attendance_start, {
-    req(input$lecturer_lecture_select)
-    result <- api_call("/attendance/start", method = "POST",
-                       body = list(lecture_id = input$lecturer_lecture_select))
-    if (!is.null(result)) {
-      output$lecturer_ai_attendance_status <- shiny::renderUI({
-        shiny::div(
-          class = "alert alert-info",
-          "✓ AI attendance detection started. Monitoring will begin in 5 seconds..."
+  output$lecturer_attendance_grid <- shiny::renderUI({
+    students <- attendance_list()
+    if (length(students) == 0) {
+      return(shiny::div(class = "alert alert-info", "No students found. Upload a roster first."))
+    }
+
+    shiny::div(class = "attendance-grid",
+      lapply(students, function(s) {
+        status_class <- if (s$status == "Present") "present" else "absent"
+        
+        # Photo URL
+        photo_url <- if (!is.null(input$lecturer_lecture_select)) {
+            paste0(FASTAPI_BASE, "/attendance/snapshot/", input$lecturer_lecture_select, "/", s$student_id)
+        } else {
+            "default_student.png"
+        }
+
+        shiny::div(class = paste("student-card", status_class),
+          shiny::img(src = photo_url, class = "student-photo", 
+                     onerror = "this.src='default_student.png'"),
+          shiny::div(class = "student-id", s$student_id),
+          shiny::div(class = "student-name", s$name),
+          shiny::div(class = "card-actions",
+            shinyWidgets::materialSwitch(
+              inputId = paste0("att_", s$student_id),
+              label = "Present",
+              value = (s$status == "Present"),
+              status = "success"
+            ),
+            shiny::textInput(paste0("reason_", s$student_id), NULL, 
+                             value = s$reason, placeholder = "Reason (optional)")
+          )
         )
       })
+    )
+  })
+
+  shiny::observeEvent(input$lecturer_attendance_refresh, {
+    refresh_attendance()
+  })
+
+  shiny::observeEvent(input$lecturer_attendance_save, {
+    students <- attendance_list()
+    payload <- lapply(students, function(s) {
+        list(
+            student_id = s$student_id,
+            lecture_id = input$lecturer_lecture_select,
+            status = if (input[[paste0("att_", s$student_id)]]) "Present" else "Absent",
+            reason = input[[paste0("reason_", s$student_id)]]
+        )
+    })
+    
+    result <- api_call("/attendance/manual", method = "POST", body = payload)
+    if (!is.null(result)) {
+      shinyalert::shinyalert("Success", "Attendance records updated", type = "success")
     }
   })
 
