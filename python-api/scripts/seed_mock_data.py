@@ -112,6 +112,15 @@ def seed_data():
             "Focused": 1.00, "Engaged": 0.85, "Confused": 0.55,
             "Anxious": 0.35, "Frustrated": 0.25, "Disengaged": 0.00,
         }
+        # Realistic HSEmotion raw label mapping for each educational state
+        RAW_LABEL_FOR_STATE = {
+            "Focused": "neutral",
+            "Engaged": "happy",
+            "Confused": "anger",    # anger with low intensity → Confused
+            "Anxious": "fear",
+            "Frustrated": "disgust",
+            "Disengaged": "sad",
+        }
         emotions = list(EMOTION_CONFIDENCE.keys())
         count = 0
         for lecture in lectures:
@@ -125,6 +134,8 @@ def seed_data():
                         student_id=student.student_id,
                         lecture_id=lecture.lecture_id,
                         timestamp=lecture.start_time + datetime.timedelta(minutes=random.randint(0, 120)),
+                        raw_emotion=RAW_LABEL_FOR_STATE[emotion],
+                        raw_confidence=round(random.uniform(0.50, 0.95), 3),  # simulated model certainty
                         emotion=emotion,
                         confidence=confidence,
                         engagement_score=confidence  # engagement_score == confidence (locked)

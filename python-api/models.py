@@ -42,9 +42,11 @@ class EmotionLog(Base):
     student_id = Column(String, ForeignKey("students.student_id"), nullable=False)
     lecture_id = Column(String, ForeignKey("lectures.lecture_id"), nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
-    emotion = Column(String, nullable=False)  # Focused | Engaged | Confused | Anxious | Frustrated | Disengaged
-    confidence = Column(Float, nullable=False)
-    engagement_score = Column(Float, nullable=False)
+    raw_emotion = Column(String, nullable=True)   # HSEmotion raw label: happy | neutral | sad | angry | fear | disgust | surprise
+    raw_confidence = Column(Float, nullable=True)  # Model softmax score (0.0–1.0) — how sure the model is
+    emotion = Column(String, nullable=False)       # Mapped educational state: Focused | Engaged | Confused | Anxious | Frustrated | Disengaged
+    confidence = Column(Float, nullable=False)     # Fixed engagement weight per state (CLAUDE.md §8.2) — NOT model confidence
+    engagement_score = Column(Float, nullable=False)  # == confidence (engagement weight)
 
     # Relationships
     student = relationship("Student", back_populates="emotions")
@@ -56,22 +58,13 @@ class AttendanceLog(Base):
     student_id    = Column(String, ForeignKey("students.student_id"), nullable=False)
     lecture_id    = Column(String, ForeignKey("lectures.lecture_id"), nullable=False)
     timestamp     = Column(DateTime, default=datetime.datetime.utcnow)
-    status        = Column(String, nullable=False)  # Present | Absent
-    method        = Column(String, nullable=False)  # AI | Manual | QR
+    status        = Column(String, nullable=False)   # Present | Absent
+    method        = Column(String, nullable=False)   # AI | Manual | QR
+    snapshot_path = Column(String, nullable=True)    # Path to face ROI crop: data/snapshots/{lecture_id}/{student_id}.jpg
 
     # Relationships
     student = relationship("Student", back_populates="attendance")
     lecture = relationship("Lecture", back_populates="attendance")
-    evidence = relationship("AttendanceEvidence", back_populates="attendance", uselist=False)
-
-class AttendanceEvidence(Base):
-    __tablename__ = "attendance_evidence"
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    attendance_id = Column(Integer, ForeignKey("attendance_log.id"), nullable=False)
-    snapshot_path = Column(String, nullable=False)  # Path to face ROI crop
-
-    # Relationships
-    attendance = relationship("AttendanceLog", back_populates="evidence")
 
 class Material(Base):
     __tablename__ = "materials"
