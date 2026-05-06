@@ -21,3 +21,10 @@ boto3
 
 # Scheduling
 apscheduler
+
+# AI/ML
+ultralytics
+hsemotion
+face-recognition
+google-generativeai
+pdfplumber

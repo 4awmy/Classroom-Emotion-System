@@ -1,12 +1,12 @@
 services:
   backend:
     build:
-      context: ./backend
+      context: ./python-api
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
     volumes:
-      - ./backend/app:/app/app
+      - ./python-api/app:/app/app
       - classroom_db:/app/data
     environment:
       - DATABASE_URL=${DATABASE_URL:-sqlite:///./data/classroom_emotions.db}

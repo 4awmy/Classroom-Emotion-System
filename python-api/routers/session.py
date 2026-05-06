@@ -5,8 +5,9 @@ from datetime import datetime
 import logging
 from sqlalchemy.orm import Session
 from services.websocket import manager
-from database import SessionLocal
-from models import FocusStrike
+from database import get_db, SessionLocal
+import models
+from schemas import LectureResponse
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -14,6 +15,8 @@ logger = logging.getLogger(__name__)
 class SessionStartRequest(BaseModel):
     lecture_id: str
     lecturer_id: str
+    title: Optional[str] = None
+    subject: Optional[str] = None
     slide_url: str
 
 class SessionEndRequest(BaseModel):
@@ -25,7 +28,26 @@ class SessionBroadcastRequest(BaseModel):
     lecture_id: str
 
 @router.post("/start")
-async def start_session(request: SessionStartRequest):
+async def start_session(request: SessionStartRequest, db: Session = Depends(get_db)):
+    # Persist lecture to DB
+    lecture = db.query(models.Lecture).filter(models.Lecture.lecture_id == request.lecture_id).first()
+    if not lecture:
+        lecture = models.Lecture(
+            lecture_id=request.lecture_id,
+            lecturer_id=request.lecturer_id,
+            title=request.title,
+            subject=request.subject,
+            slide_url=request.slide_url,
+            start_time=datetime.utcnow()
+        )
+        db.add(lecture)
+    else:
+        lecture.start_time = datetime.utcnow()
+        lecture.end_time = None
+        lecture.slide_url = request.slide_url
+    
+    db.commit()
+
     # Broadcast session:start to all clients
     await manager.broadcast({
         "type": "session:start",
@@ -37,7 +59,13 @@ async def start_session(request: SessionStartRequest):
     return {"status": "started", "lecture_id": request.lecture_id}
 
 @router.post("/end")
-async def end_session(request: SessionEndRequest):
+async def end_session(request: SessionEndRequest, db: Session = Depends(get_db)):
+    # Update lecture end_time in DB
+    lecture = db.query(models.Lecture).filter(models.Lecture.lecture_id == request.lecture_id).first()
+    if lecture:
+        lecture.end_time = datetime.utcnow()
+        db.commit()
+
     # Broadcast session:end to all clients
     await manager.broadcast({
         "type": "session:end",
@@ -57,16 +85,10 @@ async def broadcast_event(request: SessionBroadcastRequest):
     })
     return {"status": "broadcast"}
 
-@router.get("/upcoming")
-async def get_upcoming_sessions():
-    return [
-        {
-            "lecture_id": "L1",
-            "title": "Introduction to Algorithms",
-            "start_time": "2026-04-28T09:00:00Z",
-            "slide_url": "https://drive.google.com/file/d/abc123/view"
-        }
-    ]
+@router.get("/upcoming", response_model=List[LectureResponse])
+async def get_upcoming_sessions(db: Session = Depends(get_db)):
+    # For Phase 1, we'll just return all lectures that haven't ended
+    return db.query(models.Lecture).filter(models.Lecture.end_time == None).all()
 
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):

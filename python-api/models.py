@@ -52,12 +52,13 @@ class EmotionLog(Base):
 
 class AttendanceLog(Base):
     __tablename__ = "attendance_log"
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    student_id = Column(String, ForeignKey("students.student_id"), nullable=False)
-    lecture_id = Column(String, ForeignKey("lectures.lecture_id"), nullable=False)
-    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
-    status = Column(String, nullable=False)  # Present | Absent
-    method = Column(String, nullable=False)  # AI | Manual | QR
+    id            = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    student_id    = Column(String, ForeignKey("students.student_id"), nullable=False)
+    lecture_id    = Column(String, ForeignKey("lectures.lecture_id"), nullable=False)
+    timestamp     = Column(DateTime, default=datetime.datetime.utcnow)
+    status        = Column(String, nullable=False)  # Present | Absent
+    method        = Column(String, nullable=False)  # AI | Manual | QR
+    snapshot_path = Column(String, nullable=True)  # Path to face ROI crop
 
     # Relationships
     student = relationship("Student", back_populates="attendance")
