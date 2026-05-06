@@ -11,11 +11,7 @@ lecturer_server <- function(input, output, session) {
     intervalMillis = 10000,
     session = session,
     checkFunc = function() {
-      if (file.exists("../python-api/data/exports/emotions.csv")) {
-        file.info("../python-api/data/exports/emotions.csv")$mtime
-      } else {
-        0
-      }
+      get_file_mtime("../python-api/data/exports/emotions.csv")
     },
     valueFunc = function() {
       load_csv("../python-api/data/exports/emotions.csv")
