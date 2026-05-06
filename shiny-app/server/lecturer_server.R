@@ -336,6 +336,68 @@ lecturer_server <- function(input, output, session) {
   })
 
   # ========================================================================
+  # Confusion Spike Observer — T045
+  # Fires when confusion_rate >= 0.40 over the last 120 emotion rows (~2 min)
+  # Fetches a Gemini clarifying question and presents a shinyalert popup.
+  # ========================================================================
+
+  confusion_alerted <- shiny::reactiveVal(FALSE)
+
+  shiny::observe({
+    live_reactive()
+    emotions <- emotions_data()
+    if (nrow(emotions) == 0) return()
+
+    # Evaluate last 120 rows (~2 minutes of data at 1 record/5s per student)
+    recent <- tail(emotions, 120)
+    confusion_rate <- mean(
+      recent$emotion %in% c("Confused", "Frustrated"),
+      na.rm = TRUE
+    )
+
+    # Only alert once per spike (reset when rate drops below threshold)
+    if (confusion_rate < 0.40) {
+      confusion_alerted(FALSE)
+      return()
+    }
+    if (isTRUE(confusion_alerted())) return()
+    confusion_alerted(TRUE)
+
+    # Fetch Gemini clarifying question
+    lecture_id <- input$lecturer_lecture_select
+    question <- tryCatch({
+      result <- httr2::request(paste0(FASTAPI_BASE, "/gemini/question")) |>
+        httr2::req_url_query(lecture_id = lecture_id) |>
+        httr2::req_perform() |>
+        httr2::resp_body_json()
+      result$question %||% "Can you clarify the key concept we just covered?"
+    }, error = function(e) {
+      "Can you clarify the key concept we just covered?"
+    })
+
+    shinyalert::shinyalert(
+      title    = sprintf("\u26a0 Class Confused (%.0f%%)", confusion_rate * 100),
+      text     = paste0("Suggested question:\n\n", question),
+      type     = "warning",
+      showCancelButton  = TRUE,
+      confirmButtonText = "Ask It",
+      cancelButtonText  = "Dismiss",
+      callbackR = function(confirmed) {
+        if (!isTRUE(confirmed)) return()
+        tryCatch({
+          httr2::request(paste0(FASTAPI_BASE, "/session/broadcast")) |>
+            httr2::req_body_json(list(
+              type       = "freshbrainer",
+              question   = question,
+              lecture_id = lecture_id
+            )) |>
+            httr2::req_perform()
+        }, error = function(e) NULL)
+      }
+    )
+  })
+
+  # ========================================================================
   # Submodule E: Student Reports
   # ========================================================================
 
