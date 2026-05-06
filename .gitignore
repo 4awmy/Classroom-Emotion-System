@@ -1,9 +1,14 @@
 .env
 .venv
+venv311/
 __pycache__/
 *.py[cod]
 *$py.class
 .DS_Store
 data/*.db
 *.db
-__pycache__/
+*.db-shm
+*.db-wal
+StudentPicsDataset.xlsx
+~$*.xlsx
+*.diff
