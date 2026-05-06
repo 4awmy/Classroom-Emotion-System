@@ -18,6 +18,7 @@ library(ggplot2)          # static/export charts
 library(dplyr)            # data wrangling
 library(lubridate)        # date/time helpers (floor_date, etc.)
 library(httr2)            # FastAPI HTTP calls
+library(curl)             # curl::form_file() for multipart uploads
 library(openxlsx)         # xlsx export for download handlers
 library(rmarkdown)        # PDF report generation
 

@@ -21,6 +21,9 @@ ui <- htmlTemplate(
   # RTL support, logo and footer.  DO NOT rebuild this chrome in R.
   filename = file.path("www", "template.html"),
 
+  # {{ currentYear }} — footer copyright year
+  currentYear = format(Sys.Date(), "%Y"),
+
   # {{ userMenuOutput }} — reactive: shows logged-in user name + role badge.
   userMenuOutput = uiOutput("user_menu"),
 

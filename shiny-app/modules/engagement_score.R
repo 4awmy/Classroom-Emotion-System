@@ -72,11 +72,16 @@ compute_engagement <- function(emotions_df) {
     summarise(
       avg_engagement     = round(mean(engagement_score, na.rm = TRUE), 3),
       avg_cognitive_load = round(mean(cognitive_load,   na.rm = TRUE), 3),
-      # Trend slope: negative means engagement is declining across lectures
-      trend_slope        = tryCatch(
-        coef(lm(engagement_score ~ seq_along(engagement_score)))[2],
-        error = function(e) NA_real_
-      ),
+      # Trend slope: negative means engagement is declining across lectures.
+      # Guard: lm() requires at least 2 observations; single-lecture students get NA.
+      trend_slope        = if (dplyr::n() >= 2) {
+        tryCatch(
+          coef(lm(engagement_score ~ seq_along(engagement_score)))[2],
+          error = function(e) NA_real_
+        )
+      } else {
+        NA_real_
+      },
       lectures_attended  = dplyr::n(),
       .groups = "drop"
     )
