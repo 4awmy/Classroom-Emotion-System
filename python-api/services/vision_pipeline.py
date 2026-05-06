@@ -71,18 +71,20 @@ def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event):
     """
     Main vision pipeline loop.
     Runs every 5 seconds.
+    camera_url: "0" or integer index for webcam, RTSP URL string for IP/phone camera.
     """
-    print(f"[VISION] Starting pipeline for lecture {lecture_id} on {camera_url}")
-    
+    # Convert "0" / "1" env var strings to integer for cv2.VideoCapture
+    camera_source = int(camera_url) if isinstance(camera_url, str) and camera_url.isdigit() else camera_url
+    print(f"[VISION] Starting pipeline for lecture {lecture_id} on {camera_source!r}")
+
     # Initialize models
     yolo_model = YOLO('yolov8n.pt')
     if HSEmotionRecognizer:
-        # HSEmotion model name can vary, 'vgg16_face_sfew' is a common one or similar
         try:
-            fer_model = HSEmotionRecognizer(model_name='resnet34_7_ema_face', device='cpu')
-        except:
+            fer_model = HSEmotionRecognizer(model_name='enet_b0_8_best_afew', device='cpu')
+        except Exception as e:
             fer_model = None
-            print("[VISION] Warning: HSEmotion model failed to load.")
+            print(f"[VISION] Warning: HSEmotion model failed to load: {e}")
     else:
         fer_model = None
         print("[VISION] Warning: HSEmotion not installed.")
@@ -90,14 +92,14 @@ def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event):
     db = SessionLocal()
     known_encodings, known_ids = load_student_encodings(db)
     seen_today = set()
-    
+
     # Snapshot directory
     snapshot_dir = f"data/snapshots/{lecture_id}"
     os.makedirs(snapshot_dir, exist_ok=True)
 
     retry_count = 0
     while not stop_event.is_set() and retry_count < 5:
-        cap = cv2.VideoCapture(camera_url)
+        cap = cv2.VideoCapture(camera_source)
         if not cap.isOpened():
             print(f"[VISION] Error: Could not open camera {camera_url}. Retrying...")
             retry_count += 1
@@ -135,23 +137,27 @@ def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event):
                             student_id = known_ids[best_idx]
                             
                             # 3. Emotion Classification
+                            raw_label, raw_score = None, None
                             if fer_model:
                                 emotion_label, scores = fer_model.predict_emotions(roi, logits=False)
+                                raw_label = emotion_label.lower()
                                 raw_score = float(max(scores))
-                                emotion = map_emotion(emotion_label, raw_score)
+                                emotion = map_emotion(raw_label, raw_score)
                             else:
-                                emotion = "Focused" # Fallback
-                            
-                            confidence = get_confidence(emotion)
-                            
-                            # 4. Persistence
+                                emotion = "Focused"  # Fallback when model unavailable
+
+                            engagement_weight = get_confidence(emotion)
+
+                            # 4. Persistence — store both raw model output AND mapped educational state
                             log_entry = EmotionLog(
                                 student_id=student_id,
                                 lecture_id=lecture_id,
                                 timestamp=datetime.utcnow(),
-                                emotion=emotion,
-                                confidence=confidence,
-                                engagement_score=confidence
+                                raw_emotion=raw_label,          # e.g. "happy", "neutral", "sad"
+                                raw_confidence=raw_score,        # model softmax score (actual certainty)
+                                emotion=emotion,                 # mapped state: "Engaged", "Focused", etc.
+                                confidence=engagement_weight,    # fixed weight per state (§8.2)
+                                engagement_score=engagement_weight
                             )
                             db.add(log_entry)
                             
