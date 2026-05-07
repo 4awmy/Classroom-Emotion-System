@@ -4,20 +4,28 @@ import face_recognition
 import numpy as np
 import os
 import time
+import urllib.request
 from datetime import datetime
 from sqlalchemy.orm import Session
 from models import Student, EmotionLog, AttendanceLog
 from database import SessionLocal
 
-# HSEmotion might need specific initialization
-# For MVP, we'll assume a wrapper or direct usage if installed
 try:
-    from hsemotion.face_emotion_extractor import HSEmotionRecognizer
+    from hsemotion_onnx.facial_emotions import HSEmotionRecognizer
 except ImportError:
     HSEmotionRecognizer = None
 
-# YOLO for person detection
 from ultralytics import YOLO
+
+YOLO_FACE_URL = "https://github.com/akanametov/yolo-face/releases/download/v0.0.0/yolov8n-face.pt"
+YOLO_FACE_PATH = "yolov8n-face.pt"
+
+def _ensure_yolo_face():
+    """Download yolov8n-face.pt at startup if not already present."""
+    if not os.path.exists(YOLO_FACE_PATH):
+        print(f"[VISION] Downloading {YOLO_FACE_PATH} ...")
+        urllib.request.urlretrieve(YOLO_FACE_URL, YOLO_FACE_PATH)
+        print(f"[VISION] {YOLO_FACE_PATH} downloaded.")
 
 # Constants from CLAUDE.md §8.2
 EMOTION_MAP = {
@@ -77,11 +85,13 @@ def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event):
     camera_source = int(camera_url) if isinstance(camera_url, str) and camera_url.isdigit() else camera_url
     print(f"[VISION] Starting pipeline for lecture {lecture_id} on {camera_source!r}")
 
-    # Initialize models
-    yolo_model = YOLO('yolov8n.pt')
+    # Initialize models — Approach B: separate person detector + face detector
+    _ensure_yolo_face()
+    yolo_person = YOLO('yolov8n.pt')
+    yolo_face   = YOLO(YOLO_FACE_PATH)
     if HSEmotionRecognizer:
         try:
-            fer_model = HSEmotionRecognizer(model_name='enet_b0_8_best_afew', device='cpu')
+            fer_model = HSEmotionRecognizer(model_name='enet_b0_8_best_afew')
         except Exception as e:
             fer_model = None
             print(f"[VISION] Warning: HSEmotion model failed to load: {e}")
@@ -117,70 +127,82 @@ def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event):
                 break
             
             # 1. YOLO Person Detection
-            results = yolo_model(frame, classes=[0], verbose=False)
-            boxes = results[0].boxes.xyxy.cpu().numpy().astype(int)
-            
-            for box in boxes:
-                x1, y1, x2, y2 = box
-                roi = frame[y1:y2, x1:x2]
-                if roi.size == 0: continue
-                
-                # 2. Identity Match
-                rgb_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2RGB)
+            person_results = yolo_person(frame, classes=[0], verbose=False)
+            person_boxes = person_results[0].boxes.xyxy.cpu().numpy().astype(int) if person_results[0].boxes else []
+
+            for box in person_boxes:
+                x1, y1, x2, y2 = box[:4]
+                person_roi = frame[y1:y2, x1:x2]
+                if person_roi.size == 0:
+                    continue
+
+                # --- Task A: Identity Match (face_recognition on full person ROI) ---
+                rgb_roi = cv2.cvtColor(person_roi, cv2.COLOR_BGR2RGB)
                 encs = face_recognition.face_encodings(rgb_roi)
-                
-                if encs:
-                    distances = face_recognition.face_distance(known_encodings, encs[0])
-                    if len(distances) > 0:
-                        best_idx = np.argmin(distances)
-                        if distances[best_idx] <= 0.5:
-                            student_id = known_ids[best_idx]
-                            
-                            # 3. Emotion Classification
-                            raw_label, raw_score = None, None
-                            if fer_model:
-                                emotion_label, scores = fer_model.predict_emotions(roi, logits=False)
+                if not encs:
+                    continue
+
+                if len(known_encodings) == 0:
+                    continue
+                distances = face_recognition.face_distance(known_encodings, encs[0])
+                best_idx = np.argmin(distances)
+                if distances[best_idx] > 0.5:
+                    continue
+                student_id = known_ids[best_idx]
+
+                # Attendance + Snapshot on first detection this session
+                if student_id not in seen_today:
+                    seen_today.add(student_id)
+
+                    snapshot_path = None
+                    if person_roi.shape[0] >= 100 and person_roi.shape[1] >= 100:
+                        path = f"{snapshot_dir}/{student_id}.jpg"
+                        cv2.imwrite(path, person_roi, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                        snapshot_path = path
+
+                    att_entry = AttendanceLog(
+                        student_id=student_id,
+                        lecture_id=lecture_id,
+                        timestamp=datetime.utcnow(),
+                        status="Present",
+                        method="AI",
+                        snapshot_path=snapshot_path
+                    )
+                    db.add(att_entry)
+                    print(f"[VISION] Detected student {student_id} (Attendance Marked)")
+
+                # --- Task B: Emotion with tight face crop (yolo_face → face_roi → HSEmotion) ---
+                raw_label, raw_score = None, None
+                if fer_model:
+                    face_results = yolo_face(person_roi, verbose=False)
+                    face_boxes = face_results[0].boxes.xyxy.cpu().numpy().astype(int) if face_results[0].boxes else []
+
+                    if len(face_boxes) > 0:
+                        fx1, fy1, fx2, fy2 = face_boxes[0][:4]
+                        face_roi = person_roi[fy1:fy2, fx1:fx2]
+                        if face_roi.size > 0:
+                            try:
+                                emotion_label, scores = fer_model.predict_emotions(face_roi, logits=False)
                                 raw_label = emotion_label.lower()
                                 raw_score = float(max(scores))
-                                emotion = map_emotion(raw_label, raw_score)
-                            else:
-                                emotion = "Focused"  # Fallback when model unavailable
+                            except Exception as e:
+                                print(f"[VISION] HSEmotion error for {student_id}: {e}")
 
-                            engagement_weight = get_confidence(emotion)
+                emotion = map_emotion(raw_label, raw_score) if raw_label else "Focused"
+                engagement_weight = get_confidence(emotion)
 
-                            # 4. Persistence — store both raw model output AND mapped educational state
-                            log_entry = EmotionLog(
-                                student_id=student_id,
-                                lecture_id=lecture_id,
-                                timestamp=datetime.utcnow(),
-                                raw_emotion=raw_label,          # e.g. "happy", "neutral", "sad"
-                                raw_confidence=raw_score,        # model softmax score (actual certainty)
-                                emotion=emotion,                 # mapped state: "Engaged", "Focused", etc.
-                                confidence=engagement_weight,    # fixed weight per state (§8.2)
-                                engagement_score=engagement_weight
-                            )
-                            db.add(log_entry)
-                            
-                            # 5. Attendance + Snapshot (Flow E)
-                            if student_id not in seen_today:
-                                seen_today.add(student_id)
-                                
-                                snapshot_path = None
-                                if roi.shape[0] >= 100 and roi.shape[1] >= 100:
-                                    path = f"{snapshot_dir}/{student_id}.jpg"
-                                    cv2.imwrite(path, roi, [cv2.IMWRITE_JPEG_QUALITY, 80])
-                                    snapshot_path = path
-                                
-                                att_entry = AttendanceLog(
-                                    student_id=student_id,
-                                    lecture_id=lecture_id,
-                                    timestamp=datetime.utcnow(),
-                                    status="Present",
-                                    method="AI",
-                                    snapshot_path=snapshot_path
-                                )
-                                db.add(att_entry)
-                                print(f"[VISION] Detected student {student_id} (Attendance Marked)")
+                # Persistence — store both raw model output AND mapped educational state
+                log_entry = EmotionLog(
+                    student_id=student_id,
+                    lecture_id=lecture_id,
+                    timestamp=datetime.utcnow(),
+                    raw_emotion=raw_label,
+                    raw_confidence=raw_score,
+                    emotion=emotion,
+                    confidence=engagement_weight,
+                    engagement_score=engagement_weight
+                )
+                db.add(log_entry)
             
             db.commit()
             

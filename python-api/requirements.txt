@@ -28,4 +28,3 @@ hsemotion-onnx
 face-recognition
 google-generativeai
 pdfplumber
-sounddevice

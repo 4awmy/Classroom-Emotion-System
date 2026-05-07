@@ -10,27 +10,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from database import get_db
-from services.gemini_service import generate_smart_notes, generate_intervention_plan
+from services.gemini_service import generate_intervention_plan
 import os
 import logging
-from datetime import datetime
-import models
-from schemas import NotificationBase, NotificationResponse
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
-
-
-def _parse_timestamp(ts) -> datetime:
-    """Parse SQLite timestamp string or datetime object to datetime."""
-    if isinstance(ts, datetime):
-        return ts
-    for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"):
-        try:
-            return datetime.strptime(str(ts), fmt)
-        except ValueError:
-            continue
-    return datetime.utcnow()  # fallback — never crash on bad timestamp
 
 
 @router.get("/{student_id}/plan")
@@ -72,26 +57,5 @@ async def get_intervention_plan(student_id: str, db: Session = Depends(get_db)):
 
 @router.get("/{student_id}/{lecture_id}")
 async def get_smart_notes(student_id: str, lecture_id: str, db: Session = Depends(get_db)):
-    """T062: Generate smart notes from transcript + distraction timestamps."""
-    transcripts = db.execute(
-        text("SELECT chunk_text FROM transcripts WHERE lecture_id = :lid ORDER BY timestamp"),
-        {"lid": lecture_id}
-    ).fetchall()
-
-    if not transcripts:
-        return {"markdown": f"## Lecture {lecture_id} Notes\n\n*No transcript available.*"}
-
-    transcript_text = " ".join(r.chunk_text for r in transcripts)
-
-    strikes = db.execute(
-        text("SELECT timestamp FROM focus_strikes WHERE student_id = :sid AND lecture_id = :lid ORDER BY timestamp"),
-        {"sid": student_id, "lid": lecture_id}
-    ).fetchall()
-
-    # Bug 2 fix: parse timestamps safely regardless of SQLite returning str or datetime
-    distraction_timestamps = [
-        _parse_timestamp(r.timestamp).strftime("%H:%M") for r in strikes
-    ]
-
-    notes = generate_smart_notes(transcript_text, distraction_timestamps)
-    return {"markdown": notes}
+    """T062: Smart notes endpoint — transcript source retired; returns placeholder."""
+    return {"markdown": f"## Lecture {lecture_id} Notes\n\n*Lecture transcript not available.*"}
