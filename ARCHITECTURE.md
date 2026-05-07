@@ -27,19 +27,20 @@
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                          CLASSROOM (Physical Layer)                         │
 │                                                                             │
-│   ┌──────────────────┐          ┌──────────────────┐                       │
-│   │  IP Camera (1x)  │  RTSP    │   Microphone     │  PCM audio            │
-│   │  Fixed, ceiling  │─────────▶│   (USB/3.5mm)    │──────────────────┐    │
-│   └──────────────────┘          └──────────────────┘                  │    │
-└───────────────┬─────────────────────────────────────────────────────── │───┘
-                │ RTSP stream                                             │
-                ▼                                                         ▼
+│   ┌──────────────────┐                                                      │
+│   │  IP Camera (1x)  │  RTSP                                                │
+│   │  Fixed, ceiling  │──────────────────────────────────────────────────┐  │
+│   └──────────────────┘                                                   │  │
+└──────────────────────────────────────────────────────────────────────────│──┘
+                                                                           │ RTSP stream
+                                                                           ▼
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                FASTAPI BACKEND  (Railway.app or Digital Ocean)               │
 │                                                                              │
 │  ┌─────────────────────────────────────────────────────────────────────┐    │
 │  │                    vision_pipeline.py (Thread 1)                    │    │
-│  │   cv2.VideoCapture → YOLOv8 → face_recognition → HSEmotion         │    │
+│  │   cv2.VideoCapture → yolov8n.pt (person) → face_recognition         │    │
+│  │   → yolov8n-face.pt (face crop) → HSEmotion                         │    │
 │  │   Rate: 1 frame / 5 seconds                                         │    │
 │  └────────────────────────────┬────────────────────────────────────────┘    │
 │                               │ INSERT                                       │
@@ -49,13 +50,7 @@
 │  │          classroom_emotions.db  (python-api/data/)                   │  │
 │  │                                                                       │  │
 │  │  students | lectures | emotion_log | attendance_log | materials       │  │
-│  │  incidents | transcripts | notifications | focus_strikes              │  │
-│  └───────────────────────────────────────────────────────────────────── ┘  │
-│                               │                                              │
-│  ┌─────────────────────────── │ ─────────────────────────────────────────┐  │
-│  │           whisper_service.py (Coroutine)    INSERT ─────────────────▶ │  │
-│  │   sounddevice → Whisper API → transcripts table                       │  │
-│  │   Broadcast → WebSocket → React Native clients                        │  │
+│  │  incidents | notifications | focus_strikes                            │  │
 │  └───────────────────────────────────────────────────────────────────── ┘  │
 │                                                                              │
 │  APScheduler (cron 02:00) ──────────────────────────────────────────────── ▶│
@@ -82,7 +77,7 @@
 | Module | Runtime | Owner | Responsibilities |
 |--------|---------|-------|-----------------|
 | **FastAPI Backend** | Railway.app (Python 3.11) | S3 | All business logic, DB writes, WebSocket server, AI orchestration |
-| **Vision + Audio AI** | Same process as FastAPI (S1 code) | S1 | Camera capture, YOLO, face_recognition, HSEmotion, Whisper |
+| **Vision AI** | Same process as FastAPI (S1 code) | S1 | Camera capture, yolov8n.pt person detection, face_recognition identity match, yolov8n-face.pt face crop, HSEmotion |
 | **R/Shiny Web Portal** | shinyapps.io | S2 | Admin dashboards, Lecturer panels — reads CSV, calls FastAPI HTTP |
 | **React Native App** | Expo / Android APK | S4 | Student interface — WebSocket client, AppState monitor |
 
@@ -101,7 +96,7 @@ These rules are architectural invariants. Violating them breaks the data isolati
 - ❌ MUST NOT perform any AI computation
 
 **React Native App:**
-- ✅ MAY connect to FastAPI via WebSocket for receiving events (captions, session:start, alerts)
+- ✅ MAY connect to FastAPI via WebSocket for receiving events (session:start, freshbrainer alerts, exam:autosubmit)
 - ✅ MAY call FastAPI via HTTP for auth, notes fetch, upcoming lectures
 - ✅ MAY emit WebSocket events (focus strikes)
 - ❌ MUST NOT send video or audio to FastAPI — only JSON text payloads
@@ -109,16 +104,16 @@ These rules are architectural invariants. Violating them breaks the data isolati
 - ❌ MUST NOT read CSV files
 - ❌ MUST NOT connect to SQLite
 
-**Vision + Audio AI (S1 modules):**
-- ✅ Runs as threads/coroutines spawned by FastAPI session router
+**Vision AI (S1 modules):**
+- ✅ Runs as a thread spawned by FastAPI session router
 - ✅ Writes directly to SQLite via SQLAlchemy session
 - ❌ MUST NOT write to CSV files (APScheduler owns that)
-- ❌ MUST NOT call WebSocket endpoints (whisper_service handles its own broadcast via shared `active_connections`)
+- ❌ MUST NOT call WebSocket endpoints directly
 
 **FastAPI Backend:**
 - ✅ Is the single writer to SQLite
 - ✅ Is the WebSocket server
-- ✅ Calls external APIs: OpenAI Whisper, Google Gemini, Google Drive
+- ✅ Calls external APIs: Google Gemini, Google Drive
 - ❌ MUST NOT read from CSV exports (it only writes them via APScheduler)
 
 ---
@@ -154,7 +149,6 @@ Response 200: {"status": "started", "lecture_id": "L1"}
 Side-effects:
   - INSERT into lectures table
   - Spawns vision_pipeline thread (background)
-  - Spawns whisper_service coroutine (background)
   - Broadcasts WebSocket: session:start
 
 POST /session/end
@@ -162,7 +156,7 @@ Body:    {"lecture_id": "L1"}
 Response 200: {"status": "ended"}
 Side-effects:
   - UPDATE lectures SET end_time = NOW()
-  - Stops vision thread and whisper coroutine
+  - Stops vision thread (via threading.Event stop flag)
   - Broadcasts WebSocket: session:end
 
 POST /session/broadcast
@@ -289,6 +283,7 @@ All payloads are JSON-encoded strings. The `type` field is the discriminator —
   "lecture_id": "L1",
   "slide_url": "https://drive.google.com/file/d/abc123/view",
   "lecturer_id": "LECT01",
+  "start_time": "2026-04-28T09:00:00Z",
   "timestamp": "2026-04-28T09:00:00Z"
 }
 ```
@@ -301,18 +296,6 @@ All payloads are JSON-encoded strings. The `type` field is the discriminator —
   "timestamp": "2026-04-28T11:00:00Z"
 }
 ```
-
-**Live Caption Broadcast**
-```json
-{
-  "type": "caption",
-  "text": "وهنا نشرح مفهوم التعقيد الزمني في الخوارزميات",
-  "lecture_id": "L1",
-  "timestamp": "2026-04-28T09:05:03Z",
-  "language": "ar"
-}
-```
-> `language` values: `"ar"` | `"en"` | `"mixed"` — Whisper detects per chunk.
 
 **Fresh-Brainer Intervention Alert**
 ```json
@@ -498,21 +481,6 @@ Every 60 seconds during exam:
     Broadcast WebSocket: exam:autosubmit
 ```
 
-### `transcripts`
-```sql
-CREATE TABLE transcripts (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    lecture_id  TEXT NOT NULL REFERENCES lectures(lecture_id),
-    timestamp   DATETIME DEFAULT CURRENT_TIMESTAMP,
-    chunk_text  TEXT NOT NULL,
-    -- Raw Whisper output for a 5-second audio chunk
-    -- May be Arabic, English, or a mix of both
-    language    TEXT
-    -- Whisper-detected language: "ar" | "en" | "mixed"
-    -- "mixed" when Whisper detects Arabic words within English sentences or vice versa
-);
-```
-
 ### `notifications`
 ```sql
 CREATE TABLE notifications (
@@ -566,10 +534,6 @@ materials.csv:
 incidents.csv:
     student_id (TEXT), exam_id (TEXT), timestamp (DATETIME),
     flag_type (TEXT), severity (INTEGER), evidence_path (TEXT)
-
-transcripts.csv:
-    lecture_id (TEXT), timestamp (DATETIME),
-    chunk_text (TEXT), language (TEXT)
 
 notifications.csv:
     student_id (TEXT), lecturer_id (TEXT), lecture_id (TEXT),
@@ -644,9 +608,9 @@ notifications.csv:
 
 ## 8. Flow B — The 5-Second Live Lecture Heartbeat
 
-**Purpose:** The core live loop. Two concurrent processes run during every lecture — one handles vision, one handles audio. They are independent and do not share state except the SQLite session.
+**Purpose:** The core live loop. The vision pipeline runs continuously during every lecture, processing one frame every 5 seconds to detect student identities and emotions.
 
-**Actors:** Lecturer (Shiny), FastAPI session router, Vision Thread (S1), Whisper Coroutine (S1), React Native clients
+**Actors:** Lecturer (Shiny), FastAPI session router, Vision Thread (S1), React Native clients
 
 ### 8.1 Session Initiation
 
@@ -656,14 +620,15 @@ Shiny: httr2 POST /session/start {lecture_id, lecturer_id, slide_url}
   ▼
 FastAPI session.py:
   a. INSERT INTO lectures (lecture_id, lecturer_id, title, start_time, slide_url)
-  b. Broadcast WS to all clients: {type: "session:start", lecture_id, slide_url}
-  c. threading.Thread(target=run_pipeline, args=(lecture_id, CAMERA_URL)).start()
-  d. asyncio.create_task(stream_captions(lecture_id))
+  b. Broadcast WS to all clients: {type: "session:start", lecture_id, slide_url, lecturer_id, start_time, timestamp}
+  c. threading.Thread(target=run_pipeline, args=(lecture_id, CAMERA_URL, stop_event)).start()
 ```
 
 ---
 
-### 8.2 Thread 1 — Vision Pipeline (runs every 5 seconds)
+### 8.2 Thread 1 — Vision Pipeline (runs every 5 seconds, Approach B)
+
+**Startup:** `_ensure_yolo_face()` checks for `yolov8n-face.pt` on disk and auto-downloads it if not present before the pipeline loop begins.
 
 ```
 Every 5 seconds:
@@ -676,30 +641,39 @@ Every 5 seconds:
 └─────────────────────────┬───────────────────────────────────────────┘
                           │
 ┌─────────────────────────▼───────────────────────────────────────────┐
-│  STEP 2: YOLOv8 Person Detection                                    │
+│  STEP 2: Stage 1 — yolov8n.pt Person Detection                      │
 │  results = yolo_model(frame, classes=[0], verbose=False)            │
 │  boxes = results[0].boxes.xyxy.cpu().numpy().astype(int)            │
-│  Output: list of [x1, y1, x2, y2] bounding boxes                   │
+│  Output: list of [x1, y1, x2, y2] person_roi bounding boxes        │
 │  Each box = one detected person in the crowd frame                  │
 └─────────────────────────┬───────────────────────────────────────────┘
-                          │  For each bounding box:
+                          │  For each person bounding box:
 ┌─────────────────────────▼───────────────────────────────────────────┐
-│  STEP 3: Face Crop + Identity Match                                 │
-│  roi = frame[y1:y2, x1:x2]                                         │
-│  if roi.size == 0 → skip                                            │
-│  rgb_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2RGB)                     │
+│  STEP 3 (Task A): face_recognition Identity Match on person_roi     │
+│  person_roi = frame[y1:y2, x1:x2]                                  │
+│  if person_roi.size == 0 → skip                                     │
+│  rgb_roi = cv2.cvtColor(person_roi, cv2.COLOR_BGR2RGB)              │
 │  encs = face_recognition.face_encodings(rgb_roi)                   │
-│  if not encs → skip (no face in this bounding box)                 │
+│  if not encs → skip (no face visible in person bounding box)        │
 │                                                                     │
 │  distances = face_recognition.face_distance(known_encs, encs[0])   │
 │  best_idx = argmin(distances)                                       │
 │  if distances[best_idx] > 0.5 → student_id = "unknown" → skip      │
 │  else → student_id = known_ids[best_idx]                            │
+│  → Attendance log written here (first detection only)               │
 └─────────────────────────┬───────────────────────────────────────────┘
                           │  Student identified:
 ┌─────────────────────────▼───────────────────────────────────────────┐
-│  STEP 4: HSEmotion Classification                                   │
-│  raw_label, scores = hs_recognizer.predict_emotions(roi,            │
+│  STEP 4 (Stage 2 + Task B): yolov8n-face.pt + HSEmotion             │
+│                                                                     │
+│  Stage 2: yolov8n-face.pt on person_roi → tight face_roi           │
+│  face_results = face_yolo_model(person_roi, verbose=False)          │
+│  if no face detected → skip (fallback: use person_roi directly)    │
+│  else: fx1,fy1,fx2,fy2 = face_results[0].boxes.xyxy[0]             │
+│        face_roi = person_roi[fy1:fy2, fx1:fx2]                      │
+│                                                                     │
+│  Task B: HSEmotion on face_roi (correct AffectNet domain)          │
+│  raw_label, scores = hs_recognizer.predict_emotions(face_roi,       │
 │                                                     logits=False)   │
 │  raw_score = float(max(scores))                                     │
 │                                                                     │
@@ -737,53 +711,7 @@ Every 5 seconds:
 
 ---
 
-### 8.3 Coroutine — Whisper Audio Pipeline (runs every 5 seconds, independently)
-
-```
-Every 5 seconds:
-
-STEP 1: Capture 5s audio chunk
-  audio = sd.rec(5 * 16000, samplerate=16000, channels=1, dtype="int16")
-  sd.wait()
-  → numpy array shape (80000, 1)
-
-STEP 2: Encode to WAV bytes (in-memory, no disk write)
-  buf = io.BytesIO()
-  wave.open(buf) → write PCM frames
-  buf.seek(0)
-  buf.name = "audio.wav"   # required by OpenAI SDK
-
-STEP 3: Whisper API call
-  response = openai_client.audio.transcriptions.create(
-      model="whisper-1",
-      file=buf,
-      # No language parameter — Whisper auto-detects ar-EG / en-US per chunk
-  )
-  text = response.text.strip()
-  if not text → skip (silence or below threshold)
-
-STEP 4: Write to transcripts table
-  db.add(Transcript(lecture_id=lecture_id, chunk_text=text, language="mixed"))
-  db.commit()
-
-STEP 5: Broadcast to all WebSocket clients
-  payload = {
-      "type": "caption",
-      "text": text,
-      "lecture_id": lecture_id,
-      "timestamp": datetime.utcnow().isoformat() + "Z",
-      "language": "mixed"
-  }
-  for ws in active_connections:
-      await ws.send_json(payload)
-
-→ React Native CaptionBar displays text for 4 seconds, then fades
-→ await asyncio.sleep(0)  # yield to event loop, repeat
-```
-
----
-
-### 8.4 React Native Side — AppState Focus Strike
+### 8.3 React Native Side — AppState Focus Strike
 
 ```
 AppState.addEventListener('change', (nextState) => {
@@ -805,7 +733,7 @@ FastAPI receives → INSERT INTO focus_strikes (student_id, lecture_id, strike_t
 
 ---
 
-### 8.5 R/Shiny Live Dashboard (reads from FastAPI, not SQLite)
+### 8.4 R/Shiny Live Dashboard (reads from FastAPI, not SQLite)
 
 ```
 reactiveTimer(10000)  →  every 10 seconds:
@@ -928,10 +856,6 @@ Confusion observer:
 │        SELECT student_id, exam_id, timestamp,                       │
 │               flag_type, severity, evidence_path                    │
 │        FROM incidents                                                │
-│                                                                      │
-│      "transcripts":                                                  │
-│        SELECT lecture_id, timestamp, chunk_text, language           │
-│        FROM transcripts                                              │
 │                                                                      │
 │      "notifications":                                                │
 │        SELECT student_id, lecturer_id, lecture_id,                  │
@@ -1068,33 +992,7 @@ socket.on('connect', () => {
 
 ---
 
-### 11.4 Whisper API Failure
-
-**Problem:** OpenAI API returns an error (rate limit, timeout, network issue).
-
-**Behaviour:**
-```python
-try:
-    response = openai_client.audio.transcriptions.create(
-        model="whisper-1",
-        file=wav_buf,
-    )
-    text = response.text.strip()
-    if not text:
-        continue
-    ...
-except Exception as e:
-    print(f"[WHISPER] Error: {e}")
-    continue  # silently skip this 5-second chunk
-```
-
-**What students see:** The CaptionBar shows nothing for that 5-second window. The next successful chunk will display normally. No error is pushed to the client.
-
-**What is NOT written:** No empty row is inserted into `transcripts`. Only successful, non-empty transcriptions are saved.
-
----
-
-### 11.5 APScheduler Export Failure
+### 11.4 APScheduler Export Failure
 
 **Problem:** The nightly 02:00 export job crashes mid-run (disk full, DB locked).
 
@@ -1116,7 +1014,7 @@ for name, query in queries.items():
 
 ---
 
-### 11.6 HSEmotion Model Exception
+### 11.5 HSEmotion Model Exception
 
 **Problem:** HSEmotion `predict_emotions()` throws on a malformed or very small ROI (edge-case face crops from YOLO).
 
