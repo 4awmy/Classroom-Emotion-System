@@ -1,5 +1,15 @@
 from fastapi import WebSocket
-from typing import List
+from typing import List, Optional
+import asyncio
+
+_main_loop: Optional[asyncio.AbstractEventLoop] = None
+
+def set_main_loop(loop: asyncio.AbstractEventLoop):
+    global _main_loop
+    _main_loop = loop
+
+def get_main_loop() -> Optional[asyncio.AbstractEventLoop]:
+    return _main_loop
 
 
 class ConnectionManager:

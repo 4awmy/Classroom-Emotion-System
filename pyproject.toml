@@ -15,5 +15,12 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "anyio>=4.13.0",
+    "httpx>=0.28.1",
+    "pytest>=9.0.3",
     "ruff>=0.15.12",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["python-api/tests"]
+pythonpath = ["python-api"]
