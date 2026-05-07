@@ -5,10 +5,13 @@ import numpy as np
 import os
 import time
 import urllib.request
+import asyncio
 from datetime import datetime
 from sqlalchemy.orm import Session
 from models import Student, EmotionLog, AttendanceLog
 from database import SessionLocal
+from services.proctor_service import ProctorService
+from services.websocket import manager, get_main_loop
 
 try:
     from hsemotion_onnx.facial_emotions import HSEmotionRecognizer
@@ -75,7 +78,7 @@ def load_student_encodings(db: Session):
         known_ids.append(s.student_id)
     return known_encodings, known_ids
 
-def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event):
+def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event, context: str = "lecture", exam_id: str = None):
     """
     Main vision pipeline loop.
     Runs every 5 seconds.
@@ -83,7 +86,7 @@ def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event):
     """
     # Convert "0" / "1" env var strings to integer for cv2.VideoCapture
     camera_source = int(camera_url) if isinstance(camera_url, str) and camera_url.isdigit() else camera_url
-    print(f"[VISION] Starting pipeline for lecture {lecture_id} on {camera_source!r}")
+    print(f"[VISION] Starting pipeline for lecture {lecture_id} on {camera_source!r} (Context: {context})")
 
     # Initialize models — Approach B: separate person detector + face detector
     _ensure_yolo_face()
@@ -100,6 +103,7 @@ def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event):
         print("[VISION] Warning: HSEmotion not installed.")
 
     db = SessionLocal()
+    proctor = ProctorService(db) if context == "exam" else None
     known_encodings, known_ids = load_student_encodings(db)
     seen_today = set()
 
@@ -108,28 +112,45 @@ def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event):
     os.makedirs(snapshot_dir, exist_ok=True)
 
     retry_count = 0
-    while not stop_event.is_set() and retry_count < 5:
+    max_retries = 10
+    backoff_base = 2
+    
+    while not stop_event.is_set() and retry_count < max_retries:
+        print(f"[VISION] Attempting to open camera {camera_source} (Attempt {retry_count + 1}/{max_retries})")
         cap = cv2.VideoCapture(camera_source)
+        
         if not cap.isOpened():
-            print(f"[VISION] Error: Could not open camera {camera_url}. Retrying...")
+            wait_time = min(backoff_base ** retry_count, 60)
+            print(f"[VISION] Error: Could not open camera {camera_source}. Retrying in {wait_time}s...")
             retry_count += 1
-            time.sleep(10)
+            if stop_event.wait(timeout=wait_time):
+                break
             continue
         
+        print(f"[VISION] Camera {camera_source} opened successfully.")
         retry_count = 0 # Reset on success
         
         while not stop_event.is_set():
             start_time = time.time()
             
-            ret, frame = cap.read()
-            if not ret:
-                print("[VISION] Camera stream dropped.")
+            try:
+                ret, frame = cap.read()
+                if not ret:
+                    print("[VISION] Camera stream dropped or failed to read frame.")
+                    break
+            except Exception as e:
+                print(f"[VISION] Exception during cap.read(): {e}")
                 break
             
             # 1. YOLO Person Detection
-            person_results = yolo_person(frame, classes=[0], verbose=False)
+            classes = [0]
+            if context == "exam":
+                classes.append(67) # cell phone
+            
+            person_results = yolo_person(frame, classes=classes, verbose=False)
             person_boxes = person_results[0].boxes.xyxy.cpu().numpy().astype(int) if person_results[0].boxes else []
 
+            detected_ids = set()
             for box in person_boxes:
                 x1, y1, x2, y2 = box[:4]
                 person_roi = frame[y1:y2, x1:x2]
@@ -146,9 +167,14 @@ def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event):
                     continue
                 distances = face_recognition.face_distance(known_encodings, encs[0])
                 best_idx = np.argmin(distances)
+                
                 if distances[best_idx] > 0.5:
+                    if context == "exam" and exam_id:
+                        proctor.check_identity_mismatch(None, exam_id, person_roi, distances[best_idx])
                     continue
+                
                 student_id = known_ids[best_idx]
+                detected_ids.add(student_id)
 
                 # Attendance + Snapshot on first detection this session
                 if student_id not in seen_today:
@@ -173,6 +199,7 @@ def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event):
 
                 # --- Task B: Emotion with tight face crop (yolo_face → face_roi → HSEmotion) ---
                 raw_label, raw_score = None, None
+                face_roi = None
                 if fer_model:
                     face_results = yolo_face(person_roi, verbose=False)
                     face_boxes = face_results[0].boxes.xyxy.cpu().numpy().astype(int) if face_results[0].boxes else []
@@ -203,7 +230,37 @@ def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event):
                     engagement_score=engagement_weight
                 )
                 db.add(log_entry)
+
+                # --- Proctoring Checks ---
+                if context == "exam" and exam_id:
+                    # Re-run YOLO on person_roi to find phones/multiple persons
+                    person_roi_results = yolo_person(person_roi, classes=[0, 67], verbose=False)
+                    proctor.check_phone_on_desk(student_id, exam_id, person_roi, person_roi_results)
+                    proctor.check_multiple_persons(student_id, exam_id, person_roi, person_roi_results)
+                    
+                    if face_roi is not None:
+                        pitch, yaw, roll, suspicious = proctor.check_head_rotation(student_id, exam_id, face_roi)
+                    
+                    if proctor.check_auto_submit(exam_id, student_id):
+                        try:
+                            payload = {
+                                "type": "exam:autosubmit",
+                                "exam_id": exam_id,
+                                "student_id": student_id,
+                                "reason": "auto_3_severity3",
+                                "timestamp": datetime.utcnow().isoformat() + "Z"
+                            }
+                            loop = get_main_loop()
+                            if loop and loop.is_running():
+                                asyncio.run_coroutine_threadsafe(manager.broadcast(payload), loop)
+                            else:
+                                asyncio.run(manager.broadcast(payload))
+                        except Exception as e:
+                            print(f"[VISION] Failed to broadcast auto-submit: {e}")
             
+            if context == "exam" and exam_id:
+                proctor.check_absent(exam_id, detected_ids)
+
             db.commit()
             
             # Sleep to maintain 5-second interval
@@ -213,6 +270,9 @@ def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event):
                 break
         
         cap.release()
+        if not stop_event.is_set():
+            print("[VISION] Attempting to reconnect camera...")
+            time.sleep(2) # Brief pause before re-opening
     
     db.close()
     print(f"[VISION] Pipeline stopped for lecture {lecture_id}")

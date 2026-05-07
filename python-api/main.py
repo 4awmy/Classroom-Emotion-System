@@ -1,7 +1,9 @@
+import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import emotion, attendance, session, gemini, notes, exam, roster, upload, auth, notify
 from services import export_service
+from services.websocket import set_main_loop
 from database import engine
 from sqlalchemy import text
 import models
@@ -16,6 +18,10 @@ if engine.url.drivername == "sqlite":
         conn.commit()
 
 app = FastAPI(title="AAST LMS API")
+
+@app.on_event("startup")
+async def startup_event():
+    set_main_loop(asyncio.get_running_loop())
 
 # Configure CORS
 # allow_origins=["*"] is incompatible with allow_credentials=True per the CORS spec.

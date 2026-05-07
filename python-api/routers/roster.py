@@ -16,11 +16,18 @@ router = APIRouter()
 def extract_drive_id(url: str) -> Optional[str]:
     """
     Extracts the file ID from a Google Drive share URL.
+    Handles:
+    - https://drive.google.com/open?id=ID
+    - https://drive.google.com/file/d/ID/view
+    - Just the ID
     """
+    if not url or url == "nan":
+        return None
+    
     patterns = [
         r'/file/d/([a-zA-Z0-9_-]+)',
         r'id=([a-zA-Z0-9_-]+)',
-        r'([a-zA-Z0-9_-]+)$' # Fallback for just the ID
+        r'([a-zA-Z0-9_-]{25,})' # Long alphanumeric string likely to be an ID
     ]
     for pattern in patterns:
         match = re.search(pattern, url)
@@ -44,29 +51,56 @@ def get_face_encoding(image_bytes: bytes) -> Optional[bytes]:
 
 @router.post("/upload")
 async def upload_roster(
-    roster_xlsx: UploadFile = File(...),
+    roster_file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
     """
-    Bulk roster upload via XLSX.
-    Expected columns: student_id, name, email, photo_link
+    Bulk roster upload via XLSX or CSV.
+    Expected columns: student_id, name (or Student Name), email, photo_link (or Photo Link)
     """
     try:
-        contents = await roster_xlsx.read()
-        df = pd.read_excel(io.BytesIO(contents))
+        contents = await roster_file.read()
+        filename = roster_file.filename.lower()
         
-        required_cols = ["student_id", "name", "email", "photo_link"]
-        if not all(col in df.columns for col in required_cols):
-            raise HTTPException(status_code=400, detail=f"XLSX must contain: {required_cols}")
+        if filename.endswith(".xlsx"):
+            df = pd.read_excel(io.BytesIO(contents))
+        elif filename.endswith(".csv"):
+            df = pd.read_csv(io.BytesIO(contents))
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported file format. Use .xlsx or .csv")
+
+        # Normalize column names
+        df.columns = [str(c).strip().lower().replace(" ", "_") for c in df.columns]
+        
+        # Mapping variations
+        column_map = {
+            "student_id": ["student_id", "id", "sid"],
+            "name": ["name", "student_name", "full_name"],
+            "email": ["email", "e-mail"],
+            "photo_link": ["photo_link", "link", "drive_link", "url"]
+        }
+        
+        final_cols = {}
+        for target, aliases in column_map.items():
+            for alias in aliases:
+                if alias in df.columns:
+                    final_cols[target] = alias
+                    break
+        
+        if "student_id" not in final_cols or "name" not in final_cols:
+            raise HTTPException(status_code=400, detail=f"File must contain student_id and name columns. Found: {list(df.columns)}")
 
         created = 0
         encoded = 0
         
         for _, row in df.iterrows():
-            sid = str(row["student_id"]).strip()
-            name = str(row["name"]).strip()
-            email = str(row["email"]).strip()
-            url = str(row["photo_link"]).strip()
+            sid = str(row[final_cols["student_id"]]).strip().split(".")[0] # handle float IDs
+            if not re.match(r'^\d{9}$', sid):
+                continue # Skip invalid IDs
+                
+            name = str(row[final_cols["name"]]).strip()
+            email = str(row.get(final_cols.get("email"), "")).strip() or None
+            url = str(row.get(final_cols.get("photo_link"), "")).strip()
             
             # 1. UPSERT Student record
             student = db.query(Student).filter(Student.student_id == sid).first()
@@ -82,20 +116,24 @@ async def upload_roster(
             file_id = extract_drive_id(url)
             if file_id:
                 try:
-                    resp = requests.get(f"https://drive.google.com/uc?export=download&id={file_id}", timeout=15)
+                    resp = requests.get(f"https://drive.google.com/uc?export=download&id={file_id}", timeout=20)
                     if resp.status_code == 200:
                         encoding = get_face_encoding(resp.content)
                         if encoding:
                             student.face_encoding = encoding
                             encoded += 1
-                except:
-                    pass # Skip failing links
+                            print(f"[ROSTER] Encoded {sid} ({name})")
+                except Exception as e:
+                    print(f"[ROSTER] Failed to download/encode {sid}: {e}")
         
         db.commit()
         return {"students_created": created, "encodings_saved": encoded}
         
+    except HTTPException as he:
+        raise he
     except Exception as e:
         db.rollback()
+        print(f"[ROSTER] Critical error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/student", response_model=StudentUploadResponse, status_code=201)
@@ -153,3 +191,4 @@ def list_students(db: Session = Depends(get_db)):
             "has_encoding": s.face_encoding is not None
         })
     return results
+

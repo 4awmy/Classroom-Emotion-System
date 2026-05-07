@@ -46,7 +46,7 @@ async def get_intervention_plan(student_id: str, db: Session = Depends(get_db)):
     ]
     history_text = "\n".join(history_lines)
 
-    plan = generate_intervention_plan(history_text)
+    plan = await generate_intervention_plan(history_text)
 
     os.makedirs("data/plans", exist_ok=True)
     with open(plan_path, "w", encoding="utf-8") as f:

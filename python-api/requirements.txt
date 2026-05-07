@@ -28,3 +28,5 @@ hsemotion-onnx
 face-recognition
 google-generativeai
 pdfplumber
+mediapipe
+opencv-python-headless

@@ -23,9 +23,12 @@ def get_live_emotions(
         EmotionLog.lecture_id == lecture_id
     ).order_by(EmotionLog.timestamp.desc()).limit(limit).all()
     
-    # confidence_rate is added by the schema or manually if needed
-    # Since our schema doesn't have it yet, I should probably add it there
+    # Populate confidence_rate alias
+    for log in logs:
+        log.confidence_rate = log.confidence
+        
     return logs
+
 
 @router.get("/confusion-rate")
 def get_confusion_rate(

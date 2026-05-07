@@ -7,13 +7,23 @@ from sqlalchemy.orm import sessionmaker, DeclarativeBase
 load_dotenv()
 
 # Data directory setup
-DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "data")
 if not os.path.exists(DATA_DIR):
     os.makedirs(DATA_DIR)
 
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{os.path.join(DATA_DIR, 'classroom_emotions.db')}")
+
+# Add check for Windows-style absolute paths in SQLite URLs
+if DATABASE_URL.startswith("sqlite:///"):
+    # Ensure it's using forward slashes and absolute path
+    path = DATABASE_URL.split("///")[1]
+    abs_path = os.path.abspath(path).replace("\\", "/")
+    DATABASE_URL = f"sqlite:///{abs_path}"
+
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 
 # Only apply check_same_thread if using SQLite
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}

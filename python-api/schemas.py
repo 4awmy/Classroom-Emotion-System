@@ -54,7 +54,9 @@ class EmotionLogBase(BaseModel):
     raw_confidence: Optional[float] = None  # Model softmax score — actual detection certainty (0.0–1.0)
     emotion: str                            # Mapped educational state: Focused | Engaged | Confused | Anxious | Frustrated | Disengaged
     confidence: float                       # Fixed engagement weight per state (CLAUDE.md §8.2)
+    confidence_rate: Optional[float] = None # Alias for confidence (R/Shiny compatibility)
     engagement_score: float                 # == confidence
+
 
 class EmotionLogCreate(EmotionLogBase):
     timestamp: Optional[datetime] = None

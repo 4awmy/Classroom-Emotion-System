@@ -4,6 +4,7 @@ from typing import List, Optional
 from datetime import datetime
 import logging
 import threading
+import time
 from sqlalchemy.orm import Session
 from services.websocket import manager
 from database import get_db, SessionLocal
@@ -17,7 +18,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 # Global tracking for active lecture tasks
-# lecture_id -> {"stop_event": threading.Event}
+# lecture_id -> {"stop_event": threading.Event, "thread": threading.Thread}
 active_lecture_tasks = {}
 
 class SessionStartRequest(BaseModel):
@@ -26,6 +27,8 @@ class SessionStartRequest(BaseModel):
     title: Optional[str] = None
     subject: Optional[str] = None
     slide_url: str
+    context: Optional[str] = "lecture"  # lecture | exam
+    exam_id: Optional[str] = None
 
 class SessionEndRequest(BaseModel):
     lecture_id: str
@@ -60,17 +63,46 @@ async def start_session(request: SessionStartRequest, db: Session = Depends(get_
     if request.lecture_id not in active_lecture_tasks:
         stop_event = threading.Event()
 
-        # Vision Pipeline (Thread)
+        # Vision Pipeline (Thread) with robust retry wrapper
         camera_url = os.getenv("CLASSROOM_CAMERA_URL", "0") # Default to webcam
+        
+        def start_vision_with_retry():
+            retry_count = 0
+            max_retries = 10
+            backoff = 2
+            
+            while retry_count < max_retries and not stop_event.is_set():
+                try:
+                    logger.info(f"[SESSION] Starting vision pipeline for {request.lecture_id} (Attempt {retry_count + 1})")
+                    run_pipeline(request.lecture_id, camera_url, stop_event, request.context, request.exam_id)
+                    
+                    # If run_pipeline returns, check if it was intentional
+                    if stop_event.is_set():
+                        logger.info(f"[SESSION] Vision pipeline for {request.lecture_id} stopped intentionally.")
+                        break
+                    
+                    logger.warning(f"[SESSION] Vision pipeline for {request.lecture_id} exited unexpectedly. Retrying...")
+                except Exception as e:
+                    logger.error(f"[SESSION] Vision pipeline crash for {request.lecture_id}: {e}")
+                
+                retry_count += 1
+                wait_time = min(backoff ** retry_count, 30)
+                logger.info(f"[SESSION] Waiting {wait_time}s before next retry...")
+                if stop_event.wait(timeout=wait_time):
+                    break
+            
+            if retry_count >= max_retries:
+                logger.error(f"[SESSION] Vision pipeline for {request.lecture_id} failed after {max_retries} attempts.")
+
         vision_thread = threading.Thread(
-            target=run_pipeline,
-            args=(request.lecture_id, camera_url, stop_event),
+            target=start_vision_with_retry,
             daemon=True
         )
         vision_thread.start()
 
         active_lecture_tasks[request.lecture_id] = {
             "stop_event": stop_event,
+            "thread": vision_thread
         }
 
     # 3. Broadcast session:start to all clients
@@ -79,9 +111,12 @@ async def start_session(request: SessionStartRequest, db: Session = Depends(get_
         "lecture_id": request.lecture_id,
         "slide_url": request.slide_url,
         "lecturer_id": request.lecturer_id,
+        "context": request.context,
+        "exam_id": request.exam_id,
         "timestamp": datetime.utcnow().isoformat() + "Z"
     })
-    return {"status": "started", "lecture_id": request.lecture_id}
+    return {"status": "started", "lecture_id": request.lecture_id, "context": request.context}
+
 
 @router.post("/end")
 async def end_session(request: SessionEndRequest, db: Session = Depends(get_db)):
