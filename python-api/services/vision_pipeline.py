@@ -12,7 +12,7 @@ from database import SessionLocal
 # HSEmotion might need specific initialization
 # For MVP, we'll assume a wrapper or direct usage if installed
 try:
-    from hsemotion.face_emotion_extractor import HSEmotionRecognizer
+    from hsemotion_onnx.facial_emotions import HSEmotionRecognizer
 except ImportError:
     HSEmotionRecognizer = None
 
@@ -81,7 +81,7 @@ def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event):
     yolo_model = YOLO('yolov8n.pt')
     if HSEmotionRecognizer:
         try:
-            fer_model = HSEmotionRecognizer(model_name='enet_b0_8_best_afew', device='cpu')
+            fer_model = HSEmotionRecognizer(model_name='enet_b0_8_best_afew')
         except Exception as e:
             fer_model = None
             print(f"[VISION] Warning: HSEmotion model failed to load: {e}")

@@ -10,11 +10,24 @@ from models import Transcript
 import os
 
 # Initialize OpenAI
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+api_key = os.getenv("OPENAI_API_KEY")
+if api_key:
+    client = OpenAI(api_key=api_key)
+else:
+    print("[WHISPER] Warning: OPENAI_API_KEY not found. Running in mock mode.")
+    class MockOpenAI:
+        class Audio:
+            class Transcriptions:
+                def create(self, **kwargs):
+                    class MockResponse:
+                        text = "This is a mock transcription because no API key was found."
+                    return MockResponse()
+            transcriptions = Transcriptions()
+        audio = Audio()
+    client = MockOpenAI()
 
-# Shared connection manager (from session router)
-# In a real app, this would be a proper service/class
-from routers.session import manager
+# Shared connection manager
+from services.websocket import manager
 
 async def stream_captions(lecture_id: str, stop_event: asyncio.Event):
     """
