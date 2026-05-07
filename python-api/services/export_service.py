@@ -13,7 +13,6 @@ def export_all():
             "attendance":    "SELECT student_id, lecture_id, timestamp, status, method FROM attendance_log",
             "materials":     "SELECT material_id, lecture_id, lecturer_id, title, drive_link, uploaded_at FROM materials",
             "incidents":     "SELECT student_id, exam_id, timestamp, flag_type, severity, evidence_path FROM incidents",
-            "transcripts":   "SELECT lecture_id, timestamp, chunk_text, language FROM transcripts",
             "notifications": "SELECT student_id, lecturer_id, lecture_id, reason, created_at, read FROM notifications",
         }
         

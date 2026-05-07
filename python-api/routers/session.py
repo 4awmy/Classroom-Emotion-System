@@ -4,7 +4,6 @@ from typing import List, Optional
 from datetime import datetime
 import logging
 import threading
-import asyncio
 from sqlalchemy.orm import Session
 from services.websocket import manager
 from database import get_db, SessionLocal
@@ -12,14 +11,13 @@ import models
 from models import FocusStrike
 from schemas import LectureResponse
 from services.vision_pipeline import run_pipeline
-from services.whisper_service import stream_captions
 import os
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 # Global tracking for active lecture tasks
-# lecture_id -> {"stop_event": threading.Event, "async_stop_event": asyncio.Event}
+# lecture_id -> {"stop_event": threading.Event}
 active_lecture_tasks = {}
 
 class SessionStartRequest(BaseModel):
@@ -61,24 +59,18 @@ async def start_session(request: SessionStartRequest, db: Session = Depends(get_
     # 2. Spawn background tasks
     if request.lecture_id not in active_lecture_tasks:
         stop_event = threading.Event()
-        async_stop_event = asyncio.Event()
-        
+
         # Vision Pipeline (Thread)
         camera_url = os.getenv("CLASSROOM_CAMERA_URL", "0") # Default to webcam
         vision_thread = threading.Thread(
-            target=run_pipeline, 
+            target=run_pipeline,
             args=(request.lecture_id, camera_url, stop_event),
             daemon=True
         )
         vision_thread.start()
-        
-        # Whisper Pipeline (Async Task)
-        whisper_task = asyncio.create_task(stream_captions(request.lecture_id, async_stop_event))
-        
+
         active_lecture_tasks[request.lecture_id] = {
             "stop_event": stop_event,
-            "async_stop_event": async_stop_event,
-            "whisper_task": whisper_task
         }
 
     # 3. Broadcast session:start to all clients
@@ -103,9 +95,6 @@ async def end_session(request: SessionEndRequest, db: Session = Depends(get_db))
     if request.lecture_id in active_lecture_tasks:
         tasks = active_lecture_tasks.pop(request.lecture_id)
         tasks["stop_event"].set()
-        tasks["async_stop_event"].set()
-        # Optionally wait for whisper task or cancel
-        # tasks["whisper_task"].cancel()
 
     # 3. Broadcast session:end to all clients
     await manager.broadcast({

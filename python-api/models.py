@@ -32,7 +32,6 @@ class Lecture(Base):
     emotions = relationship("EmotionLog", back_populates="lecture")
     attendance = relationship("AttendanceLog", back_populates="lecture")
     materials = relationship("Material", back_populates="lecture")
-    transcripts = relationship("Transcript", back_populates="lecture")
     notifications = relationship("Notification", back_populates="lecture")
     focus_strikes = relationship("FocusStrike", back_populates="lecture")
 
@@ -90,17 +89,6 @@ class Incident(Base):
 
     # Relationships
     student = relationship("Student", back_populates="incidents")
-
-class Transcript(Base):
-    __tablename__ = "transcripts"
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    lecture_id = Column(String, ForeignKey("lectures.lecture_id"), nullable=False)
-    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
-    chunk_text = Column(String, nullable=False)
-    language = Column(String)  # ar | en | mixed
-
-    # Relationships
-    lecture = relationship("Lecture", back_populates="transcripts")
 
 class Notification(Base):
     __tablename__ = "notifications"

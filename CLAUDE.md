@@ -14,14 +14,14 @@
 6. [Database Architecture](#6-database-architecture)
 7. [Vision Pipeline](#7-vision-pipeline)
 8. [Engagement Score](#8-engagement-score)
-9. [Audio Pipeline — Whisper](#9-audio-pipeline--whisper)
+9. [Audio Pipeline — RETIRED](#9-audio-pipeline--retired)
 10. [Roster Ingestion Pipeline](#10-roster-ingestion-pipeline)
 11. [State Case Scenarios](#11-state-case-scenarios)
 12. [Module Specifications](#12-module-specifications)
 13. [FastAPI Backend](#13-fastapi-backend)
 14. [Step-by-Step Development Guide](#14-step-by-step-development-guide)
 15. [Deployment Guide](#15-deployment-guide)
-16. [Granular Work Breakdown Structure](#16-granular-work-breakdown-structure)
+16. [Work Breakdown Structure](#16-work-breakdown-structure)
 17. [Key Constraints](#17-key-constraints)
 
 ---
@@ -159,14 +159,6 @@ Every team member must complete **all** of the following before Week 1 ends. S3 
 4. Copy the key — this is your `GEMINI_API_KEY`
 5. Free tier: 15 requests/minute, 1M tokens/day — sufficient for this project
 6. Model to use: `gemini-1.5-flash` (do not use pro — not free)
-
-#### OpenAI — Whisper API Key (S1 + S3)
-1. Go to https://platform.openai.com
-2. Create account → Add billing (minimum $5 credit)
-3. Go to API Keys → **Create new secret key**
-4. Copy the key — this is your `OPENAI_API_KEY`
-5. Whisper API cost: ~$0.006/minute of audio — a 1-hour lecture costs ~$0.36
-6. **Do not use GPT models** — only Whisper (`whisper-1`) is used in this project
 
 #### Google Cloud Platform — Drive API (S3)
 1. Go to https://console.cloud.google.com
@@ -651,28 +643,37 @@ Camera connects via **RTSP stream**: `rtsp://192.168.x.x/stream` — set in `CLA
 Camera frame (every 5s)
         │
         ▼
-┌───────────────┐
-│  YOLOv8       │  Detect all persons in crowd frame
-│  Person detect│  Output: list of bounding boxes [x1,y1,x2,y2]
-└───────┬───────┘
-        │  For each bounding box:
-        ▼
-┌─────────────────┐
-│ face_recognition│  Crop face ROI → 128-dim encoding
-│ ID match        │  Compare against SQLite student encodings
-└───────┬─────────┘  Output: student_id (or "unknown" → skip)
-        │  For each identified student:
-        ▼
-┌───────────────┐
-│  HSEmotion    │  Analyze emotion on cropped face ROI
-│  Emotion      │  Output: raw_label + softmax scores
-└───────┬───────┘
-        │
-        ▼
+┌────────────────────────┐
+│  Stage 1 — yolov8n.pt  │  Detect all persons in crowd frame
+│  Person Detection      │  Output: list of [x1,y1,x2,y2] boxes
+└──────────┬─────────────┘
+           │  For each person box → person_roi
+           ▼
+┌──────────────────────────────────────────────────────────┐
+│  Task A — Identity / Attendance                          │
+│  face_recognition.face_encodings(person_roi)             │
+│  → 128-dim encoding → compare SQLite encodings          │
+│  → student_id (distance ≤ 0.5) or skip                  │
+│  → INSERT attendance_log on first detection              │
+│  → save snapshot (person_roi, for lecturer review)       │
+└──────────┬───────────────────────────────────────────────┘
+           │  For each identified student:
+           ▼
+┌──────────────────────────────────────────────────────────┐
+│  Task B — Emotion with tight face crop                   │
+│  Stage 2 — yolov8n-face.pt run on person_roi            │
+│  → face_roi = tight face bounding box                    │
+│  → HSEmotion (enet_b0_8_best_afew) on face_roi          │
+│  → raw_label + softmax scores (AffectNet-trained input)  │
+└──────────┬───────────────────────────────────────────────┘
+           │
+           ▼
   map_emotion() → educational state
-  get_confidence() → fixed score (switch-case)
-  INSERT into emotion_log + attendance_log (first detection)
+  get_confidence() → fixed score (§8.2)
+  INSERT emotion_log (raw_emotion, raw_confidence, emotion, engagement_score)
 ```
+
+**Why Approach B (two-stage):** HSEmotion was trained on AffectNet face-only images. Passing a full-body person ROI is an out-of-domain input that degrades accuracy. `yolov8n-face.pt` provides a tight face crop before classification. Identity matching still uses the full person ROI (face_recognition handles it correctly).
 
 **Why 5 seconds:** 3 sequential models on a crowd frame is compute-heavy. 1 frame/5s = 12 samples/minute per student — sufficient resolution without overloading the server.
 
@@ -693,126 +694,16 @@ Camera frame (every 5s)
 
 File: `python-api/services/vision_pipeline.py`
 
-```python
-import cv2, time, os, numpy as np, face_recognition, threading
-from hsemotion_onnx.facial_emotions import HSEmotionRecognizer
-from ultralytics import YOLO
-from datetime import datetime
-from database import SessionLocal
-from models import EmotionLog, AttendanceLog
+See `python-api/services/vision_pipeline.py` for the authoritative implementation.
 
-FRAME_INTERVAL = 5  # seconds — do not change
-
-def map_emotion(raw_label: str, raw_score: float) -> str:
-    HIGH_INTENSITY = 0.65
-    match raw_label.lower():
-        case "neutral":           return "Focused"
-        case "happy" | "surprise": return "Engaged"
-        case "fear":              return "Anxious"
-        case "anger" | "disgust": return "Frustrated" if raw_score >= HIGH_INTENSITY else "Confused"
-        case "sad":               return "Disengaged"
-        case _:                   return "Focused"
-
-EMOTION_CONFIDENCE = {
-    "Focused": 1.00, "Engaged": 0.85, "Confused": 0.55,
-    "Anxious": 0.35, "Frustrated": 0.25, "Disengaged": 0.00,
-}
-
-def get_confidence(emotion: str) -> float:
-    return EMOTION_CONFIDENCE.get(emotion, 0.50)
-
-yolo_model    = YOLO("yolov8n.pt")
-hs_recognizer = HSEmotionRecognizer(model_name="enet_b0_8_best_afew")
-
-def load_student_encodings(db) -> dict:
-    rows = db.execute(
-        "SELECT student_id, face_encoding FROM students WHERE face_encoding IS NOT NULL"
-    ).fetchall()
-    return {r.student_id: np.frombuffer(r.face_encoding, dtype=np.float64) for r in rows}
-
-def identify_face(face_enc, known: dict, tolerance=0.5) -> str:
-    if not known:
-        return "unknown"
-    ids, encs = list(known.keys()), list(known.values())
-    distances = face_recognition.face_distance(encs, face_enc)
-    best = int(np.argmin(distances))
-    return ids[best] if distances[best] <= tolerance else "unknown"
-
-def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event = None):
-    """Run the live vision pipeline. Pass a threading.Event as stop_event;
-    call stop_event.set() from POST /session/end to gracefully stop the loop."""
-    RECONNECT_RETRIES = 5
-    RECONNECT_BACKOFF = 10  # seconds
-
-    def open_camera(url: str):
-        for attempt in range(RECONNECT_RETRIES):
-            cap = cv2.VideoCapture(url)
-            if cap.isOpened():
-                return cap
-            time.sleep(RECONNECT_BACKOFF)
-        raise RuntimeError(f"Cannot connect to camera after {RECONNECT_RETRIES} attempts")
-
-    cap = open_camera(camera_url)
-    db  = SessionLocal()
-    known = load_student_encodings(db)
-    seen_today = set()  # track attendance per session
-
-    while not (stop_event and stop_event.is_set()):
-        ret, frame = cap.read()
-        if not ret:
-            # RTSP dropped — attempt reconnection
-            cap.release()
-            try:
-                cap = open_camera(camera_url)
-            except RuntimeError:
-                break
-            continue
-
-        results = yolo_model(frame, classes=[0], verbose=False)
-        boxes   = results[0].boxes.xyxy.cpu().numpy().astype(int) if results[0].boxes else []
-
-        for box in boxes:
-            x1, y1, x2, y2 = box[:4]
-            roi = frame[y1:y2, x1:x2]
-            if roi.size == 0:
-                continue
-            rgb_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2RGB)
-
-            encs = face_recognition.face_encodings(rgb_roi)
-            if not encs:
-                continue
-            student_id = identify_face(encs[0], known)
-            if student_id == "unknown":
-                continue
-
-            try:
-                raw_label, scores = hs_recognizer.predict_emotions(roi, logits=False)
-                raw_score  = float(max(scores))
-                emotion    = map_emotion(raw_label, raw_score)
-                confidence = get_confidence(emotion)
-            except Exception:
-                continue
-
-            db.add(EmotionLog(
-                student_id=student_id, lecture_id=lecture_id,
-                timestamp=datetime.utcnow(), emotion=emotion,
-                confidence=confidence, engagement_score=confidence
-            ))
-
-            if student_id not in seen_today:
-                seen_today.add(student_id)
-                db.add(AttendanceLog(
-                    student_id=student_id, lecture_id=lecture_id,
-                    timestamp=datetime.utcnow(), status="Present", method="AI"
-                ))
-
-            db.commit()
-
-        time.sleep(FRAME_INTERVAL)
-
-    cap.release()
-    db.close()
-```
+Key design points:
+- `yolo_person = YOLO("yolov8n.pt")` — person bounding boxes from full crowd frame
+- `yolo_face = YOLO("yolov8n-face.pt")` — tight face crop from each person ROI
+- `_ensure_yolo_face()` auto-downloads `yolov8n-face.pt` at startup if absent
+- **Task A** (identity): `face_recognition.face_encodings(person_roi)` → SQLite match → `student_id`
+- **Task B** (emotion): `yolo_face(person_roi)` → `face_roi` → `HSEmotionRecognizer.predict_emotions(face_roi)`
+- Attendance logged on first detection per session; snapshot saved as person ROI
+- Emotion and engagement_score always written per 5-second cycle per identified student
 
 ---
 
@@ -905,88 +796,11 @@ compute_engagement <- function(emotions_df) {
 
 ---
 
-## 9. Audio Pipeline — Whisper
+## 9. Audio Pipeline — RETIRED
 
-### 9.1 Why Whisper
-
-The lecturer code-switches between **Egyptian Arabic (ar-EG)** and **English**. Google Cloud Speech-to-Text requires a single declared language and fails on code-switching. OpenAI Whisper auto-detects language per chunk and handles mixed-language audio natively.
-
-### 9.2 Implementation
-
-File: `python-api/services/whisper_service.py`
-
-```python
-import openai, asyncio, io, wave, numpy as np
-import sounddevice as sd
-from database import SessionLocal
-from models import Transcript
-from datetime import datetime
-
-SAMPLE_RATE   = 16000
-CHUNK_SECONDS = 5
-openai_client = openai.OpenAI()  # uses OPENAI_API_KEY
-
-active_connections = []  # shared with session.py WebSocket manager
-
-def capture_chunk() -> np.ndarray:
-    audio = sd.rec(int(CHUNK_SECONDS * SAMPLE_RATE),
-                   samplerate=SAMPLE_RATE, channels=1, dtype="int16")
-    sd.wait()
-    return audio
-
-def audio_to_wav_bytes(audio: np.ndarray) -> io.BytesIO:
-    buf = io.BytesIO()
-    with wave.open(buf, "wb") as wf:
-        wf.setnchannels(1)
-        wf.setsampwidth(2)
-        wf.setframerate(SAMPLE_RATE)
-        wf.writeframes(audio.tobytes())
-    buf.seek(0)
-    buf.name = "audio.wav"
-    return buf
-
-async def stream_captions(lecture_id: str):
-    """Run in background — captures mic, transcribes, broadcasts, saves to DB."""
-    loop = asyncio.get_event_loop()
-    db   = SessionLocal()
-
-    while True:
-        audio_chunk = await loop.run_in_executor(None, capture_chunk)
-        wav_buf     = audio_to_wav_bytes(audio_chunk)
-
-        try:
-            response = openai_client.audio.transcriptions.create(
-                model="whisper-1",
-                file=wav_buf,
-                # No language set — Whisper auto-detects ar/en code-switching
-            )
-            text = response.text.strip()
-            if not text:
-                continue
-
-            # Save to transcripts table
-            db.add(Transcript(
-                lecture_id=lecture_id,
-                timestamp=datetime.utcnow(),
-                chunk_text=text,
-                language="mixed"
-            ))
-            db.commit()
-
-            # Broadcast to all connected WebSocket clients
-            payload = {
-                "type": "caption",
-                "text": text,
-                "lecture_id": lecture_id,
-                "timestamp": datetime.utcnow().isoformat(),
-                "language": "mixed"
-            }
-            for ws in active_connections:
-                await ws.send_json(payload)
-
-        except Exception as e:
-            print(f"Whisper error: {e}")
-```
+> **Audio transcription and live captions have been removed from scope.**
+> `whisper_service.py`, the `transcripts` table, `transcripts.csv` export, and `CaptionBar.tsx` are all deleted.
+> The `GET /notes/{student_id}/{lecture_id}` endpoint returns a placeholder until an alternative note source is defined.
 
 ---
 
@@ -1139,29 +953,23 @@ Step 3  Vision pipeline (every 5 seconds):
           e. get_confidence() → fixed score
           f. INSERT emotion_log
           g. INSERT attendance_log (first detection only, method=AI)
-Step 4  Whisper loop (every 5 seconds):
-          a. Capture 5s audio from classroom mic
-          b. Whisper API → transcript text (handles ar-EG/en-US code-switching)
-          c. INSERT into transcripts table
-          d. Broadcast WS: {type: "caption", text: "...", lecture_id: ..., timestamp: ..., language: "mixed"}
-Step 5  React Native student app:
+Step 4  React Native student app:
           a. AppState listener: app goes background → WS emit strike
              {type: "focus_strike", student_id, lecture_id, strike_type: "app_background"}
              (exam context: add context: "exam" → routes to incidents table instead)
           b. FastAPI → INSERT focus_strikes
-          c. Caption received → CaptionBar displays for 4s
-Step 6  Shiny live dashboard (reactiveTimer every 10s):
+Step 5  Shiny live dashboard (reactiveTimer every 10s):
           a. GET /emotion/live?lecture_id= → last 60 emotion_log rows
           b. D1: engagement gauge updated
           c. D2–D7: all panels refreshed
-Step 7  Confusion spike check (Shiny observer, every 10s):
+Step 6  Confusion spike check (Shiny observer, every 10s):
           a. confusion_rate = mean(emotion == "Confused") over last 120 rows
           b. If ≥ 0.40 → triggers State 3
-Step 8  Lecturer clicks "End Lecture"
+Step 7  Lecturer clicks "End Lecture"
           POST /session/end → updates lectures.end_time
           Broadcasts {type: "session:end"}
           Background threads stopped gracefully via threading.Event stop flag
-Step 9  Nightly 02:00: APScheduler → export_all() → CSV files written
+Step 8  Nightly 02:00: APScheduler → export_all() → CSV files written
           R/Shiny reactivePoll detects mtime change → analytics dashboards refresh
 ```
 
@@ -1482,7 +1290,6 @@ Return as a numbered markdown list.
 ```bash
 # python-api/.env  — NEVER commit this file. Only commit .env.example.
 GEMINI_API_KEY=                              # from Google AI Studio
-OPENAI_API_KEY=                              # from OpenAI platform (Whisper)
 GOOGLE_APPLICATION_CREDENTIALS=./gcloud_key.json  # Google Drive service account
 JWT_SECRET=                                  # any long random string
 FASTAPI_BASE_URL=https://your-app.railway.app
@@ -1834,7 +1641,6 @@ railway init
 
 # Set environment variables (do this BEFORE first deploy)
 railway variables set GEMINI_API_KEY=your_key
-railway variables set OPENAI_API_KEY=your_key
 railway variables set JWT_SECRET=your_long_random_secret
 railway variables set DATABASE_URL=sqlite:///./data/classroom_emotions.db
 railway variables set CLASSROOM_CAMERA_URL=rtsp://192.168.x.x/stream
@@ -2034,209 +1840,17 @@ jobs:
 
 ---
 
-## 16. Granular Work Breakdown Structure — 16 Weeks, 4 Phases
+## 16. Work Breakdown Structure
+
+> **Single source of truth for tasks: [`TASKS.md`](./TASKS.md)**
+> Do not duplicate task status here. All task tracking, assignees, and status columns live in `TASKS.md` only.
 
 ### Critical Path Rules
 
 1. **Week 1: Data Contract.** No feature code until all 4 approve the SQLite schema PR.
-2. **End of Week 2: S3 mock endpoints live on Railway.** S2 and S4 start building against these — they must never wait on S1's AI models.
-3. **S1's real models are not required until Phase 2.** Phase 1 uses mocks and synthetic data only.
+2. **End of Week 2: S3 mock endpoints live on DigitalOcean.** S2 and S4 start building against these — they must never wait on S1's AI models.
+3. **S1's real models are not required until Phase 3.** Phase 2 uses mocks and synthetic data only.
 4. **All work via PRs against `dev`.** Never commit directly to `main`. S3 (Backend Lead) is the PR gatekeeper.
-
----
-
-### Phase 1 — Foundation (Weeks 1–3)
-**Milestone: All shells deployed. All mock routes live. S2 and S4 unblocked.**
-
-#### S3 — Backend Lead (Week 1 is highest priority)
-
-| ID | Task | Deliverable | Done when |
-|---|---|---|---|
-| P1-S3-01 | Data Contract | `data-schema/README.md` with all 9 SQLite schemas + 6 CSV export schemas + JWT payload | All 4 members approve PR |
-| P1-S3-02 | SQLite + ORM | `database.py` + `models.py` with all ORM models | `create_all()` succeeds, all 9 tables created |
-| P1-S3-03 | FastAPI skeleton | `main.py` with 7 routers, CORS, `/health` | `curl /health` returns 200 on Railway |
-| P1-S3-04 | All mock endpoints | Every route returns hardcoded valid JSON | All routes in Postman collection pass |
-| P1-S3-05 | JWT auth stub | `POST /auth/login` returns signed JWT | Token verified by S2 (httr2) and S4 (fetch) |
-| P1-S3-06 | WebSocket skeleton | `/session/ws` + `POST /session/start` broadcasts mock event | S4 confirms receipt in console |
-| P1-S3-07 | `.env.example` files | All env var keys documented (empty values) | Both `.env.example` files committed |
-
-#### S1 — AI Vision Lead (Week 1–3)
-
-| ID | Task | Deliverable | Done when |
-|---|---|---|---|
-| P1-S1-01 | Python environment | All packages in `requirements.txt` installed | `python -c "import ultralytics, face_recognition, hsemotion_onnx, openai"` succeeds |
-| P1-S1-02 | Camera connectivity | Script opens RTSP stream, saves frame | `test_frame.jpg` created without error |
-| P1-S1-03 | Vision pipeline stub | `vision_pipeline.py` with correct structure, no models | File imports cleanly, placeholder functions defined |
-| P1-S1-04 | Synthetic data seeder | `notebooks/generate_synthetic_data.py` inserts 1000+ rows using 9-digit student IDs (e.g. 231006367) | S2 can run `compute_engagement()` against it |
-| P1-S1-05 | YOLO test | Script runs YOLO on sample classroom photo | Bounding boxes drawn on output image |
-
-#### S2 — R/Shiny UI Lead (Week 1–3, uses mock endpoints from S3)
-
-| ID | Task | Deliverable | Done when |
-|---|---|---|---|
-| P1-S2-01 | Audit AAST templates | `shiny-app/www/slot-map.md` — which HTML slots exist for injection | Slot map reviewed and committed |
-| P1-S2-02 | Shiny shell | `app.R` + `global.R` wired, `htmlTemplate()` injection working | App loads in browser showing AAST chrome |
-| P1-S2-03 | Admin UI shell | `admin_ui.R` — 8 empty tab panels, navigation works | All 8 tabs clickable |
-| P1-S2-04 | Lecturer UI shell | `lecturer_ui.R` — 5 submodule tabs: Roster, Materials, Attendance, Live, Reports | All 5 tabs render |
-| P1-S2-05 | httr2 connection | R script GETs `/health` from Railway mock | Prints `{"status":"ok"}` |
-| P1-S2-06 | Synthetic data test | `compute_engagement()` runs against seeded CSV | Returns valid data frame, no errors |
-| P1-S2-07 | Analytics module stub | S2 writes `compute_engagement` skeleton and validates it runs against synthetic CSV | Returns valid data frame, no errors |
-
-#### S4 — Mobile Lead (Week 1–3, uses mock WS from S3)
-
-| ID | Task | Deliverable | Done when |
-|---|---|---|---|
-| P1-S4-01 | Expo scaffold | `react-native-app/` with Expo Router, NativeWind, Zustand, socket.io-client | `npx expo start` launches without errors |
-| P1-S4-02 | Auth screen | `login.tsx` calls `POST /auth/login`, stores JWT | Login works against mock endpoint |
-| P1-S4-03 | Home screen stub | `home.tsx` renders after login | Screen shows placeholder lecture cards |
-| P1-S4-04 | WebSocket client | `api.ts` connects to mock WS, logs events | `{type: "session:start"}` payload appears in console |
-| P1-S4-05 | AppState stub | `focus.tsx` logs AppState changes | Background/foreground transitions logged |
-
----
-
-### Phase 2 — Core Features (Weeks 4–8)
-**Milestone: Real data flowing. All 8 admin panels functional. Roster ingestion working.**
-
-#### S1 (Weeks 4–6)
-
-| ID | Task | Deliverable | Done when |
-|---|---|---|---|
-| P2-S1-01 | YOLO person detection | Detects persons in live classroom frame | Bounding boxes shown on test image |
-| P2-S1-02 | face_recognition ID match | Crop ROI → encoding → SQLite match | Correct student_id returned |
-| P2-S1-03 | HSEmotion integration | Full 3-step pipeline, fixed confidence lookup | Educational state + confidence written to SQLite |
-| P2-S1-04 | 5-second loop | `run_pipeline()` loops continuously | `emotion_log` grows during 1-min test run |
-| P2-S1-05 | Roster encoding | `roster.py` processes XLSX, downloads Drive photos, writes BLOBs | 10 test rows → 10 encodings in DB (student_id = 9-digit format) |
-| P2-S1-06 | Auto attendance | First detection per lecture → INSERT attendance_log | `attendance_log` populated after test |
-| P2-S1-07 | Whisper integration | Captures mic, transcribes via Whisper API | Arabic + English phrases transcribed correctly |
-| P2-S1-08 | RTSP reconnection | `run_pipeline()` retries camera connection 5× with 10s backoff; stop_event halts on session end | Pipeline survives 30s camera dropout; stops cleanly on POST /session/end |
-
-#### S2 (Weeks 4–8)
-
-| ID | Task | Deliverable | Done when |
-|---|---|---|---|
-| P2-S2-01 | `engagement_score.R` | `compute_engagement()` returns by_lecture + by_student | Unit test passes against synthetic data |
-| P2-S2-02 | `clustering.R` | `cluster_lecturers()` + `cluster_student_subject()` with K-means (k=3) | 3 clusters with correct labels |
-| P2-S2-03 | Admin Panel 1 | Attendance DT + filters + xlsx export | Filter and download work |
-| P2-S2-04 | Admin Panel 2 | Engagement trend plotly line | Chart renders |
-| P2-S2-05 | Admin Panel 3 | Dept heatmap ggplot2 | Heatmap renders |
-| P2-S2-06 | Admin Panel 4 | At-risk cohort DT + Flag button | Button calls API |
-| P2-S2-07 | Admin Panel 5 | LES table + conditional formatting | Top 10% green, bottom 10% red |
-| P2-S2-08 | Admin Panel 6 | Emotion distribution stacked bar (6 states) | Normalized bars render |
-| P2-S2-09 | Admin Panel 7 | Lecturer cluster scatter | Cluster map renders |
-| P2-S2-10 | Admin Panel 8 | Time-of-day heatmap | Heatmap renders |
-| P2-S2-11 | Lecturer: Roster | File inputs + httr2 POST /roster/upload | Upload succeeds, count shown |
-| P2-S2-12 | Lecturer: Materials | fileInput + httr2 POST /upload/material | Upload succeeds, list refreshes |
-| P2-S2-13 | Lecturer: Attendance | Manual DT + AI mode + QR | All 3 modes work |
-
-#### S3 (Weeks 4–8)
-
-| ID | Task | Deliverable | Done when |
-|---|---|---|---|
-| P2-S3-01 | Real emotion endpoints | `POST /emotion/frame` writes; `GET /emotion/live` reads | Vision pipeline and Shiny both work |
-| P2-S3-02 | Attendance endpoints | `POST /attendance/start`, `/manual`, `GET /qr/{id}` | All 3 functional |
-| P2-S3-03 | Roster endpoint | `POST /roster/upload` parses XLSX, downloads Drive photos | Encodings saved to DB (9-digit IDs) |
-| P2-S3-04 | Materials + Drive | `POST /upload/material` → Drive → materials table | Drive link in DB |
-| P2-S3-05 | Session WS (real) | `POST /session/start` → DB row + broadcast + threads | S4 and Shiny receive events |
-| P2-S3-06 | Nightly export | APScheduler at 02:00 → CSVs written atomically (os.replace pattern) | Manual `export_all()` produces correct CSVs; no partial-read race condition |
-| P2-S3-07 | Notify endpoint | `POST /notify/lecturer` → notifications table | Returns 200, row in DB |
-| P2-S3-08 | Confusion rate endpoint | `GET /emotion/confusion-rate?lecture_id=&window=120` → float 0.0–1.0 | Shiny live dashboard confusion observer uses this (moved here from Phase 3) |
-| P2-S3-09 | Session broadcast endpoint | `POST /session/broadcast {type, payload}` → WS broadcast to all clients | Freshbrainer question reaches all React Native clients |
-| P2-S3-10 | Real JWT auth | `POST /auth/login` validates credentials, issues signed JWT; middleware protects routes | Token verified with JWT_SECRET; invalid tokens return 401 |
-
-#### S4 (Weeks 4–8)
-
-| ID | Task | Deliverable | Done when |
-|---|---|---|---|
-| P2-S4-01 | Home screen (real) | Fetches `GET /session/upcoming`, renders cards | Real lectures displayed |
-| P2-S4-02 | AppState focus mode | Background → WS `{type: "focus_strike", strike_type: "app_background"}` → FastAPI logs to focus_strikes | Strike appears in SQLite |
-| P2-S4-03 | CaptionBar | WS caption events → RTL overlay → auto-clears 4s | Arabic + English display correctly |
-| P2-S4-04 | Strike counter | FocusOverlay shows count, warns at 3 | Counter increments on each strike |
-| P2-S4-05 | Offline strike cache | Queue strikes locally (AsyncStorage) when WS disconnected; drain queue on reconnect | No strikes lost during brief network interruptions |
-
----
-
-### Phase 3 — AI + Live Systems (Weeks 9–12)
-**Milestone: Gemini live. Confusion alert working. Smart Notes delivered to students.**
-
-#### S1 (Weeks 9–10)
-
-| ID | Task | Deliverable | Done when |
-|---|---|---|---|
-| P3-S1-01 | Gemini smart notes | `generate_smart_notes()` → markdown with ✱ | Test transcript → correct output |
-| P3-S1-02 | Gemini fresh-brainer | `generate_fresh_brainer()` → 1–2 sentence question | Question generated from test slide |
-| P3-S1-03 | Gemini intervention | `generate_intervention_plan()` → 3-item list | Valid plan for test history |
-| P3-S1-04 | Nightly plan job | APScheduler writes `data/plans/{student_id}.md` | Plans appear after manual trigger |
-
-#### S2 (Weeks 9–12)
-
-| ID | Task | Deliverable | Done when |
-|---|---|---|---|
-| P3-S2-01 | D1–D7 live dashboard | All 7 panels built, reactiveTimer(10000) | Gauge + all charts update every 10s |
-| P3-S2-02 | Confusion observer | confusion_rate ≥ 0.40 → shinyalert with question | Alert fires with test data |
-| P3-S2-03 | Student report cards | selectInput → engagement + cognitive load + plan | Plan rendered from API |
-| P3-S2-04 | PDF export | `rmarkdown::render()` → PDF download | PDF with all 6 sections downloads |
-
-#### S3 (Weeks 9–11)
-
-| ID | Task | Deliverable | Done when |
-|---|---|---|---|
-| P3-S3-01 | `/gemini/question` | Fetches slide text → Gemini → returns question | Shiny receives question string |
-| P3-S3-02 | `/notes/{sid}/{lid}` | Reads transcripts → smart notes → returns markdown | Markdown correct |
-| P3-S3-03 | `/notes/{sid}/plan` | Reads latest plan .md → returns content | Plan markdown returned |
-| P3-S3-04 | Strike WS handler | WS `focus_strike` event → INSERT focus_strikes (or incidents if context=exam) | Strike in DB; exam strikes in incidents table |
-
-#### S4 (Weeks 9–12)
-
-| ID | Task | Deliverable | Done when |
-|---|---|---|---|
-| P3-S4-01 | Smart Notes viewer | Fetches after session ends, ✱ sections highlighted | Notes display with highlight |
-| P3-S4-02 | Fresh-brainer overlay | WS `freshbrainer` → bottom-sheet | Overlay appears on trigger |
-| P3-S4-03 | Notes export | `Share.share()` native share | Export works on device |
-
----
-
-### Phase 4 — Exam + Polish (Weeks 13–16)
-**Milestone: Full demo ready. Exam proctoring working. CI/CD live.**
-
-#### S1 (Weeks 13–14)
-
-| ID | Task | Deliverable | Done when |
-|---|---|---|---|
-| P4-S1-01 | YOLO phone detection | `proctor_service.py` detects phones on desks | Test image → `phone_on_desk` in incidents |
-| P4-S1-02 | Head posture | MediaPipe FaceMesh → extreme rotation flagged | Rotated face → `head_rotation` in incidents |
-| P4-S1-03 | Auto-submit trigger | 3 × Severity-3 in 10 min → `POST /exam/submit`; implemented as 60-second polling loop that queries `incidents` table for recent sev-3 count | Fires in integration test; does not double-submit |
-| P4-S1-04 | Evidence screenshot | Each incident saves frame to `data/evidence/` | Screenshot file present |
-
-#### S2 (Weeks 13–16)
-
-| ID | Task | Deliverable | Done when |
-|---|---|---|---|
-| P4-S2-01 | Exam incident panel | DT from `incidents.csv`, severity colors, xlsx export | Incidents display correctly |
-| P4-S2-02 | AAST UI polish | All panels reviewed against templates, consistent branding | Design review sign-off |
-| P4-S2-03 | student_report.Rmd | AAST header/footer, all 6 sections, clean PDF | PDF passes visual review |
-
-#### S3 (Weeks 13–15)
-
-| ID | Task | Deliverable | Done when |
-|---|---|---|---|
-| P4-S3-01 | Exam API | `POST /exam/start`, `/exam/submit`, `GET /exam/incidents/{id}` | All 3 functional |
-| P4-S3-02 | Notify (full) | `POST /notify/lecturer` → notifications table + WS broadcast | Notification in Shiny without reload |
-| P4-S3-03 | GitHub Actions CI/CD | `deploy.yml` → Railway auto-deploy on push to main | Pipeline passes |
-
-#### S4 (Weeks 13–15)
-
-| ID | Task | Deliverable | Done when |
-|---|---|---|---|
-| P4-S4-01 | Exam screen | `app/(exam)/exam.tsx` → `POST /exam/start` on mount, AppState strike | Exam starts, background triggers incident |
-| P4-S4-02 | Auto-submit handling | WS `exam:autosubmit` → navigates to submitted screen | Screen transitions correctly |
-
-#### Team Integration (Weeks 15–16)
-
-| ID | Task | Deliverable | Done when |
-|---|---|---|---|
-| INT-01 | End-to-end test | Full flow: Roster → Start lecture → Vision → Captions → Shiny live → Confusion alert → Smart Notes | All steps pass in 15-minute test session |
-| INT-02 | Full demo dry run | 10-minute simulated lecture, all 4 members present | No critical bugs, all features demonstrated |
-| INT-03 | Final README | Clone-to-run guide for all 3 services | Reviewed and merged to main |
 
 ---
 
@@ -2249,25 +1863,17 @@ jobs:
 5. **Live data goes to SQLite** — never write live lecture data directly to CSV files
 6. **R/Shiny reads nightly CSV exports ONLY** — never connect R/Shiny directly to SQLite
 7. **Nightly export at 02:00** — APScheduler in `export_service.py`, not a manual script
-8. **Whisper for audio** — lecturer code-switches ar-EG/en; no Google Cloud Speech
-9. **Engagement confidence values are locked** — Focused=1.00, Engaged=0.85, Confused=0.55, Anxious=0.35, Frustrated=0.25, Disengaged=0.00 — fixed switch-case, never from model softmax
-10. **AppState API for mobile focus mode** — no OS-level device locks
-11. **Camera-based exam proctoring only** — no JS browser lockdowns; YOLO + MediaPipe
-12. **R/Shiny injects into pre-existing AAST templates** — do not rebuild HTML/CSS chrome
-13. **S2 writes all R analytics directly** — follow the formulas in Section 8 exactly for engagement and K-means
-14. **SQLite column names locked after Week 1** — never rename any column
-15. **S3 mock endpoints live by end of Week 2** — S2 and S4 must never be blocked on AI models
-16. **All tooling free or low-cost** — Railway/shinyapps.io/Expo free tiers + Gemini 1.5 Flash + Whisper pay-per-use
+8. **Engagement confidence values are locked** — Focused=1.00, Engaged=0.85, Confused=0.55, Anxious=0.35, Frustrated=0.25, Disengaged=0.00 — fixed switch-case, never from model softmax
+9. **AppState API for mobile focus mode** — no OS-level device locks
+10. **Camera-based exam proctoring only** — no JS browser lockdowns; YOLO + MediaPipe
+11. **R/Shiny injects into pre-existing AAST templates** — do not rebuild HTML/CSS chrome
+12. **S2 writes all R analytics directly** — follow the formulas in Section 8 exactly for engagement and K-means
+13. **SQLite column names locked after Week 1** — never rename any column
+14. **S3 mock endpoints live by end of Week 2** — S2 and S4 must never be blocked on AI models
+15. **All tooling free or low-cost** — shinyapps.io/Expo free tiers + Gemini 1.5 Flash
 
 <!-- SPECKIT START -->
-For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan at:
-specs/aast-lms-validation/plan.md
-
-Also read:
-- specs/aast-lms-validation/research.md  — gap analysis, timeline assessment, hosting decision
-- specs/aast-lms-validation/data-model.md — entity summary, CSV schemas
-- specs/aast-lms-validation/contracts/http-api.md — all HTTP endpoint contracts
-- specs/aast-lms-validation/contracts/websocket.md — all WebSocket payload contracts
-- .specify/memory/constitution.md — 16 non-negotiable project principles
+This file (CLAUDE.md) is the single source of truth for architecture, constraints, and specs.
+Task tracking lives in: TASKS.md
+Technical contracts live in: ARCHITECTURE.md
 <!-- SPECKIT END -->
