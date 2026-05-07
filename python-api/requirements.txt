@@ -17,7 +17,6 @@ numpy
 openpyxl
 requests
 qrcode[pil]
-boto3
 
 # Scheduling
 apscheduler
