@@ -11,7 +11,7 @@ def export_all():
         os.makedirs(EXPORT_DIR, exist_ok=True)
         queries = {
             "emotions":      "SELECT student_id, lecture_id, timestamp, emotion, confidence, engagement_score FROM emotion_log",
-            "attendance":    "SELECT student_id, lecture_id, timestamp, status, method FROM attendance_log",
+            "attendance":    "SELECT student_id, lecture_id, timestamp, status, method, snapshot_path FROM attendance_log",
             "materials":     "SELECT material_id, lecture_id, lecturer_id, title, drive_link, uploaded_at FROM materials",
             "incidents":     "SELECT student_id, exam_id, timestamp, flag_type, severity, evidence_path FROM incidents",
             "notifications": "SELECT student_id, lecturer_id, lecture_id, reason, created_at, read FROM notifications",
