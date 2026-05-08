@@ -12,14 +12,13 @@ import {
   ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useStore } from "@/store/useStore";
-import { authAPI, setAuthToken, connectWebSocket } from "@/services/api";
+import { authAPI, connectWebSocket } from "@/services/api";
 import { Colors, Radius, Shadow } from "@/constants/theme";
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { setStudentId } = useStore();
+  const { setStudentId, setAuthToken } = useStore();
 
   const [studentId, setStudentIdInput] = useState("");
   const [password, setPassword] = useState("");
@@ -34,8 +33,6 @@ export default function LoginScreen() {
       // Demo credentials
       if (studentId.trim() === "demo" && password === "demo") {
         const mockToken = "mock.jwt.token.for.demo";
-        await AsyncStorage.setItem("auth_token", mockToken);
-        await AsyncStorage.setItem("student_id", studentId.trim());
         setAuthToken(mockToken);
         setStudentId(studentId.trim());
         connectWebSocket();
@@ -46,8 +43,6 @@ export default function LoginScreen() {
       // Real API login
       const response = await authAPI.login(studentId.trim(), password);
       if (response?.token) {
-        await AsyncStorage.setItem("auth_token", response.token);
-        await AsyncStorage.setItem("student_id", studentId.trim());
         setAuthToken(response.token);
         setStudentId(studentId.trim());
         connectWebSocket();

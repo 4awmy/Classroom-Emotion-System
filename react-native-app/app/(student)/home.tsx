@@ -25,15 +25,11 @@ interface Lecture {
 const ACTIVITIES_LIGHT = [
   { key: "focus",    icon: "eye",      label: "Focus Mode",  color: "#EEF2FF", iconColor: "#4F46E5" },
   { key: "notes",    icon: "book",     label: "Smart Notes", color: "#F0FDF4", iconColor: "#16A34A" },
-  { key: "schedule", icon: "calendar", label: "Schedule",    color: "#FFF7ED", iconColor: "#EA580C" },
-  { key: "qr",       icon: "qr-code",  label: "Attendance",  color: "#FFFBEB", iconColor: "#D97706" },
 ];
 
 const ACTIVITIES_DARK = [
   { key: "focus",    icon: "eye",      label: "Focus Mode",  color: "#1E2460", iconColor: "#818CF8" },
   { key: "notes",    icon: "book",     label: "Smart Notes", color: "#052E16", iconColor: "#4ADE80" },
-  { key: "schedule", icon: "calendar", label: "Schedule",    color: "#431407", iconColor: "#FB923C" },
-  { key: "qr",       icon: "qr-code",  label: "Attendance",  color: "#451A03", iconColor: "#FCD34D" },
 ];
 
 export default function HomeScreen() {
@@ -90,8 +86,6 @@ export default function HomeScreen() {
   };
 
   const handleLogout = async () => {
-    await AsyncStorage.removeItem("auth_token");
-    await AsyncStorage.removeItem("student_id");
     useStore.getState().reset();
     router.replace("/(auth)/login");
   };

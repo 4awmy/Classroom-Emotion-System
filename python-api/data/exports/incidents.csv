@@ -1,0 +1,16 @@
+﻿student_id,exam_id,timestamp,flag_type,severity,evidence_path
+999999999,EXAM_1,2026-05-07 19:20:36.680897,head_rotation,2,data/evidence/EXAM_1_999999999_1778181636.jpg
+999999999,EXAM_1,2026-05-07 19:32:05.056510,head_rotation,2,data/evidence/EXAM_1_999999999_1778182325.jpg
+999999999,EXAM_1,2026-05-07 19:36:19.732116,head_rotation,2,data/evidence/EXAM_1_999999999_1778182579.jpg
+999999999,EXAM_1,2026-05-07 19:38:53.483398,head_rotation,2,data/evidence/EXAM_1_999999999_1778182733.jpg
+999999999,EXAM_1,2026-05-07 19:40:27.980799,head_rotation,2,data/evidence/EXAM_1_999999999_1778182827.jpg
+999999999,EXAM_1,2026-05-07 19:50:56.131164,head_rotation,2,data/evidence/EXAM_1_999999999_1778183456.jpg
+unknown_person_0,EXAM_TEST,2026-05-07 21:12:43.316260,phone_on_desk,3,data/evidence/EXAM_TEST_unknown_person_0_1778188363.jpg
+231006131,EXAM_TEST,2026-05-07 21:12:44.219520,phone_on_desk,3,data/evidence/EXAM_TEST_231006131_1778188364.jpg
+unknown_person_2,EXAM_TEST,2026-05-07 21:12:44.417962,multiple_persons,3,data/evidence/EXAM_TEST_unknown_person_2_1778188364.jpg
+,EXAM_TEST,2026-05-07 21:12:44.744108,identity_mismatch,3,data/evidence/EXAM_TEST_None_1778188364.jpg
+unknown_person_0,EXAM_TEST,2026-05-07 21:12:48.295547,phone_on_desk,3,data/evidence/EXAM_TEST_unknown_person_0_1778188368.jpg
+unknown_person_0,EXAM_TEST,2026-05-07 21:12:48.301652,multiple_persons,3,data/evidence/EXAM_TEST_unknown_person_0_1778188368.jpg
+231006131,EXAM_TEST,2026-05-07 21:12:49.229411,phone_on_desk,3,data/evidence/EXAM_TEST_231006131_1778188369.jpg
+unknown_person_0,EXAM_TEST,2026-05-07 21:12:58.329102,multiple_persons,3,data/evidence/EXAM_TEST_unknown_person_0_1778188378.jpg
+,EXAM_TEST,2026-05-07 21:12:58.718223,identity_mismatch,3,data/evidence/EXAM_TEST_None_1778188378.jpg

@@ -1,43 +1,33 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { setAuthToken, connectWebSocket } from "@/services/api";
+import { connectWebSocket } from "@/services/api";
 import { useStore } from "@/store/useStore";
 import { Colors } from "@/constants/theme";
 
 export default function SplashScreen() {
   const router = useRouter();
-  const { setStudentId, setIsDark } = useStore();
+  const { authToken, studentId } = useStore();
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    checkStoredSession();
+    // Wait for Zustand rehydration (simulated with 1.5s delay to show splash)
+    const timer = setTimeout(() => {
+      setIsReady(true);
+    }, 1500);
+    return () => clearTimeout(timer);
   }, []);
 
-  const checkStoredSession = async () => {
-    // Show splash for 1.5s then check stored credentials
-    await new Promise((r) => setTimeout(r, 1500));
-    try {
-      const token = await AsyncStorage.getItem("auth_token");
-      const storedId = await AsyncStorage.getItem("student_id");
-      const darkMode = await AsyncStorage.getItem("dark_mode");
-
-      if (darkMode === "1") {
-        setIsDark(true);
-      }
-
-      if (token && storedId) {
-        setAuthToken(token);
-        setStudentId(storedId);
+  useEffect(() => {
+    if (isReady) {
+      if (authToken && studentId) {
         connectWebSocket();
         router.replace("/(student)/home");
       } else {
         router.replace("/(auth)/login");
       }
-    } catch {
-      router.replace("/(auth)/login");
     }
-  };
+  }, [isReady, authToken, studentId]);
 
   return (
     <View style={styles.container}>

@@ -1,15 +1,19 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { setAuthToken as setAPIAuthToken } from "@/services/api";
 
 interface StudentStore {
   studentId: string | null;
+  authToken: string | null;
   activeLectureId: string | null;
   focusActive: boolean;
   strikes: number;
   isDark: boolean;
 
-  setStudentId: (id: string) => void;
-  setActiveLectureId: (id: string) => void;
+  setStudentId: (id: string | null) => void;
+  setAuthToken: (token: string | null) => void;
+  setActiveLectureId: (id: string | null) => void;
   setFocusActive: (active: boolean) => void;
   setStrikes: (count: number | ((prev: number) => number)) => void;
   setIsDark: (dark: boolean) => void;
@@ -19,36 +23,61 @@ interface StudentStore {
 
 /**
  * Zustand store for managing student app state
- * Persists across screen navigation
+ * Uses persist middleware to handle cold-start edge cases and session restoration.
  */
-export const useStore = create<StudentStore>((set, get) => ({
-  studentId: null,
-  activeLectureId: null,
-  focusActive: false,
-  strikes: 0,
-  isDark: false,
-
-  setStudentId: (id) => set({ studentId: id }),
-  setActiveLectureId: (id) => set({ activeLectureId: id }),
-  setFocusActive: (active) => set({ focusActive: active }),
-  setStrikes: (count) =>
-    set((state) => ({
-      strikes: typeof count === "function" ? count(state.strikes) : count,
-    })),
-
-  setIsDark: (dark) => set({ isDark: dark }),
-
-  toggleDark: () => {
-    const next = !get().isDark;
-    set({ isDark: next });
-    AsyncStorage.setItem("dark_mode", next ? "1" : "0");
-  },
-
-  reset: () =>
-    set({
+export const useStore = create<StudentStore>()(
+  persist(
+    (set, get) => ({
       studentId: null,
+      authToken: null,
       activeLectureId: null,
       focusActive: false,
       strikes: 0,
+      isDark: false,
+
+      setStudentId: (id) => set({ studentId: id }),
+      setAuthToken: (token) => {
+        set({ authToken: token });
+        if (token) setAPIAuthToken(token);
+      },
+      setActiveLectureId: (id) => set({ activeLectureId: id }),
+      setFocusActive: (active) => set({ focusActive: active }),
+      setStrikes: (count) =>
+        set((state) => ({
+          strikes: typeof count === "function" ? count(state.strikes) : count,
+        })),
+
+      setIsDark: (dark) => set({ isDark: dark }),
+
+      toggleDark: () => {
+        const next = !get().isDark;
+        set({ isDark: next });
+      },
+
+      reset: () =>
+        set({
+          studentId: null,
+          authToken: null,
+          activeLectureId: null,
+          focusActive: false,
+          strikes: 0,
+        }),
     }),
-}));
+    {
+      name: "student-app-storage",
+      storage: createJSONStorage(() => AsyncStorage),
+      // Persist auth and preferences
+      partialize: (state) => ({ 
+        isDark: state.isDark,
+        studentId: state.studentId,
+        authToken: state.authToken
+      }),
+      onRehydrateStorage: () => (state) => {
+        // Restore API token on app load if found in storage
+        if (state?.authToken) {
+          setAPIAuthToken(state.authToken);
+        }
+      },
+    }
+  )
+);
