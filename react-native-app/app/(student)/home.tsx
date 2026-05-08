@@ -1,15 +1,18 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useStore } from "@/store/useStore";
 import { sessionAPI } from "@/services/api";
+import { Colors, DarkColors, Radius, Shadow, Spacing } from "@/constants/theme";
 
 interface Lecture {
   lecture_id: string;
@@ -19,13 +22,26 @@ interface Lecture {
   lecturer_id: string;
 }
 
-/**
- * Home Screen (P1-S4-03)
- * Shows upcoming lectures and engagement summary
- */
+const ACTIVITIES_LIGHT = [
+  { key: "focus",    icon: "eye",      label: "Focus Mode",  color: "#EEF2FF", iconColor: "#4F46E5" },
+  { key: "notes",    icon: "book",     label: "Smart Notes", color: "#F0FDF4", iconColor: "#16A34A" },
+  { key: "schedule", icon: "calendar", label: "Schedule",    color: "#FFF7ED", iconColor: "#EA580C" },
+  { key: "qr",       icon: "qr-code",  label: "Attendance",  color: "#FFFBEB", iconColor: "#D97706" },
+];
+
+const ACTIVITIES_DARK = [
+  { key: "focus",    icon: "eye",      label: "Focus Mode",  color: "#1E2460", iconColor: "#818CF8" },
+  { key: "notes",    icon: "book",     label: "Smart Notes", color: "#052E16", iconColor: "#4ADE80" },
+  { key: "schedule", icon: "calendar", label: "Schedule",    color: "#431407", iconColor: "#FB923C" },
+  { key: "qr",       icon: "qr-code",  label: "Attendance",  color: "#451A03", iconColor: "#FCD34D" },
+];
+
 export default function HomeScreen() {
   const router = useRouter();
-  const { studentId, setActiveLectureId, setFocusActive } = useStore();
+  const { studentId, setActiveLectureId, setFocusActive, isDark, toggleDark } = useStore();
+  const C = isDark ? DarkColors : Colors;
+  const styles = useMemo(() => makeStyles(C), [isDark]);
+  const ACTIVITIES = isDark ? ACTIVITIES_DARK : ACTIVITIES_LIGHT;
 
   const [lectures, setLectures] = useState<Lecture[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,206 +53,383 @@ export default function HomeScreen() {
   const loadUpcomingLectures = async () => {
     try {
       setLoading(true);
-      console.log("[Home] Loading upcoming lectures for:", studentId);
-
-      // Phase 1: Mock data
-      const mockLectures: Lecture[] = [
+      const response = await sessionAPI.getUpcoming();
+      setLectures(Array.isArray(response) ? response : []);
+    } catch {
+      // Fallback to mock data when backend not available
+      setLectures([
         {
           lecture_id: "L1",
           title: "Introduction to Algorithms",
-          subject: "Computer Science",
-          start_time: "2025-04-30T10:00:00Z",
+          subject: "CCS3002",
+          start_time: new Date().toISOString(),
           lecturer_id: "PROF_001",
         },
         {
           lecture_id: "L2",
           title: "Data Structures Advanced",
-          subject: "Computer Science",
-          start_time: "2025-04-30T12:00:00Z",
+          subject: "CCS3003",
+          start_time: new Date(Date.now() + 7200000).toISOString(),
           lecturer_id: "PROF_002",
         },
-      ];
-
-      setLectures(mockLectures);
-
-      // Phase 2: Uncomment to use real API
-      // const response = await sessionAPI.getUpcoming();
-      // setLectures(response);
-    } catch (error) {
-      console.error("[Home] Error loading lectures:", error);
+      ]);
     } finally {
       setLoading(false);
     }
   };
 
   const handleJoinLecture = (lectureId: string) => {
-    console.log("[Home] Joining lecture:", lectureId);
     setActiveLectureId(lectureId);
     setFocusActive(true);
     router.push("/(student)/focus");
   };
 
-  if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#002147" />
-        <Text style={styles.loadingText}>Loading lectures...</Text>
-      </View>
-    );
-  }
+  const handleActivity = (key: string) => {
+    if (key === "focus") router.push("/(student)/focus");
+    else if (key === "notes") router.push("/(student)/notes");
+  };
+
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem("auth_token");
+    await AsyncStorage.removeItem("student_id");
+    useStore.getState().reset();
+    router.replace("/(auth)/login");
+  };
+
+  const formatTime = (iso: string) =>
+    new Date(iso).toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
+    <View style={styles.root}>
+      {/* ── Top Profile Header ──────────────────────────── */}
       <View style={styles.header}>
-        <Text style={styles.greeting}>Welcome, {studentId}</Text>
-        <Text style={styles.subtext}>Upcoming Lectures</Text>
+        <View style={styles.profileRow}>
+          {/* Avatar */}
+          <View style={styles.avatar}>
+            <Ionicons name="person" size={26} color={C.textSecondary} />
+          </View>
+
+          {/* Name + ID */}
+          <View style={styles.profileInfo}>
+            <Text style={styles.greeting}>
+              Hi, <Text style={styles.greetingBold}>{studentId ?? "Student"}</Text>
+            </Text>
+            {studentId && (
+              <View style={styles.idBadge}>
+                <Text style={styles.idBadgeText}>{studentId}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Icons */}
+          <View style={styles.headerIcons}>
+            <TouchableOpacity style={styles.iconBtn} onPress={toggleDark}>
+              <Ionicons name={isDark ? "sunny" : "moon"} size={20} color={Colors.white} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.iconBtn} onPress={handleLogout}>
+              <Ionicons name="log-out-outline" size={20} color={Colors.white} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.iconBtn}>
+              <Ionicons name="notifications-outline" size={20} color={Colors.white} />
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
 
-      {/* Lectures List */}
-      {lectures.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>No upcoming lectures</Text>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── AAST Banner ─────────────────────────────────── */}
+        <View style={styles.banner}>
+          <View style={styles.bannerInner}>
+            <Text style={styles.bannerTitle}>AAST LMS</Text>
+            <Text style={styles.bannerSub}>
+              AI-powered Classroom Analytics{"\n"}Arab Academy — Cairo Campus
+            </Text>
+          </View>
+          <View style={styles.bannerBadge}>
+            <Text style={styles.bannerBadgeText}>Live</Text>
+          </View>
         </View>
-      ) : (
-        <FlatList
-          data={lectures}
-          keyExtractor={(item) => item.lecture_id}
-          renderItem={({ item }) => (
-            <View style={styles.lectureCard}>
-              <View style={styles.lectureInfo}>
-                <Text style={styles.lectureTitle}>{item.title}</Text>
-                <Text style={styles.lectureSubject}>{item.subject}</Text>
-                <Text style={styles.lectureTime}>
-                  {new Date(item.start_time).toLocaleTimeString("en-US", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    hour12: true,
-                  })}
-                </Text>
+
+        {/* ── Activities Grid ──────────────────────────────── */}
+        <Text style={styles.sectionTitle}>Activities</Text>
+        <View style={styles.activityGrid}>
+          {ACTIVITIES.map((a) => (
+            <TouchableOpacity
+              key={a.key}
+              style={[styles.activityCard, { backgroundColor: a.color }]}
+              onPress={() => handleActivity(a.key)}
+              activeOpacity={0.75}
+            >
+              <Ionicons name={a.icon as any} size={30} color={a.iconColor} />
+              <Text style={[styles.activityLabel, { color: a.iconColor }]}>
+                {a.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* ── Upcoming Lectures ────────────────────────────── */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Upcoming Lectures</Text>
+          <TouchableOpacity onPress={loadUpcomingLectures}>
+            <Text style={styles.viewAll}>Refresh</Text>
+          </TouchableOpacity>
+        </View>
+
+        {loading ? (
+          <ActivityIndicator color={C.navy} style={{ marginVertical: 24 }} />
+        ) : lectures.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Ionicons name="calendar-outline" size={32} color={C.textMuted} />
+            <Text style={styles.emptyText}>No upcoming lectures</Text>
+          </View>
+        ) : (
+          lectures.map((lec) => (
+            <View key={lec.lecture_id} style={styles.lectureCard}>
+              {/* Timeline dot */}
+              <View style={styles.timeline}>
+                <View style={styles.timelineDot} />
+                <View style={styles.timelineLine} />
               </View>
+
+              <View style={styles.lectureBody}>
+                <Text style={styles.lectureCode}>{lec.subject}</Text>
+                <Text style={styles.lectureTitle}>{lec.title}</Text>
+                <Text style={styles.lectureTime}>{formatTime(lec.start_time)}</Text>
+              </View>
+
               <TouchableOpacity
-                style={styles.joinButton}
-                onPress={() => handleJoinLecture(item.lecture_id)}
+                style={styles.joinBtn}
+                onPress={() => handleJoinLecture(lec.lecture_id)}
+                activeOpacity={0.8}
               >
-                <Text style={styles.joinButtonText}>Join</Text>
+                <Ionicons name="chevron-forward" size={18} color={C.navy} />
               </TouchableOpacity>
             </View>
-          )}
-          scrollEnabled
-          contentContainerStyle={styles.listContent}
-        />
-      )}
-
-      {/* Info Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          💡 Tip: Stay focused during lectures to maintain your engagement score
-        </Text>
-      </View>
+          ))
+        )}
+      </ScrollView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
+const makeStyles = (C: typeof Colors) => StyleSheet.create({
+  root: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: C.background,
   },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: "#666",
-  },
+
+  /* Header */
   header: {
-    backgroundColor: "#002147",
-    paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 16,
+    backgroundColor: C.navy,
+    paddingTop: 52,
+    paddingBottom: 12,
+    paddingHorizontal: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+  },
+  profileRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  avatar: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: C.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  profileInfo: {
+    flex: 1,
+    gap: 4,
   },
   greeting: {
+    fontSize: 15,
+    color: Colors.white,
+  },
+  greetingBold: {
+    fontWeight: "700",
+    color: Colors.white,
+  },
+  idBadge: {
+    backgroundColor: C.gold,
+    borderRadius: Radius.xl,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    alignSelf: "flex-start",
+  },
+  idBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: Colors.white,
+  },
+  headerIcons: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: C.navy,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  scroll: { flex: 1 },
+  scrollContent: { padding: Spacing.md, paddingBottom: 32 },
+
+  /* Banner */
+  banner: {
+    backgroundColor: Colors.navy,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    ...Shadow.card,
+  },
+  bannerInner: { flex: 1 },
+  bannerTitle: {
     fontSize: 20,
-    fontWeight: "bold",
-    color: "#fff",
+    fontWeight: "800",
+    color: Colors.gold,
     marginBottom: 4,
   },
-  subtext: {
-    fontSize: 14,
-    color: "#ccc",
+  bannerSub: {
+    fontSize: 12,
+    color: Colors.white,
+    opacity: 0.8,
+    lineHeight: 18,
   },
-  listContent: {
-    padding: 16,
+  bannerBadge: {
+    backgroundColor: Colors.gold,
+    borderRadius: Radius.xl,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
   },
-  lectureCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+  bannerBadgeText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: Colors.navy,
+  },
+
+  /* Section */
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: C.textPrimary,
+    marginBottom: Spacing.sm,
+  },
+  sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    marginBottom: Spacing.sm,
+    marginTop: Spacing.md,
   },
-  lectureInfo: {
-    flex: 1,
+  viewAll: {
+    fontSize: 13,
+    color: C.gold,
+    fontWeight: "600",
+  },
+
+  /* Activities */
+  activityGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    marginBottom: Spacing.md,
+  },
+  activityCard: {
+    width: "47%",
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    alignItems: "center",
+    gap: 8,
+    ...Shadow.card,
+  },
+  activityLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+
+  /* Lectures */
+  lectureCard: {
+    backgroundColor: C.white,
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    ...Shadow.card,
+  },
+  timeline: {
+    width: 20,
+    alignItems: "center",
     marginRight: 12,
   },
-  lectureTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 4,
+  timelineDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#3B82F6',
   },
-  lectureSubject: {
-    fontSize: 13,
-    color: "#666",
-    marginBottom: 6,
+  timelineLine: {
+    width: 2,
+    flex: 1,
+    backgroundColor: C.border,
+    marginTop: 4,
+  },
+  lectureBody: { flex: 1 },
+  lectureCode: {
+    fontSize: 12,
+    color: '#3B82F6',
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  lectureTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: C.textPrimary,
+    marginBottom: 4,
   },
   lectureTime: {
     fontSize: 12,
-    color: "#002147",
+    color: C.gold,
     fontWeight: "600",
   },
-  joinButton: {
-    backgroundColor: "#002147",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  joinButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: "center",
+  joinBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: C.background,
     alignItems: "center",
+    justifyContent: "center",
+  },
+
+  /* Empty */
+  emptyCard: {
+    backgroundColor: C.white,
+    borderRadius: Radius.md,
+    padding: 32,
+    alignItems: "center",
+    gap: 8,
+    ...Shadow.card,
   },
   emptyText: {
-    fontSize: 16,
-    color: "#999",
-    fontStyle: "italic",
-  },
-  footer: {
-    backgroundColor: "#e3f2fd",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#90caf9",
-  },
-  footerText: {
-    fontSize: 12,
-    color: "#1565c0",
-    textAlign: "center",
+    fontSize: 14,
+    color: C.textMuted,
   },
 });

@@ -7,16 +7,16 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useStore } from "@/store/useStore";
 import { authAPI, setAuthToken, connectWebSocket } from "@/services/api";
+import { Colors, Radius, Shadow } from "@/constants/theme";
 
-/**
- * Login Screen (P1-S4-02)
- * Phase 1: Mock JWT authentication
- * Phase 2: Connect to real /auth/login endpoint
- */
 export default function LoginScreen() {
   const router = useRouter();
   const { setStudentId } = useStore();
@@ -25,176 +25,241 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
-    if (!studentId.trim() || !password.trim()) {
-      Alert.alert("Error", "Please enter both Student ID and password");
-      return;
-    }
+  const canSubmit = studentId.trim().length > 0 && password.trim().length > 0;
 
+  const handleLogin = async () => {
+    if (!canSubmit) return;
     setLoading(true);
     try {
-      console.log("[Auth] Logging in student:", studentId);
-
-      // Phase 1: Mock login
-      if (studentId === "demo" && password === "demo") {
+      // Demo credentials
+      if (studentId.trim() === "demo" && password === "demo") {
         const mockToken = "mock.jwt.token.for.demo";
+        await AsyncStorage.setItem("auth_token", mockToken);
+        await AsyncStorage.setItem("student_id", studentId.trim());
         setAuthToken(mockToken);
-        setStudentId(studentId);
+        setStudentId(studentId.trim());
         connectWebSocket();
-
-        console.log("[Auth] Mock login successful");
         router.replace("/(student)/home");
         return;
       }
 
-      // Phase 2: Real login (uncomment when backend ready)
-      // const response = await authAPI.login(studentId, password);
-      // if (response.token) {
-      //   setAuthToken(response.token);
-      //   setStudentId(studentId);
-      //   connectWebSocket();
-      //   router.replace('/(student)/home');
-      // }
-    } catch (error) {
-      console.error("[Auth] Login error:", error);
-      Alert.alert("Login Failed", "Invalid credentials or server error");
+      // Real API login
+      const response = await authAPI.login(studentId.trim(), password);
+      if (response?.token) {
+        await AsyncStorage.setItem("auth_token", response.token);
+        await AsyncStorage.setItem("student_id", studentId.trim());
+        setAuthToken(response.token);
+        setStudentId(studentId.trim());
+        connectWebSocket();
+        router.replace("/(student)/home");
+      } else {
+        Alert.alert("Login Failed", "Invalid credentials. Please try again.");
+      }
+    } catch {
+      Alert.alert("Login Failed", "Invalid credentials. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.logo}>AAST</Text>
-        <Text style={styles.title}>Learning Management</Text>
-        <Text style={styles.subtitle}>Student Portal</Text>
-      </View>
+    <KeyboardAvoidingView
+      style={styles.root}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+        bounces={false}
+      >
+        {/* ── Navy Header ─────────────────────────────────── */}
+        <View style={styles.header}>
+          <View style={styles.logoBadge}>
+            <Text style={styles.logoText}>AAST</Text>
+          </View>
+          <Text style={styles.titleAr}>بوابة الطالب</Text>
+          <Text style={styles.titleEn}>Student Portal</Text>
+        </View>
 
-      {/* Form */}
-      <View style={styles.form}>
-        <Text style={styles.label}>Student ID</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your student ID"
-          value={studentId}
-          onChangeText={setStudentIdInput}
-          editable={!loading}
-          placeholderTextColor="#ccc"
-        />
+        {/* ── Light Body ──────────────────────────────────── */}
+        <View style={styles.body}>
+          <Text style={styles.signInHint}>Sign in to continue</Text>
 
-        <Text style={styles.label}>Password</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          editable={!loading}
-          placeholderTextColor="#ccc"
-        />
+          {/* Registration Number */}
+          <View style={styles.inputCard}>
+            <TextInput
+              style={styles.input}
+              placeholder="Registration Number"
+              placeholderTextColor={Colors.textMuted}
+              value={studentId}
+              onChangeText={setStudentIdInput}
+              keyboardType="default"
+              autoCapitalize="none"
+              editable={!loading}
+            />
+          </View>
 
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Login</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+          {/* Password */}
+          <View style={styles.inputCard}>
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              placeholderTextColor={Colors.textMuted}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              editable={!loading}
+            />
+          </View>
 
-      {/* Demo Hint */}
-      <View style={styles.demo}>
-        <Text style={styles.demoText}>Demo credentials:</Text>
-        <Text style={styles.demoValue}>ID: demo | Password: demo</Text>
-      </View>
-    </View>
+          {/* Sign In Button */}
+          <TouchableOpacity
+            style={[
+              styles.button,
+              canSubmit ? styles.buttonActive : styles.buttonInactive,
+            ]}
+            onPress={handleLogin}
+            disabled={loading || !canSubmit}
+            activeOpacity={0.85}
+          >
+            {loading ? (
+              <ActivityIndicator color={Colors.white} />
+            ) : (
+              <Text
+                style={[
+                  styles.buttonText,
+                  canSubmit ? styles.buttonTextActive : styles.buttonTextInactive,
+                ]}
+              >
+                Sign In
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          {/* Demo hint */}
+          <View style={styles.demoBox}>
+            <Text style={styles.demoText}>
+              Demo: Registration <Text style={styles.demoBold}>demo</Text> / Password{" "}
+              <Text style={styles.demoBold}>demo</Text>
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
-    justifyContent: "center",
-    padding: 20,
+    backgroundColor: Colors.background,
   },
+  scroll: {
+    flexGrow: 1,
+  },
+
+  /* Navy header — matches real app ~45% height */
   header: {
+    backgroundColor: Colors.navy,
     alignItems: "center",
-    marginBottom: 40,
+    paddingTop: 64,
+    paddingBottom: 40,
+    gap: 8,
   },
-  logo: {
-    fontSize: 48,
-    fontWeight: "bold",
-    color: "#002147", // AAST navy
+  logoBadge: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderWidth: 2.5,
+    borderColor: Colors.white,
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 8,
   },
-  title: {
+  logoText: {
     fontSize: 24,
+    fontWeight: "bold",
+    color: Colors.white,
+    letterSpacing: 3,
+  },
+  titleAr: {
+    fontSize: 18,
+    color: Colors.gold,
     fontWeight: "600",
-    color: "#333",
-    marginBottom: 4,
   },
-  subtitle: {
+  titleEn: {
+    fontSize: 13,
+    color: Colors.white,
+    opacity: 0.8,
+  },
+
+  /* Light body */
+  body: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 40,
+  },
+  signInHint: {
     fontSize: 14,
-    color: "#999",
+    color: Colors.textMuted,
+    textAlign: "center",
+    marginBottom: 28,
   },
-  form: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 8,
+
+  /* Input cards — white rounded, exactly like real app */
+  inputCard: {
+    backgroundColor: Colors.white,
+    borderRadius: Radius.md,
+    marginBottom: 16,
+    ...Shadow.card,
   },
   input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    marginBottom: 16,
-    backgroundColor: "#fafafa",
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    fontSize: 15,
+    color: Colors.textPrimary,
   },
+
+  /* Sign In button */
   button: {
-    backgroundColor: "#002147",
-    borderRadius: 8,
-    padding: 14,
+    borderRadius: Radius.xl,
+    paddingVertical: 15,
     alignItems: "center",
     marginTop: 8,
+    marginBottom: 24,
   },
-  buttonDisabled: {
-    opacity: 0.6,
+  buttonActive: {
+    backgroundColor: Colors.navy,
+  },
+  buttonInactive: {
+    backgroundColor: '#D1D5DB',
   },
   buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: 0.5,
   },
-  demo: {
-    backgroundColor: "#e3f2fd",
-    borderRadius: 8,
+  buttonTextActive: {
+    color: Colors.white,
+  },
+  buttonTextInactive: {
+    color: Colors.white,
+  },
+
+  /* Demo hint */
+  demoBox: {
+    backgroundColor: '#EFF6FF',
+    borderRadius: Radius.sm,
     padding: 12,
     alignItems: "center",
   },
   demoText: {
     fontSize: 12,
-    color: "#1565c0",
-    marginBottom: 4,
+    color: '#3B82F6',
   },
-  demoValue: {
-    fontSize: 12,
-    fontFamily: "monospace",
-    color: "#0d47a1",
-    fontWeight: "600",
+  demoBold: {
+    fontWeight: "700",
   },
 });
