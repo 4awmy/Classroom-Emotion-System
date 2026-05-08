@@ -19,7 +19,7 @@ calculate_attendance_pct <- function(attendance_df) {
     dplyr::ungroup()
 }
 
-# Aggregate attendance by course/department
+# Aggregate attendance by lecture_id
 aggregate_attendance <- function(attendance_df) {
   if (nrow(attendance_df) == 0) {
     return(data.frame())
@@ -27,9 +27,9 @@ aggregate_attendance <- function(attendance_df) {
 
   attendance_df |>
     calculate_attendance_pct() |>
-    dplyr::group_by(.data$course, .data$lecturer_id) |>
+    dplyr::group_by(.data$lecture_id) |>
     dplyr::summarise(
-      total_lectures = dplyr::n_distinct(.data$lecture_id),
+      total_students = dplyr::n_distinct(.data$student_id),
       attendance_rate = round(mean(.data$attendance_pct, na.rm = TRUE), 3),
       present_count = sum(.data$status == "PRESENT", na.rm = TRUE),
       absent_count = sum(.data$status == "ABSENT", na.rm = TRUE),

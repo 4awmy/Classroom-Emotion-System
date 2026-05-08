@@ -62,6 +62,7 @@ class EmotionLogCreate(EmotionLogBase):
 class EmotionLogResponse(EmotionLogBase):
     id: int
     timestamp: datetime
+    confidence_rate: Optional[float] = None  # Alias for confidence
     model_config = ConfigDict(from_attributes=True)
 
 class AttendanceLogBase(BaseModel):

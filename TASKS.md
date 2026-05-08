@@ -87,9 +87,9 @@
 | T043 | S2 | Lecturer: Attendance submodule | ✅ |
 | T044 | S2 | Lecturer: Live Dashboard D1–D7 | ✅ |
 | T045 | S2 | Confusion observer + Gemini alert | ✅ |
-| T046 | S2 | Lecturer: Student Reports submodule | — |
-| T047 | S2 | `student_report.Rmd` PDF template | — |
-| T048 | S2 | Deploy Shiny to shinyapps.io | — |
+| T046 | S2 | Lecturer: Student Reports submodule | ✅ |
+| T047 | S2 | `student_report.Rmd` PDF template | ✅ |
+| T048 | S2 | Deploy Shiny to shinyapps.io | ✅ |
 
 ---
 
@@ -131,7 +131,7 @@
 | T066 | S1 | Proctor loop + auto-submit (3×Sev3 in 10 min) | — |
 | T067 | S3 | Real `exam.py` endpoints | — |
 | T068 | S4 | Exam screen (`exam.tsx`) | — |
-| T069 | S2 | Exam incidents Shiny panel | — |
+| T069 | S2 | Exam incidents Shiny panel | ✅ |
 
 ---
 
@@ -143,7 +143,7 @@
 | T071 | S3 | GitHub Actions CI/CD (`deploy.yml`) | — |
 | T072 | ALL | End-to-end integration test | — |
 | T073 | S3 | Final README (clone-to-run guide) | — |
-| T074 | S2 | Final Shiny deploy to shinyapps.io | — |
+| T074 | S2 | Final Shiny deploy to shinyapps.io | ✅ |
 
 ---
 
@@ -151,19 +151,19 @@
 
 | Task | Assignee | Description | Status |
 |---|---|---|---|
-| T075 | S3 | Schema migration: add `snapshot_path TEXT` to `attendance_log` | — |
-| T076 | S1 | Vision pipeline: save face snapshot JPEG on first student detection | — |
-| T077 | S3 | `GET /attendance/snapshot/{lecture_id}/{student_id}` endpoint | — |
-| T078 | S3 | `POST /roster/student` — Admin manually add single student with photo | — |
-| T079 | S3 | `GET /roster/students` — list all students for Admin UI | — |
-| T080 | S3 | Export service: include `snapshot_path` in `attendance.csv` | — |
-| T081 | S3 | Add `confidence_rate` alias to `GET /emotion/live` response (display only) | — |
-| T082 | S2 | Shiny: Attendance card grid UI with live snapshots (Submodule C) | — |
-| T083 | S2 | Shiny: Update `lecturer_ui.R` Submodule C to use `uiOutput` for card grid | — |
-| T084 | S2 | Shiny: Attendance card CSS in `custom.css` (Navy/Gold, no overwrite) | — |
-| T085 | S2 | Shiny: Admin Student Management tab UI (Panel 9) | — |
-| T086 | S2 | Shiny: Admin Student Management server logic | — |
-| T087 | S2 | Shiny: rename "Confidence" → "Confidence Rate" in all UI labels (display only) | — |
+| T075 | S3 | Schema migration: add `snapshot_path TEXT` to `attendance_log` | ✅ |
+| T076 | S1 | Vision pipeline: save face snapshot JPEG on first student detection | ✅ |
+| T077 | S3 | `GET /attendance/snapshot/{lecture_id}/{student_id}` endpoint | ✅ |
+| T078 | S3 | `POST /roster/student` — Admin manually add single student with photo | ✅ |
+| T079 | S3 | `GET /roster/students` — list all students for Admin UI | ✅ |
+| T080 | S3 | Export service: include `snapshot_path` in `attendance.csv` | ✅ |
+| T081 | S3 | Add `confidence_rate` alias to `GET /emotion/live` response (display only) | ✅ |
+| T082 | S2 | Shiny: Attendance card grid UI with live snapshots (Submodule C) | ✅ |
+| T083 | S2 | Shiny: Update `lecturer_ui.R` Submodule C to use `uiOutput` for card grid | ✅ |
+| T084 | S2 | Shiny: Attendance card CSS in `custom.css` (Navy/Gold, no overwrite) | ✅ |
+| T085 | S2 | Shiny: Admin Student Management tab UI (Panel 9) | ✅ |
+| T086 | S2 | Shiny: Admin Student Management server logic | ✅ |
+| T087 | S2 | Shiny: rename "Confidence" → "Confidence Rate" in all UI labels (display only) | ✅ |
 | T088 | S4 | React Native: create AAST theme constants (`constants/theme.ts`) | — |
 | T089 | S4 | React Native: install and load Roboto font via `expo-font` | — |
 | T090 | S4 | React Native: redesign `login.tsx` (Moodle style — Navy header, white card) | — |

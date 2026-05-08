@@ -25,7 +25,8 @@ class SessionStartRequest(BaseModel):
     lecturer_id: str
     title: Optional[str] = None
     subject: Optional[str] = None
-    slide_url: str
+    slide_url: Optional[str] = None
+    camera_url: Optional[str] = None  # override CLASSROOM_CAMERA_URL env var
 
 class SessionEndRequest(BaseModel):
     lecture_id: str
@@ -61,7 +62,7 @@ async def start_session(request: SessionStartRequest, db: Session = Depends(get_
         stop_event = threading.Event()
 
         # Vision Pipeline (Thread)
-        camera_url = os.getenv("CLASSROOM_CAMERA_URL", "0") # Default to webcam
+        camera_url = request.camera_url or os.getenv("CLASSROOM_CAMERA_URL", "0")
         vision_thread = threading.Thread(
             target=run_pipeline,
             args=(request.lecture_id, camera_url, stop_event),

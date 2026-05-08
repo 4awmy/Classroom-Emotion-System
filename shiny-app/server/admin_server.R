@@ -44,6 +44,17 @@ admin_server <- function(input, output, session) {
     }
   )
 
+  incidents_data <- shiny::reactivePoll(
+    intervalMillis = 30000,
+    session = session,
+    checkFunc = function() {
+      get_file_mtime("../python-api/data/exports/incidents.csv")
+    },
+    valueFunc = function() {
+      load_csv("../python-api/data/exports/incidents.csv")
+    }
+  )
+
   # ========================================================================
   # Panel 1: Attendance Overview
   # ========================================================================
@@ -80,10 +91,10 @@ admin_server <- function(input, output, session) {
   )
 
   # ========================================================================
-  # Panel 2: Engagement Trend
+  # Panel 2: Confidence Rate Trend
   # ========================================================================
 
-  output$admin_engagement_trend <- plotly::renderPlotly({
+  output$admin_confidence_trend <- plotly::renderPlotly({
     emotions <- emotions_data()
     if (nrow(emotions) == 0) {
       return(plotly::plot_ly() |> plotly::add_text(text = "No data"))
@@ -97,16 +108,16 @@ admin_server <- function(input, output, session) {
       ) |>
       dplyr::group_by(.data$week, .data$lecture_group) |>
       dplyr::summarise(
-        avg_engagement = mean(.data$engagement_score, na.rm = TRUE),
+        avg_confidence = mean(.data$engagement_score, na.rm = TRUE),
         .groups = "drop"
       )
 
-    plotly::plot_ly(trend_data, x = ~week, y = ~avg_engagement, color = ~lecture_group, mode = "lines+markers") |>
-      plotly::layout(title = "Weekly Engagement Trend", xaxis = list(title = "Week"), yaxis = list(title = "Avg Engagement"))
+    plotly::plot_ly(trend_data, x = ~week, y = ~avg_confidence, color = ~lecture_group, mode = "lines+markers") |>
+      plotly::layout(title = "Weekly Confidence Rate Trend", xaxis = list(title = "Week"), yaxis = list(title = "Avg Confidence Rate"))
   })
 
   # ========================================================================
-  # Panel 3: Department Engagement Heatmap (ggplot2)
+  # Panel 3: Department Confidence Rate Heatmap (ggplot2)
   # ========================================================================
 
   output$admin_dept_heatmap <- shiny::renderPlot({
@@ -121,13 +132,13 @@ admin_server <- function(input, output, session) {
         lecture_group = substr(.data$lecture_id, 1, 2)
       ) |>
       dplyr::group_by(.data$lecture_group, .data$week) |>
-      dplyr::summarise(avg_eng = mean(.data$engagement_score, na.rm = TRUE), .groups = "drop")
+      dplyr::summarise(avg_conf = mean(.data$engagement_score, na.rm = TRUE), .groups = "drop")
 
-    ggplot2::ggplot(heatmap_data, ggplot2::aes(x = .data$week, y = .data$lecture_group, fill = .data$avg_eng)) +
+    ggplot2::ggplot(heatmap_data, ggplot2::aes(x = .data$week, y = .data$lecture_group, fill = .data$avg_conf)) +
       ggplot2::geom_tile() +
       ggplot2::scale_fill_gradient(low = "red", high = "green", limits = c(0, 1)) +
       ggplot2::theme_minimal() +
-      ggplot2::labs(title = "Lecture Group Engagement Heatmap", y = "Lecture Group", fill = "Avg Engagement")
+      ggplot2::labs(title = "Lecture Group Confidence Rate Heatmap", y = "Lecture Group", fill = "Avg Confidence Rate")
   })
 
   # ========================================================================
@@ -157,9 +168,69 @@ admin_server <- function(input, output, session) {
       dplyr::filter(.data$consec_run >= 3) |>
       dplyr::slice_tail(n = 1) |>
       dplyr::ungroup() |>
-      dplyr::select(.data$student_id, .data$engagement_score, .data$drop, .data$lecture_id, .data$consec_run)
+      dplyr::select(
+        `Student ID` = .data$student_id, 
+        `Confidence Rate` = .data$engagement_score, 
+        Drop = .data$drop, 
+        `Lecture ID` = .data$lecture_id, 
+        Streak = .data$consec_run
+      )
 
     DT::datatable(at_risk, options = list(pageLength = 10))
+  })
+
+  # At-risk notify button — POST selected students to /notify/lecturer
+  shiny::observeEvent(input$admin_notify_button, {
+    emotions <- emotions_data()
+    if (nrow(emotions) == 0) return()
+
+    eng_metrics <- compute_engagement(emotions)$by_lecture |>
+      dplyr::arrange(.data$student_id, .data$lecture_id)
+
+    at_risk_ids <- eng_metrics |>
+      dplyr::group_by(.data$student_id) |>
+      dplyr::mutate(
+        lag_score  = dplyr::lag(.data$engagement_score),
+        drop       = .data$lag_score - .data$engagement_score,
+        is_drop    = !is.na(.data$drop) & .data$drop > 0.20,
+        streak_id  = cumsum(!.data$is_drop),
+        consec_run = ave(as.integer(.data$is_drop), .data$student_id, .data$streak_id, FUN = cumsum)
+      ) |>
+      dplyr::filter(.data$consec_run >= 3) |>
+      dplyr::slice_tail(n = 1) |>
+      dplyr::ungroup() |>
+      dplyr::pull(.data$student_id)
+
+    if (length(at_risk_ids) == 0) {
+      shinyalert::shinyalert("No at-risk students", "No students meet the threshold.", type = "info")
+      return()
+    }
+
+    # Use lecture_id from first row in at_risk set
+    lecture_id <- eng_metrics |>
+      dplyr::filter(.data$student_id %in% at_risk_ids) |>
+      dplyr::pull(.data$lecture_id) |>
+      dplyr::first()
+
+    success <- 0
+    for (sid in at_risk_ids) {
+      tryCatch({
+        httr2::request(paste0(FASTAPI_BASE, "/notify/lecturer")) |>
+          httr2::req_url_query(
+            student_id = sid,
+            lecture_id = lecture_id,
+            reason     = "At-risk: >20% engagement drop over 3+ lectures"
+          ) |>
+          httr2::req_method("POST") |>
+          httr2::req_perform()
+        success <- success + 1
+      }, error = function(e) NULL)
+    }
+    shinyalert::shinyalert(
+      "Notifications Sent",
+      sprintf("%d at-risk student(s) flagged to lecturer.", success),
+      type = "success"
+    )
   })
 
   # ========================================================================
@@ -187,7 +258,14 @@ admin_server <- function(input, output, session) {
         LES_category = dplyr::if_else(.data$LES >= 0.7, "Excellent", dplyr::if_else(.data$LES >= 0.5, "Good", "Needs Improvement"))
       ) |>
       dplyr::arrange(dplyr::desc(.data$LES)) |>
-      dplyr::select(.data$lecture_id, .data$engagement_score, .data$confusion_rate, .data$attendance_rate, .data$LES, .data$LES_category)
+      dplyr::select(
+        `Lecture ID` = .data$lecture_id, 
+        `Confidence Rate` = .data$engagement_score, 
+        `Confusion Rate` = .data$confusion_rate, 
+        `Attendance Rate` = .data$attendance_rate, 
+        LES = .data$LES, 
+        Category = .data$LES_category
+      )
 
     DT::datatable(les_data, options = list(pageLength = 10))
   })
@@ -265,7 +343,7 @@ admin_server <- function(input, output, session) {
       plotly::layout(
         title = "Lecturer Performance Clusters",
         xaxis = list(title = "LES Score"),
-        yaxis = list(title = "Engagement Variance")
+        yaxis = list(title = "Confidence Rate Variance")
       )
   })
 
@@ -285,22 +363,23 @@ admin_server <- function(input, output, session) {
         weekday = lubridate::wday(.data$timestamp, label = TRUE)
       ) |>
       dplyr::group_by(.data$weekday, .data$hour) |>
-      dplyr::summarise(avg_eng = mean(.data$engagement_score, na.rm = TRUE), .groups = "drop")
+      dplyr::summarise(avg_conf = mean(.data$engagement_score, na.rm = TRUE), .groups = "drop")
 
-    ggplot2::ggplot(tod_data, ggplot2::aes(x = .data$hour, y = .data$weekday, fill = .data$avg_eng)) +
+    ggplot2::ggplot(tod_data, ggplot2::aes(x = .data$hour, y = .data$weekday, fill = .data$avg_conf)) +
+      ggplot2::geom_tile() +
       ggplot2::scale_fill_gradient(low = "red", high = "green", limits = c(0, 1)) +
       ggplot2::theme_minimal() +
-      ggplot2::labs(title = "Engagement by Time of Day & Weekday", x = "Hour", y = "Weekday", fill = "Avg Engagement")
-    })
+      ggplot2::labs(title = "Confidence Rate by Time of Day & Weekday", x = "Hour", y = "Weekday", fill = "Avg Confidence Rate")
+  })
 
-    # ========================================================================
-    # Panel 9: Student Management
-    # ========================================================================
+  # ========================================================================
+  # Panel 9: Student Management
+  # ========================================================================
 
-    # Trigger table refresh
-    student_refresh <- shiny::reactiveVal(0)
+  # Trigger table refresh
+  student_refresh <- shiny::reactiveVal(0)
 
-    output$admin_student_table <- DT::renderDataTable({
+  output$admin_student_table <- DT::renderDataTable({
     student_refresh() # Dependency
     data <- api_call("/roster/students")
     if (is.null(data) || length(data) == 0) return(data.frame())
@@ -309,9 +388,9 @@ admin_server <- function(input, output, session) {
     df <- dplyr::bind_rows(lapply(data, as.data.frame))
 
     DT::datatable(df, options = list(pageLength = 10), selection = "single")
-    })
+  })
 
-    shiny::observeEvent(input$admin_student_submit, {
+  shiny::observeEvent(input$admin_student_submit, {
     req(input$admin_student_id, input$admin_student_name, input$admin_student_photo)
 
     # Validate 9-digit student_id
@@ -347,7 +426,35 @@ admin_server <- function(input, output, session) {
       # Refresh table
       student_refresh(student_refresh() + 1)
     }
-    })
+  })
+
+  # ========================================================================
+  # Panel 10: Exam Incidents
+  # ========================================================================
+
+  output$admin_incidents_table <- DT::renderDataTable({
+    data <- incidents_data()
+    if (nrow(data) == 0) {
+      return(data.frame())
     }
 
+    # Format evidence link
+    data <- data |>
+      dplyr::mutate(
+        evidence = ifelse(is.na(.data$evidence_path) | .data$evidence_path == "",
+                         "No Photo",
+                         sprintf('<a href="%s/attendance/evidence/%s" target="_blank">View Photo</a>',
+                                 FASTAPI_BASE, basename(.data$evidence_path)))
+      ) |>
+      dplyr::select(
+        `Student ID`    = .data$student_id,
+        `Exam ID`       = .data$exam_id,
+        `Incident Type` = .data$flag_type,
+        Severity        = .data$severity,
+        Timestamp       = .data$timestamp,
+        Evidence        = .data$evidence
+      )
+
+    DT::datatable(data, escape = FALSE, options = list(pageLength = 25))
+  })
 }

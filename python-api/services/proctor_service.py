@@ -88,16 +88,22 @@ class ProctorService:
             return 0, 0, 0, False
 
         # Lazy load mediapipe
-        import mediapipe as mp
-        
-        if not hasattr(self, '_face_mesh'):
-            self._face_mesh = mp.solutions.face_mesh.FaceMesh(
-                static_image_mode=False,
-                max_num_faces=1,
-                refine_landmarks=True,
-                min_detection_confidence=0.5,
-                min_tracking_confidence=0.5
-            )
+        try:
+            import mediapipe as mp
+            if not hasattr(mp, "solutions") or not hasattr(mp.solutions, "face_mesh"):
+                return 0, 0, 0, False
+                
+            if not hasattr(self, '_face_mesh'):
+                self._face_mesh = mp.solutions.face_mesh.FaceMesh(
+                    static_image_mode=False,
+                    max_num_faces=1,
+                    refine_landmarks=True,
+                    min_detection_confidence=0.5,
+                    min_tracking_confidence=0.5
+                )
+        except (ImportError, AttributeError):
+            # MediaPipe not available or incompatible
+            return 0, 0, 0, False
 
         h, w, _ = face_roi.shape
         rgb_roi = cv2.cvtColor(face_roi, cv2.COLOR_BGR2RGB)

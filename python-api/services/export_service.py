@@ -10,8 +10,8 @@ def export_all():
     try:
         os.makedirs(EXPORT_DIR, exist_ok=True)
         queries = {
-            "emotions":      "SELECT student_id, lecture_id, timestamp, emotion, confidence, engagement_score FROM emotion_log",
-            "attendance":    "SELECT student_id, lecture_id, timestamp, status, method, snapshot_path FROM attendance_log",
+            "emotions":      "SELECT e.student_id, s.name, e.lecture_id, e.timestamp, e.emotion, e.confidence, e.engagement_score FROM emotion_log e JOIN students s ON e.student_id = s.student_id",
+            "attendance":    "SELECT a.student_id, s.name, a.lecture_id, a.timestamp, a.status, a.method, a.snapshot_path FROM attendance_log a JOIN students s ON a.student_id = s.student_id",
             "materials":     "SELECT material_id, lecture_id, lecturer_id, title, drive_link, uploaded_at FROM materials",
             "incidents":     "SELECT student_id, exam_id, timestamp, flag_type, severity, evidence_path FROM incidents",
             "notifications": "SELECT student_id, lecturer_id, lecture_id, reason, created_at, read FROM notifications",
