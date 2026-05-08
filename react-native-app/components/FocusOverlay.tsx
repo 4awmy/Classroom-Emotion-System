@@ -1,159 +1,162 @@
-import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React, { useMemo } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Colors, DarkColors, Radius, Shadow } from "@/constants/theme";
+import { useStore } from "@/store/useStore";
 
 interface FocusOverlayProps {
   strikes: number;
-  focusActive: boolean;
-  lectureId: string | null;
+  onDismiss: () => void;
 }
 
-const MAX_STRIKES = 3;
+export default function FocusOverlay({ strikes, onDismiss }: FocusOverlayProps) {
+  const { isDark } = useStore();
+  const C = isDark ? DarkColors : Colors;
+  const styles = useMemo(() => makeStyles(C), [isDark]);
 
-/**
- * FocusOverlay — T055
- *
- * Displays the current strike counter and focus-lock status.
- * Turns amber at 1–2 strikes, red at 3+ strikes.
- * Rendered inside the Focus Mode screen above the content.
- */
-export default function FocusOverlay({
-  strikes,
-  focusActive,
-  lectureId,
-}: FocusOverlayProps) {
-  const strikeDots = Array.from({ length: MAX_STRIKES }, (_, i) => i < strikes);
-  const isWarning = strikes >= MAX_STRIKES;
+  const isWarning = strikes >= 3;
 
   return (
-    <View style={[styles.container, isWarning && styles.containerWarning]}>
-      {/* Focus status badge */}
-      <View style={styles.row}>
-        <View style={[styles.badge, focusActive ? styles.badgeActive : styles.badgeInactive]}>
-          <Text style={styles.badgeText}>
-            {focusActive ? "FOCUS ACTIVE" : "FOCUS INACTIVE"}
-          </Text>
-        </View>
-        {lectureId && (
-          <Text style={styles.lectureId}>Lecture: {lectureId}</Text>
-        )}
-      </View>
-
-      {/* Strike counter */}
-      <View style={styles.strikeRow}>
-        <Text style={styles.strikeLabel}>Strikes</Text>
-        <View style={styles.dotsRow}>
-          {strikeDots.map((filled, i) => (
-            <View
-              key={i}
-              style={[styles.dot, filled && (isWarning ? styles.dotRed : styles.dotAmber)]}
+    <Modal transparent animationType="fade" visible onRequestClose={onDismiss}>
+      <View style={styles.backdrop}>
+        <View style={styles.card}>
+          {/* Icon */}
+          <View style={[styles.iconCircle, isWarning ? styles.iconRed : styles.iconAmber]}>
+            <Ionicons
+              name={isWarning ? "warning" : "eye-off"}
+              size={32}
+              color={Colors.white}
             />
-          ))}
-        </View>
-        <Text style={[styles.strikeCount, isWarning && styles.strikeCountRed]}>
-          {strikes}/{MAX_STRIKES}
-        </Text>
-      </View>
+          </View>
 
-      {/* Warning message at max strikes */}
-      {isWarning && (
-        <View style={styles.warningBanner}>
-          <Text style={styles.warningText}>
-            ⚠ Maximum strikes reached — lecturer has been notified
+          {/* Title */}
+          <Text style={styles.title}>
+            {isWarning ? "Focus Warning!" : "Strike Recorded"}
           </Text>
+          <Text style={styles.subtitle}>
+            You left the app during a lecture session.
+          </Text>
+
+          {/* Strike Counter */}
+          <View
+            style={[
+              styles.strikeBadge,
+              {
+                backgroundColor: isWarning
+                  ? (isDark ? "#3D0000" : "#FEE2E2")
+                  : (isDark ? "#451A03" : "#FEF3C7"),
+              },
+            ]}
+          >
+            <Text style={styles.strikeCount}>{strikes}</Text>
+            <Text style={styles.strikeLabel}>
+              {strikes === 1 ? "Strike" : "Strikes"}
+            </Text>
+          </View>
+
+          {isWarning && (
+            <Text style={styles.warningText}>
+              Your lecturer has been notified of repeated focus violations.
+            </Text>
+          )}
+
+          {/* Dismiss */}
+          <TouchableOpacity
+            style={styles.dismissBtn}
+            onPress={onDismiss}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.dismissText}>Return to App</Text>
+          </TouchableOpacity>
         </View>
-      )}
-    </View>
+      </View>
+    </Modal>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: "#002147",   // AAST navy
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#C9A84C",        // AAST gold
-  },
-  containerWarning: {
-    backgroundColor: "#7f1d1d",
-    borderColor: "#ef4444",
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-  badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  badgeActive: {
-    backgroundColor: "#C9A84C",  // gold
-  },
-  badgeInactive: {
-    backgroundColor: "#4b5563",
-  },
-  badgeText: {
-    color: "#fff",
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1,
-  },
-  lectureId: {
-    color: "#d1d5db",
-    fontSize: 12,
-  },
-  strikeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  strikeLabel: {
-    color: "#9ca3af",
-    fontSize: 13,
-    marginRight: 6,
-  },
-  dotsRow: {
-    flexDirection: "row",
-    gap: 6,
+const makeStyles = (C: typeof Colors) => StyleSheet.create({
+  backdrop: {
     flex: 1,
+    backgroundColor: "#00000066",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 32,
   },
-  dot: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: "#374151",
-    borderWidth: 1,
-    borderColor: "#6b7280",
+  card: {
+    backgroundColor: C.white,
+    borderRadius: Radius.xl,
+    padding: 28,
+    alignItems: "center",
+    width: "100%",
+    gap: 12,
+    ...Shadow.card,
   },
-  dotAmber: {
-    backgroundColor: "#f59e0b",
-    borderColor: "#d97706",
+  iconCircle: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
   },
-  dotRed: {
-    backgroundColor: "#ef4444",
-    borderColor: "#dc2626",
+  iconRed: { backgroundColor: C.error },
+  iconAmber: { backgroundColor: C.warning },
+  title: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: C.textPrimary,
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 13,
+    color: C.textSecondary,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  strikeBadge: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: Radius.xl,
+    marginVertical: 4,
   },
   strikeCount: {
-    color: "#e5e7eb",
-    fontSize: 16,
-    fontWeight: "700",
+    fontSize: 36,
+    fontWeight: "900",
+    color: C.textPrimary,
   },
-  strikeCountRed: {
-    color: "#ef4444",
-  },
-  warningBanner: {
-    marginTop: 10,
-    backgroundColor: "rgba(239, 68, 68, 0.2)",
-    borderRadius: 6,
-    padding: 8,
+  strikeLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: C.textSecondary,
   },
   warningText: {
-    color: "#fca5a5",
     fontSize: 12,
+    color: C.error,
     textAlign: "center",
+    lineHeight: 18,
+    paddingHorizontal: 8,
+  },
+  dismissBtn: {
+    backgroundColor: C.navy,
+    borderRadius: Radius.xl,
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    marginTop: 8,
+    width: "100%",
+    alignItems: "center",
+  },
+  dismissText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: Colors.white,
   },
 });

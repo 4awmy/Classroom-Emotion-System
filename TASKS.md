@@ -104,9 +104,9 @@
 | T053 | S4 | Focus mode (`focus.tsx`) | ✅ |
 | T054 | S4 | ~~CaptionBar component~~ **RETIRED** — audio/captioning removed from scope | ❌ |
 | T055 | S4 | FocusOverlay component | ✅ |
-| T056 | S4 | Smart Notes viewer (`notes.tsx`) | — |
-| T057 | S4 | NotesViewer component | — |
-| T058 | S3 | WS focus strike handler (backend) | — |
+| T056 | S4 | Smart Notes viewer (`notes.tsx`) | ✅ |
+| T057 | S4 | NotesViewer component | ✅ |
+| T058 | S3 | WS focus strike handler (backend) | ✅ |
 | T059 | S3 | Notification endpoint (`POST /notify/lecturer`) | ✅ |
 
 ---

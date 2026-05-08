@@ -135,17 +135,29 @@ async def websocket_endpoint(websocket: WebSocket):
                 student_id = data.get("student_id")
                 lecture_id = data.get("lecture_id")
                 strike_type = data.get("strike_type", "app_background")
-                
+                # "exam" → incidents table (severity=1); absent → focus_strikes table
+                context = data.get("context")
+
                 persisted = False
                 if student_id and lecture_id:
                     db: Session = SessionLocal()
                     try:
-                        db.add(FocusStrike(
-                            student_id=student_id,
-                            lecture_id=lecture_id,
-                            timestamp=datetime.utcnow(),
-                            strike_type=strike_type
-                        ))
+                        if context == "exam":
+                            # Exam background strike → incidents, severity=1 (ARCHITECTURE.md §4.2)
+                            db.add(models.Incident(
+                                student_id=student_id,
+                                exam_id=lecture_id,
+                                flag_type="app_background",
+                                severity=1,
+                                timestamp=datetime.utcnow(),
+                            ))
+                        else:
+                            db.add(FocusStrike(
+                                student_id=student_id,
+                                lecture_id=lecture_id,
+                                timestamp=datetime.utcnow(),
+                                strike_type=strike_type,
+                            ))
                         db.commit()
                         persisted = True
                     except Exception as e:
@@ -153,11 +165,12 @@ async def websocket_endpoint(websocket: WebSocket):
                         db.rollback()
                     finally:
                         db.close()
-                
+
                 if persisted:
                     await websocket.send_json({
                         "type": "strike_ack",
                         "student_id": student_id,
+                        "context": context or "lecture",
                         "timestamp": datetime.utcnow().isoformat() + "Z"
                     })
     except WebSocketDisconnect:
