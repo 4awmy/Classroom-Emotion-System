@@ -2,8 +2,11 @@ import os
 import pandas as pd
 from apscheduler.schedulers.background import BackgroundScheduler
 from database import SessionLocal
+import models
+from services import gemini_service
 
 EXPORT_DIR = "data/exports"
+PLANS_DIR = "data/plans"
 
 def export_all():
     db = SessionLocal()
@@ -26,6 +29,33 @@ def export_all():
     finally:
         db.close()
 
+def generate_nightly_plans():
+    """Generates AI intervention plans for each student based on their emotion history."""
+    db = SessionLocal()
+    try:
+        os.makedirs(PLANS_DIR, exist_ok=True)
+        students = db.query(models.Student).all()
+        for student in students:
+            # Get last 50 emotion logs for this student
+            emotions = db.query(models.EmotionLog).filter(
+                models.EmotionLog.student_id == student.student_id
+            ).order_by(models.EmotionLog.timestamp.desc()).limit(50).all()
+            
+            if not emotions:
+                continue
+                
+            history = [{"emotion": e.emotion, "timestamp": e.timestamp.isoformat()} for e in emotions]
+            plan = gemini_service.generate_intervention_plan(history)
+            
+            with open(os.path.join(PLANS_DIR, f"{student.student_id}.md"), "w", encoding="utf-8") as f:
+                f.write(plan)
+            print(f"[PLANS] Generated plan for {student.student_id}")
+    except Exception as e:
+        print(f"[PLANS] Error generating plans: {e}")
+    finally:
+        db.close()
+
 scheduler = BackgroundScheduler()
 scheduler.add_job(export_all, "cron", hour=2, minute=0)
+scheduler.add_job(generate_nightly_plans, "cron", hour=2, minute=30)
 scheduler.start()

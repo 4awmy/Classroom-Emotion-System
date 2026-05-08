@@ -289,25 +289,43 @@ lecturer_server <- function(input, output, session) {
     trimws(lid)
   }
 
+  output$lecturer_live_custom_cam_ui <- shiny::renderUI({
+    if (input$lecturer_live_camera == "custom") {
+      textInput("lecturer_live_custom_cam", "Custom URL (RTSP/HTTP)", placeholder = "rtsp://...")
+    }
+  })
+
   shiny::observeEvent(input$lecturer_live_start, {
     lecture_id <- get_live_lecture_id()
     if (is.null(lecture_id)) {
       shinyalert::shinyalert("Error", "Enter a Lecture ID first.", type = "error")
       return()
     }
+
+    cam_url <- if (input$lecturer_live_camera == "custom") {
+      input$lecturer_live_custom_cam
+    } else {
+      input$lecturer_live_camera
+    }
+
+    if (is.null(cam_url) || nchar(trimws(cam_url)) == 0) cam_url <- "0"
+
     result <- tryCatch({
       httr2::request(paste0(FASTAPI_BASE, "/session/start")) |>
         httr2::req_body_json(list(
           lecture_id  = lecture_id,
           lecturer_id = "LECTURER_1",
-          camera_url  = "0"
+          camera_url  = trimws(cam_url)
         )) |>
         httr2::req_perform() |>
         httr2::resp_body_json()
-    }, error = function(e) NULL)
+    }, error = function(e) {
+      shinyalert::shinyalert("Error", paste("Could not start session:", e$message), type = "error")
+      NULL
+    })
     if (!is.null(result)) {
       shinyalert::shinyalert("Lecture Started / بدأت المحاضرة",
-                             paste("Lecture", lecture_id, "is now live."), type = "success")
+                             paste("Lecture", lecture_id, "is now live using camera:", cam_url), type = "success")
     }
   })
 

@@ -154,16 +154,22 @@ lecturer_ui <- function() {
           tabName = "lec_live",
           h2("Live Class Monitoring / المراقبة المباشرة"),
           fluidRow(
-            column(4,
+            column(3,
               textInput("lecturer_live_lecture", "Lecture ID / رقم المحاضرة",
                        placeholder = "e.g. L1")
             ),
-            column(4,
+            column(3,
+              selectInput("lecturer_live_camera", "Camera / الكاميرا",
+                         choices = list("Default (0)" = "0", "Phone Camera" = "1", "External Cam" = "2", "Custom URL" = "custom"),
+                         selected = "0"),
+              uiOutput("lecturer_live_custom_cam_ui")
+            ),
+            column(3,
               br(),
               actionButton("lecturer_live_start", "Start Lecture / ابدأ المحاضرة",
                           class = "btn-success", icon = icon("play"))
             ),
-            column(4,
+            column(3,
               br(),
               actionButton("lecturer_live_end", "End Lecture / أنهِ المحاضرة",
                           class = "btn-danger", icon = icon("stop"))

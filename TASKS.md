@@ -85,7 +85,7 @@
 | T041 | S2 | Lecturer: Roster submodule | ✅ |
 | T042 | S2 | Lecturer: Materials submodule | ✅ |
 | T043 | S2 | Lecturer: Attendance submodule | ✅ |
-| T044 | S2 | Lecturer: Live Dashboard D1–D7 | ✅ |
+| T044 | S2 | Lecturer: Live Dashboard D1–D7 + Camera Switch (Issue 347) | ✅ |
 | T045 | S2 | Confusion observer + Gemini alert | ✅ |
 | T046 | S2 | Lecturer: Student Reports submodule | ✅ |
 | T047 | S2 | `student_report.Rmd` PDF template | ✅ |
@@ -97,7 +97,7 @@
 
 | Task | Assignee | Description | Status |
 |---|---|---|---|
-| T049 | S4 | Zustand store (`useStore.ts`) | ✅ |
+| T049 | S4 | Zustand store (`useStore.ts`) + Persistence | ✅ |
 | T050 | S4 | API client + WebSocket (`api.ts`) | ✅ |
 | T051 | S4 | Login screen (`login.tsx`) | ✅ |
 | T052 | S4 | Home screen (`home.tsx`) | ✅ |
@@ -115,11 +115,11 @@
 
 | Task | Assignee | Description | Status |
 |---|---|---|---|
-| T060 | S1 | Gemini service (`gemini_service.py` — 3 functions) | — |
-| T061 | S1 | Real `gemini.py` fresh-brainer question endpoint | — |
-| T062 | S1 | Smart notes endpoint (emotion-history based, no transcript) | — |
-| T063 | S3 | Intervention plan endpoint (`GET /notes/{sid}/plan`) | — |
-| T064 | S1 | Nightly plan generation job (APScheduler → `data/plans/`) | — |
+| T060 | S1 | Gemini service (`gemini_service.py` — 3 functions) | ✅ |
+| T061 | S1 | Real `gemini.py` fresh-brainer question endpoint | ✅ |
+| T062 | S1 | Smart notes endpoint (emotion-history based, no transcript) | ✅ |
+| T063 | S3 | Intervention plan endpoint (`GET /notes/{sid}/plan`) | ✅ |
+| T064 | S1 | Nightly plan generation job (APScheduler → `data/plans/`) | ✅ |
 
 ---
 
@@ -164,14 +164,14 @@
 | T085 | S2 | Shiny: Admin Student Management tab UI (Panel 9) | ✅ |
 | T086 | S2 | Shiny: Admin Student Management server logic | ✅ |
 | T087 | S2 | Shiny: rename "Confidence" → "Confidence Rate" in all UI labels (display only) | ✅ |
-| T088 | S4 | React Native: create AAST theme constants (`constants/theme.ts`) | — |
-| T089 | S4 | React Native: install and load Roboto font via `expo-font` | — |
-| T090 | S4 | React Native: redesign `login.tsx` (Moodle style — Navy header, white card) | — |
-| T091 | S4 | React Native: redesign `home.tsx` (card-based dashboard, Gold accent bars) | — |
-| T092 | S4 | React Native: lecture timer in `focus.tsx` (HH:MM:SS, Gold) | — |
-| T093 | S4 | React Native: redesign `focus.tsx` layout (full Navy, timer, captions) | — |
-| T094 | S4 | React Native: redesign `notes.tsx` (Gold highlights, Navy headings) | — |
-| T095 | S3 | Confirm `session:start` WS payload includes `start_time` field | — |
+| T088 | S4 | React Native: create AAST theme constants (`constants/theme.ts`) | ✅ |
+| T089 | S4 | React Native: install and load Roboto font via `expo-font` | ✅ |
+| T090 | S4 | React Native: redesign `login.tsx` (Moodle style — Navy header, white card) | ✅ |
+| T091 | S4 | React Native: redesign `home.tsx` (card-based dashboard, Gold accent bars) | ✅ |
+| T092 | S4 | React Native: lecture timer in `focus.tsx` (HH:MM:SS, Gold) | ✅ |
+| T093 | S4 | React Native: redesign `focus.tsx` layout (full Navy, timer, captions) | ✅ |
+| T094 | S4 | React Native: redesign `notes.tsx` (Gold highlights, Navy headings) | ✅ |
+| T095 | S3 | Confirm `session:start` WS payload includes `start_time` field | ✅ |
 
 ---
 

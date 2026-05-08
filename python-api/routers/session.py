@@ -80,6 +80,7 @@ async def start_session(request: SessionStartRequest, db: Session = Depends(get_
         "lecture_id": request.lecture_id,
         "slide_url": request.slide_url,
         "lecturer_id": request.lecturer_id,
+        "start_time": lecture.start_time.isoformat() + "Z",
         "timestamp": datetime.utcnow().isoformat() + "Z"
     })
     return {"status": "started", "lecture_id": request.lecture_id}
