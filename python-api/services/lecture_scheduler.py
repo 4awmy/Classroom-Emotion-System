@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from apscheduler.schedulers.background import BackgroundScheduler
 from models import ClassSchedule, Lecture, Class
@@ -28,7 +28,7 @@ def auto_start_lectures():
             existing_lecture = db.query(Lecture).filter(
                 Lecture.class_id == schedule.class_id,
                 Lecture.start_time >= datetime.combine(now.date(), datetime.min.time()),
-                Lecture.start_time < datetime.combine(now.date() + datetime.timedelta(days=1), datetime.min.time())
+                Lecture.start_time < datetime.combine(now.date() + timedelta(days=1), datetime.min.time())
             ).first()
 
             if not existing_lecture:
