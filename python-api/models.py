@@ -136,7 +136,6 @@ class Exam(Base):
 
     class_: Mapped["Class"] = relationship(back_populates="exams")
     lecture: Mapped[Optional["Lecture"]] = relationship(back_populates="exams")
-    incidents: Mapped[List["Incident"]] = relationship(back_populates="exam")
 
 class Material(Base):
     __tablename__ = "materials"
@@ -179,14 +178,13 @@ class Incident(Base):
     __tablename__ = "incidents"
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     student_id: Mapped[Optional[str]] = mapped_column(ForeignKey("students.student_id"))
-    exam_id: Mapped[str] = mapped_column(ForeignKey("exams.exam_id"))
+    exam_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     timestamp: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     flag_type: Mapped[str] = mapped_column(String, nullable=False)
     severity: Mapped[int] = mapped_column(Integer, nullable=False)
     evidence_path: Mapped[Optional[str]] = mapped_column(String)
 
     student: Mapped[Optional["Student"]] = relationship(back_populates="incidents")
-    exam: Mapped["Exam"] = relationship(back_populates="incidents")
 
 class Notification(Base):
     __tablename__ = "notifications"
