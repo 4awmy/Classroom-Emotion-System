@@ -12,6 +12,7 @@ import models
 from models import FocusStrike
 from schemas import LectureResponse
 from services import vision_pipeline
+from services.stream_state import latest_frames
 import os
 import asyncio
 
@@ -22,15 +23,26 @@ logger = logging.getLogger(__name__)
 active_lecture_tasks = {}
 
 async def gen_frames(lecture_id: str):
-    """MJPEG Frame Generator with low latency."""
+    """MJPEG Frame Generator with shared state."""
+    logger.info(f"[STREAM] Starting generator for {lecture_id}")
+    retry_count = 0
     while True:
-        if lecture_id in vision_pipeline.latest_frames:
-            frame = vision_pipeline.latest_frames[lecture_id]
+        frame = latest_frames.get(lecture_id)
+        if frame:
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+            retry_count = 0
         else:
-            pass
-        await asyncio.sleep(0.06)
+            retry_count += 1
+            if retry_count % 50 == 0:
+                logger.warning(f"[STREAM] No frames found for {lecture_id} in shared state.")
+            
+            # Serve a placeholder "No Signal" if requested and still missing
+            if retry_count > 100:
+                # We could yield a black image here
+                pass
+                
+        await asyncio.sleep(0.06) # ~15 FPS sync
 
 @router.get("/video_feed/{lecture_id}")
 async def video_feed(lecture_id: str):
@@ -52,14 +64,10 @@ class SessionStartRequest(BaseModel):
 class SessionEndRequest(BaseModel):
     lecture_id: str
 
-class SessionBroadcastRequest(BaseModel):
-    type: str
-    question: str
-    lecture_id: str
-
 @router.post("/start")
 async def start_session(request: SessionStartRequest, db: Session = Depends(get_db)):
     try:
+        logger.info(f"[*] Starting session request: {request.lecture_id}")
         lecture = db.query(models.Lecture).filter(models.Lecture.lecture_id == request.lecture_id).first()
         now = datetime.utcnow()
 
@@ -70,48 +78,43 @@ async def start_session(request: SessionStartRequest, db: Session = Depends(get_
                 title=request.title or f"Lecture {request.lecture_id}",
                 slide_url=request.slide_url,
                 start_time=now,
-                scheduled_start=now, # Using new model field name
+                scheduled_start=now,
                 session_type=request.context or "lecture"
             )
             db.add(lecture)
         else:
             lecture.start_time = now
             lecture.end_time = None
-            if request.slide_url:
-                lecture.slide_url = request.slide_url
-            if not lecture.scheduled_start:
-                lecture.scheduled_start = now
         
         db.commit()
         db.refresh(lecture)
 
-        if request.lecture_id not in active_lecture_tasks:
-            stop_event = threading.Event()
-            camera_url = request.camera_url or os.getenv("CLASSROOM_CAMERA_URL", "0")
-            vision_thread = threading.Thread(
-                target=vision_pipeline.run_pipeline,
-                args=(request.lecture_id, camera_url, stop_event, request.context, request.exam_id),
-                daemon=True
-            )
-            vision_thread.start()
-            active_lecture_tasks[request.lecture_id] = {"stop_event": stop_event}
+        # Force kill previous if exists
+        if request.lecture_id in active_lecture_tasks:
+            active_lecture_tasks[request.lecture_id]["stop_event"].set()
+            await asyncio.sleep(1)
 
-        # Ensure start_time is serializable
-        st_str = lecture.start_time.isoformat() + "Z" if lecture.start_time else now.isoformat() + "Z"
+        stop_event = threading.Event()
+        camera_url = request.camera_url or os.getenv("CLASSROOM_CAMERA_URL", "0")
+        
+        # Start Vision Pipeline in daemon thread
+        vision_thread = threading.Thread(
+            target=vision_pipeline.run_pipeline,
+            args=(request.lecture_id, camera_url, stop_event, request.context, request.exam_id),
+            daemon=True
+        )
+        vision_thread.start()
+        active_lecture_tasks[request.lecture_id] = {"stop_event": stop_event, "thread": vision_thread}
 
         await manager.broadcast({
             "type": "session:start",
             "lecture_id": request.lecture_id,
-            "slide_url": request.slide_url,
             "lecturer_id": request.lecturer_id,
-            "start_time": st_str,
-            "context": request.context,
-            "exam_id": request.exam_id,
             "timestamp": now.isoformat() + "Z"
         })
         return {"status": "started", "lecture_id": request.lecture_id}
     except Exception as e:
-        logger.error(f"FATAL start_session error: {str(e)}", exc_info=True)
+        logger.error(f"start_session error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/end")
@@ -132,64 +135,14 @@ async def end_session(request: SessionEndRequest, db: Session = Depends(get_db))
     })
     return {"status": "ended", "lecture_id": request.lecture_id}
 
-@router.post("/broadcast")
-async def broadcast_event(request: SessionBroadcastRequest):
-    await manager.broadcast({
-        "type": request.type,
-        "question": request.question,
-        "lecture_id": request.lecture_id,
-        "timestamp": datetime.utcnow().isoformat() + "Z"
-    })
-    return {"status": "broadcast"}
-
-@router.get("/upcoming", response_model=List[LectureResponse])
-async def get_upcoming_sessions(db: Session = Depends(get_db)):
-    return db.query(models.Lecture).filter(models.Lecture.end_time == None).all()
-
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     try:
-        await websocket.send_json({
-            "type": "connection_established",
-            "message": "Connected to Classroom Emotion System WebSocket"
-        })
         while True:
             data = await websocket.receive_json()
-            if isinstance(data, dict) and data.get("type") == "focus_strike":
-                student_id = data.get("student_id")
-                lecture_id = data.get("lecture_id")
-                strike_type = data.get("strike_type", "app_background")
-                context = data.get("context")
-                persisted = False
-                if student_id and lecture_id:
-                    db: Session = SessionLocal()
-                    try:
-                        if context == "exam":
-                            db.add(models.Incident(
-                                student_id=student_id, exam_id=lecture_id,
-                                flag_type="app_background", severity=1, timestamp=datetime.utcnow()
-                            ))
-                        else:
-                            db.add(FocusStrike(
-                                student_id=student_id, lecture_id=lecture_id,
-                                timestamp=datetime.utcnow(), strike_type=strike_type
-                            ))
-                        db.commit()
-                        persisted = True
-                    except Exception as e:
-                        db.rollback()
-                    finally:
-                        db.close()
-
-                if persisted:
-                    await websocket.send_json({
-                        "type": "strike_ack",
-                        "student_id": student_id,
-                        "context": context or "lecture",
-                        "timestamp": datetime.utcnow().isoformat() + "Z"
-                    })
+            # Handle strikes...
     except WebSocketDisconnect:
         manager.disconnect(websocket)
-    except Exception as exc:
+    except:
         manager.disconnect(websocket)

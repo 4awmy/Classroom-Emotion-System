@@ -70,6 +70,7 @@ lecturer_ui <- function() {
                       column(4, 
                         div(style="margin-top: 25px;",
                           actionButton("lec_live_start", "Start Session", class="btn-success", icon=icon("play")),
+                          actionButton("lec_live_end", "End Session", class="btn-danger", icon=icon("stop"), style="margin-left: 5px;"),
                           # Hidden input to store the generated lecture_id
                           conditionalPanel("false", textInput("active_lecture_id_hidden", ""))
                         )
