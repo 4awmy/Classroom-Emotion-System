@@ -241,21 +241,14 @@ def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event, 
 
                         att_entry = AttendanceLog(
                             student_id=student_id, lecture_id=lecture_id,
-                            timestamp=now, total_duration=0,
-                            status="Present", method="AI", snapshot_path=snapshot_path
+                            timestamp=now, status="Present", method="AI"
                         )
                         db.add(att_entry)
                         db.flush()
                         seen_today[student_id] = att_entry.id
                         last_seen_time[student_id] = time.time()
                     else:
-                        last_seen = last_seen_time.get(student_id, start_time)
-                        duration_delta = int(time.time() - last_seen)
-                        if duration_delta > 0:
-                            db.query(AttendanceLog).filter(AttendanceLog.id == seen_today[student_id]).update(
-                                {"total_duration": AttendanceLog.total_duration + duration_delta}
-                            )
-                            last_seen_time[student_id] = time.time()
+                        last_seen_time[student_id] = time.time()
 
                     # C. Emotion
                     emotion = "Focused"
@@ -347,11 +340,8 @@ def _run_demo_loop(lecture_id: str, db, seen_today: dict, snapshot_dir: str,
                     student_id=student_id,
                     lecture_id=lecture_id,
                     timestamp=now,
-                    check_in_time=now,
-                    total_duration=0,
                     status="Present",
-                    method="AI",
-                    snapshot_path=None
+                    method="AI"
                 )
                 db.add(att_entry)
                 db.flush()
@@ -359,14 +349,7 @@ def _run_demo_loop(lecture_id: str, db, seen_today: dict, snapshot_dir: str,
                 last_seen_time[student_id] = time.time()
                 print(f"[VISION][DEMO] Attendance marked for {student_id}")
             else:
-                # Update duration
-                last_seen = last_seen_time.get(student_id, start_time)
-                duration_delta = int(time.time() - last_seen)
-                if duration_delta > 0:
-                    db.query(AttendanceLog).filter(AttendanceLog.id == seen_today[student_id]).update(
-                        {"total_duration": AttendanceLog.total_duration + duration_delta}
-                    )
-                    last_seen_time[student_id] = time.time()
+                last_seen_time[student_id] = time.time()
 
             # Synthetic emotion
             emotion = _pick_demo_emotion()
@@ -375,8 +358,6 @@ def _run_demo_loop(lecture_id: str, db, seen_today: dict, snapshot_dir: str,
                 student_id=student_id,
                 lecture_id=lecture_id,
                 timestamp=now,
-                raw_emotion="demo",
-                raw_confidence=None,
                 emotion=emotion,
                 confidence=engagement_weight,
                 engagement_score=engagement_weight

@@ -36,6 +36,9 @@ def auto_start_lectures():
 
             if not existing_lecture:
                 class_info = db.query(Class).filter(Class.class_id == schedule.class_id).first()
+                if not class_info:
+                    logger.warning(f"No class record for schedule {schedule.schedule_id}, skipping")
+                    continue
                 new_lecture = Lecture(
                     lecture_id=str(uuid.uuid4()),
                     class_id=schedule.class_id,

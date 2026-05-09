@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import emotion, attendance, session, gemini, notes, exam, roster, upload, auth, notify, admin, courses
-from services import export_service
+from services import export_service  # starts nightly CSV scheduler on import
 from services.lecture_scheduler import start_scheduler
 from database import engine
 import models
