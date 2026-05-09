@@ -1,0 +1,5 @@
+SUPABASE_DB_PASSWORD=kdJTnejv0XYhud5C
+SUPABASE_DB_HOST=aws-0-eu-central-1.pooler.supabase.com
+SUPABASE_DB_NAME=postgres
+SUPABASE_DB_USER=postgres.asefcgykjadlekhwwzar
+SUPABASE_DB_PORT=6543

@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import emotion, attendance, session, gemini, notes, exam, roster, upload, auth, notify, admin, courses
-from services import export_service  # starts nightly CSV scheduler on import
 from services.lecture_scheduler import start_scheduler
 from database import engine
 import models
@@ -12,7 +11,6 @@ models.Base.metadata.create_all(bind=engine)
 
 # Start background schedulers
 start_scheduler()  # auto-start/end lectures from class schedule (every 1 min)
-# export_service starts its own APScheduler on import (nightly CSV at 02:00)
 
 app = FastAPI(title="AAST LMS API")
 
@@ -45,4 +43,4 @@ app.include_router(upload.router,      prefix="/upload",     tags=["Upload"])
 app.include_router(notify.router,      prefix="/notify",     tags=["Notify"])
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8003, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

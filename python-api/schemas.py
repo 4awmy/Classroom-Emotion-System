@@ -75,6 +75,15 @@ class StudentResponse(StudentBase):
     enrolled_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
+class StudentListResponse(StudentBase):
+    has_encoding: bool = False
+    model_config = ConfigDict(from_attributes=True)
+
+class StudentUploadResponse(BaseModel):
+    student_id: str
+    name: str
+    encoding_saved: bool
+
 # Course
 class CourseBase(BaseModel):
     course_id: str
