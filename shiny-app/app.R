@@ -15,16 +15,13 @@ login_ui <- function() {
   shiny::fluidPage(
     shinyjs::useShinyjs(),
     shiny::tags$head(
-      shiny::tags$link(
-        rel = "stylesheet",
-        href = "https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap"
-      ),
       shiny::tags$link(rel = "stylesheet", type = "text/css", href = "custom.css"),
       shiny::tags$style(HTML("
-        body, html { height: 100%; margin: 0; overflow: hidden; }
+        body, html { height: 100%; margin: 0; }
         .login-split {
           display: flex;
           height: 100vh;
+          overflow: hidden;
         }
         .login-left {
           flex: 0 0 55%;
@@ -37,13 +34,11 @@ login_ui <- function() {
           padding: 40px;
         }
         .login-left h1 {
-          font-family: 'Cairo', sans-serif;
           font-size: 2.5rem;
           color: #C9A84C;
           margin-bottom: 8px;
         }
         .login-left p {
-          font-family: 'Cairo', sans-serif;
           font-size: 1.2rem;
           opacity: 0.85;
           text-align: center;
@@ -64,11 +59,9 @@ login_ui <- function() {
           color: #002147;
           font-weight: 700;
           margin-bottom: 6px;
-          font-family: 'Cairo', sans-serif;
         }
         .login-card .subtitle {
           color: #C9A84C;
-          font-family: 'Cairo', sans-serif;
           font-size: 1.05rem;
           margin-bottom: 28px;
         }
@@ -103,18 +96,18 @@ login_ui <- function() {
       shiny::div(class = "login-left",
         shiny::h1("AAST LMS"),
         shiny::p(
-          HTML("نظام إدارة التعلم<br>AI-Powered Learning Management System<br>Arab Academy for Science, Technology & Maritime Transport")
+          HTML("AI-Powered Learning Management System<br>Arab Academy for Science, Technology & Maritime Transport")
         )
       ),
       # Right panel — login form
       shiny::div(class = "login-right",
         shiny::div(class = "login-card",
-          shiny::h2("Welcome / أهلاً بك"),
+          shiny::h2("Welcome"),
           shiny::div(class = "subtitle", "Web Portal Access"),
           shiny::textInput("user_id", NULL, placeholder = "Username (admin or lecturer)"),
           shiny::passwordInput("password", NULL, placeholder = "Password"),
           shiny::br(),
-          shiny::actionButton("login_btn", "Log In / دخول", class = "btn-login"),
+          shiny::actionButton("login_btn", "Log In", class = "btn-login"),
           shiny::div(class = "login-hint",
             "Use 'admin/admin' or 'lecturer/lecturer' for testing"
           )
@@ -149,7 +142,7 @@ server <- function(input, output, session) {
       user_role("lecturer")
       logged_in(TRUE)
     } else {
-      shinyalert::shinyalert("Login Failed / فشل الدخول",
+      shinyalert::shinyalert("Login Failed",
                              "Invalid username or password.",
                              type = "error")
     }

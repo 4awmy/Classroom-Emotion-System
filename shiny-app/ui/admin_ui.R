@@ -6,7 +6,7 @@ admin_ui <- function() {
     shinydashboard::dashboardHeader(
       title = tags$span(
         tags$strong("AAST LMS"),
-        tags$small(" | الإدارة", style = "font-size:0.8em; margin-right:4px;")
+        tags$small(" | Admin", style = "font-size:0.8em; margin-right:4px;")
       ),
       titleWidth = 280,
       tags$li(
@@ -23,52 +23,52 @@ admin_ui <- function() {
       shinydashboard::sidebarMenu(
         id = "admin_menu",
         shinydashboard::menuItem(
-          "الحضور / Attendance",
+          "Attendance",
           tabName = "admin_attendance",
           icon = icon("calendar-check")
         ),
         shinydashboard::menuItem(
-          "معدل التفاعل / Engagement",
+          "Engagement",
           tabName = "admin_engagement",
           icon = icon("chart-line")
         ),
         shinydashboard::menuItem(
-          "خريطة الأقسام / Dept Heatmap",
+          "Dept Heatmap",
           tabName = "admin_heatmap",
           icon = icon("th")
         ),
         shinydashboard::menuItem(
-          "طلاب في خطر / At-Risk",
+          "At-Risk",
           tabName = "admin_atrisk",
           icon = icon("exclamation-triangle")
         ),
         shinydashboard::menuItem(
-          "فعالية المحاضرة / LES",
+          "LES",
           tabName = "admin_les",
           icon = icon("star")
         ),
         shinydashboard::menuItem(
-          "توزيع المشاعر / Emotions",
+          "Emotions",
           tabName = "admin_emotions",
           icon = icon("smile")
         ),
         shinydashboard::menuItem(
-          "تجمعات المحاضرين / Clusters",
+          "Clusters",
           tabName = "admin_clusters",
           icon = icon("users")
         ),
         shinydashboard::menuItem(
-          "تحليل التوقيت / Time Analysis",
+          "Time Analysis",
           tabName = "admin_time",
           icon = icon("clock")
         ),
         shinydashboard::menuItem(
-          "إدارة الطلاب / Students",
+          "Students",
           tabName = "admin_students",
           icon = icon("user-plus")
         ),
         shinydashboard::menuItem(
-          "حوادث الامتحانات / Incidents",
+          "Incidents",
           tabName = "admin_incidents",
           icon = icon("shield-alt")
         )
@@ -76,7 +76,6 @@ admin_ui <- function() {
     ),
     shinydashboard::dashboardBody(
       tags$head(
-        tags$link(rel = "stylesheet", href = "https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap"),
         tags$link(rel = "stylesheet", type = "text/css", href = "custom.css")
       ),
       shinydashboard::tabItems(
@@ -86,7 +85,7 @@ admin_ui <- function() {
         # ====================================================================
         shinydashboard::tabItem(
           tabName = "admin_attendance",
-          h2("Attendance Summary / ملخص الحضور"),
+          h2("Attendance Summary"),
           fluidRow(
             column(3,
               selectInput("admin_dept_filter", "Filter by Department:",
@@ -110,7 +109,7 @@ admin_ui <- function() {
         # ====================================================================
         shinydashboard::tabItem(
           tabName = "admin_engagement",
-          h2("Weekly Engagement Trend / معدل التفاعل الأسبوعي"),
+          h2("Weekly Engagement Trend"),
           p("Average engagement score per lecture group over time."),
           plotly::plotlyOutput("admin_confidence_trend", height = "450px")
         ),
@@ -120,7 +119,7 @@ admin_ui <- function() {
         # ====================================================================
         shinydashboard::tabItem(
           tabName = "admin_heatmap",
-          h2("Department Engagement Heatmap / خريطة تفاعل الأقسام"),
+          h2("Department Engagement Heatmap"),
           plotOutput("admin_dept_heatmap", height = "450px")
         ),
 
@@ -129,12 +128,12 @@ admin_ui <- function() {
         # ====================================================================
         shinydashboard::tabItem(
           tabName = "admin_atrisk",
-          h2("At-Risk Students / الطلاب المعرضون للخطر"),
+          h2("At-Risk Students"),
           p("Students with >20% engagement drop over 3+ consecutive lectures."),
           br(),
           DT::dataTableOutput("admin_at_risk_table"),
           br(),
-          actionButton("admin_notify_button", "Notify Lecturer / إبلاغ المحاضر",
+          actionButton("admin_notify_button", "Notify Lecturer",
                        class = "btn-warning", icon = icon("bell"))
         ),
 
@@ -143,7 +142,7 @@ admin_ui <- function() {
         # ====================================================================
         shinydashboard::tabItem(
           tabName = "admin_les",
-          h2("Lecture Effectiveness Score / معدل فعالية المحاضرة"),
+          h2("Lecture Effectiveness Score"),
           p("LES = 0.5 × avg_engagement + 0.3 × (1 − confusion_rate) + 0.2 × attendance_rate"),
           br(),
           DT::dataTableOutput("admin_les_table")
@@ -154,19 +153,51 @@ admin_ui <- function() {
         # ====================================================================
         shinydashboard::tabItem(
           tabName = "admin_emotions",
-          h2("Emotion Distribution / توزيع المشاعر"),
-          p("Stacked bar chart: all 6 emotion states by lecture group."),
-          plotOutput("admin_emotion_dist", height = "450px")
+          h2("Emotion Distribution"),
+          p("Analysis of emotional states across departments and time."),
+          br(),
+          fluidRow(
+            column(6,
+              shinydashboard::box(
+                title = "Emotion Mix by Department",
+                width = NULL, status = "primary", solidHeader = TRUE,
+                plotOutput("admin_emotion_dist", height = "400px")
+              )
+            ),
+            column(6,
+              shinydashboard::box(
+                title = "Emotion Trend Over Time",
+                width = NULL, status = "info", solidHeader = TRUE,
+                plotly::plotlyOutput("admin_emotion_trend", height = "400px")
+              )
+            )
+          )
         ),
 
         # ====================================================================
-        # Panel 7: Lecturer Clusters
+        # Panel 7: Clusters
         # ====================================================================
         shinydashboard::tabItem(
           tabName = "admin_clusters",
-          h2("Lecturer Performance Clusters / تجمعات أداء المحاضرين"),
-          p("K-means clustering: High Performers | Consistent | Needs Support"),
-          plotly::plotlyOutput("admin_lecturer_clusters", height = "450px")
+          h2("Performance Clusters"),
+          p("K-means clustering for both lecturers and students based on engagement patterns."),
+          br(),
+          fluidRow(
+            column(6,
+              shinydashboard::box(
+                title = "Lecturer Clusters",
+                width = NULL, status = "primary", solidHeader = TRUE,
+                plotly::plotlyOutput("admin_lecturer_clusters", height = "400px")
+              )
+            ),
+            column(6,
+              shinydashboard::box(
+                title = "Student Behavior Clusters",
+                width = NULL, status = "info", solidHeader = TRUE,
+                plotly::plotlyOutput("admin_student_clusters", height = "400px")
+              )
+            )
+          )
         ),
 
         # ====================================================================
@@ -174,7 +205,7 @@ admin_ui <- function() {
         # ====================================================================
         shinydashboard::tabItem(
           tabName = "admin_time",
-          h2("Time-of-Day Engagement / معدل التفاعل حسب التوقيت"),
+          h2("Time-of-Day Engagement"),
           p("Heatmap showing peak and low engagement times by weekday and hour."),
           plotOutput("admin_tod_heatmap", height = "450px")
         ),
@@ -184,19 +215,19 @@ admin_ui <- function() {
         # ====================================================================
         shinydashboard::tabItem(
           tabName = "admin_students",
-          h2("Student Management / إدارة الطلاب"),
+          h2("Student Management"),
           p("Add a student manually or view the existing roster with face encoding status."),
           br(),
           fluidRow(
             column(4,
               wellPanel(
-                textInput("admin_student_id", "Student ID (9 digits) / رقم الطالب",
+                textInput("admin_student_id", "Student ID (9 digits)",
                          placeholder = "231006367"),
-                textInput("admin_student_name", "Full Name / الاسم الكامل"),
+                textInput("admin_student_name", "Full Name"),
                 textInput("admin_student_email", "Email (optional)"),
                 fileInput("admin_student_photo", "Face Photo (Max 5MB)",
                          accept = c("image/jpeg", "image/png")),
-                actionButton("admin_student_submit", "Add Student / إضافة طالب",
+                actionButton("admin_student_submit", "Add Student",
                              class = "btn-primary", icon = icon("user-plus"))
               )
             ),
@@ -211,7 +242,7 @@ admin_ui <- function() {
         # ====================================================================
         shinydashboard::tabItem(
           tabName = "admin_incidents",
-          h2("Proctoring Incident Logs / سجلات حوادث الامتحانات"),
+          h2("Proctoring Incident Logs"),
           p("Review flags detected during exam sessions."),
           br(),
           DT::dataTableOutput("admin_incidents_table")
