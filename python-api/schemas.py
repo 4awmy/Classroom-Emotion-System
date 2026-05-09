@@ -35,6 +35,23 @@ class StudentUploadResponse(BaseModel):
     name: str
     encoding_saved: bool
 
+class ScheduleBase(BaseModel):
+    lecturer_id: str
+    subject: str
+    title: str
+    day_of_week: int
+    scheduled_start: str
+    scheduled_end: str
+    classroom: Optional[str] = None
+    is_recurring: int = 1
+
+class ScheduleCreate(ScheduleBase):
+    pass
+
+class ScheduleResponse(ScheduleBase):
+    id: int
+    model_config = ConfigDict(from_attributes=True)
+
 class LectureBase(BaseModel):
     lecture_id: str
     lecturer_id: str
@@ -42,9 +59,11 @@ class LectureBase(BaseModel):
     subject: str
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
+    scheduled_start_time: Optional[datetime] = None
     slide_url: Optional[str] = None
 
 class LectureResponse(LectureBase):
+    schedule_id: Optional[int] = None
     model_config = ConfigDict(from_attributes=True)
 
 class EmotionLogBase(BaseModel):
@@ -74,6 +93,8 @@ class AttendanceLogBase(BaseModel):
 class AttendanceLogResponse(AttendanceLogBase):
     id: int
     timestamp: datetime
+    check_in_time: Optional[datetime] = None
+    total_duration: int = 0
     model_config = ConfigDict(from_attributes=True)
 
 # student_id and exam_id are nullable in the DB (incident can precede identity match)

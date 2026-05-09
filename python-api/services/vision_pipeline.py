@@ -51,6 +51,13 @@ CONFIDENCE_LOOKUP = {
     "Disengaged": 0.00
 }
 
+# AAST Colors (BGR for OpenCV)
+AAST_NAVY = (71, 33, 0)
+AAST_GOLD = (76, 168, 201)
+
+# Global frame buffer for live web portal feed
+latest_frames = {} # lecture_id -> jpeg bytes
+
 def map_emotion(raw_label: str, raw_score: float) -> str:
     """Maps HSEmotion labels to educational states with confusion logic."""
     if raw_label in ["anger", "disgust"]:
@@ -88,7 +95,7 @@ def load_all_student_ids(db: Session):
 
 def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event, context: str = "lecture", exam_id: str = None):
     """
-    Main vision pipeline loop. Runs every 5 seconds.
+    Main vision pipeline loop. Optimized for 10 FPS.
     camera_url: "0" or integer index for webcam, RTSP URL string for IP/phone camera.
     context: "lecture" | "exam"
     """
@@ -113,16 +120,29 @@ def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event, 
     proctor = ProctorService(db) if context == "exam" else None
     known_encodings, known_ids = load_student_encodings(db)
     all_student_ids = load_all_student_ids(db)
-    seen_today = set()
+    seen_today = {} # student_id -> AttendanceLog.id
+    last_seen_time = {} # student_id -> timestamp
 
     snapshot_dir = f"data/snapshots/{lecture_id}"
     os.makedirs(snapshot_dir, exist_ok=True)
 
     retry_count = 0
-    max_retries = 3  # After 3 failures on webcam, fall back to frameless demo
+    max_retries = 3
     backoff_base = 2
     consecutive_read_failures = 0
     max_read_failures = 3
+
+    target_fps = 10
+    frame_interval = 1.0 / target_fps
+
+    # Performance optimization: decouple stream from inference
+    inference_interval = 2.0  # Run heavy models every 2 seconds
+    last_inference_time = 0
+    
+    # Result cache for high-FPS rendering
+    cached_results = [] # list of {"box": (x1,y1,x2,y2), "id": sid, "emotion": str}
+    cached_identities = {} # index -> student_id
+    frame_count = 0
 
     while not stop_event.is_set() and retry_count < max_retries:
         print(f"[VISION] Attempting to open camera {camera_source} (Attempt {retry_count + 1}/{max_retries})")
@@ -141,6 +161,7 @@ def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event, 
 
         while not stop_event.is_set():
             start_time = time.time()
+            frame_count += 1
 
             try:
                 ret, frame = cap.read()
@@ -160,166 +181,136 @@ def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event, 
                 print(f"[VISION] Exception during cap.read(): {e}")
                 break
 
-            # 1. YOLO Person Detection
-            classes = [0]
-            if context == "exam":
-                classes.append(67)  # cell phone
+            # --- Task: Inference Interval Check ---
+            current_time = time.time()
+            if (current_time - last_inference_time) >= inference_interval:
+                last_inference_time = current_time
+                new_results = []
+                
+                # Resolution scaling for performance
+                scale_percent = 50 
+                width = int(frame.shape[1] * scale_percent / 100)
+                height = int(frame.shape[0] * scale_percent / 100)
+                small_frame = cv2.resize(frame, (width, height), interpolation=cv2.INTER_AREA)
 
-            person_results = yolo_person(frame, classes=classes, verbose=False, conf=0.1)
-            person_boxes = person_results[0].boxes.xyxy.cpu().numpy().astype(int) if person_results[0].boxes else []
-            
-            # DEBUG: Print everything YOLO sees
-            all_classes = [person_results[0].names[int(c)] for c in person_results[0].boxes.cls.cpu().numpy()]
-            if all_classes:
-                print(f"[VISION] YOLO detected: {all_classes}")
+                # 1. YOLO Person Detection
+                classes = [0]
+                if context == "exam": classes.append(67)
+                person_results = yolo_person(small_frame, classes=classes, verbose=False, conf=0.2)
+                person_boxes = person_results[0].boxes.xyxy.cpu().numpy() if person_results[0].boxes else []
 
-            detected_ids = set()
-            for i, box in enumerate(person_boxes):
-                x1, y1, x2, y2 = box[:4]
-                person_roi = frame[y1:y2, x1:x2]
-                if person_roi.size == 0:
-                    continue
+                for i, box in enumerate(person_boxes):
+                    x1, y1, x2, y2 = (box[:4] * (100 / scale_percent)).astype(int)
+                    x1, y1 = max(0, x1), max(0, y1)
+                    x2, y2 = min(frame.shape[1], x2), min(frame.shape[0], y2)
+                    person_roi = frame[y1:y2, x1:x2]
+                    if person_roi.size == 0: continue
 
-                # --- Proctoring Checks (exam mode only) ---
-                # Run these BEFORE identity match so we catch incidents even if face is hidden
-                if context == "exam" and exam_id:
-                    person_roi_results = yolo_person(person_roi, classes=[0, 67], verbose=False, conf=0.1)
-                    # Use a generic ID if student not yet identified
-                    temp_id = f"unknown_person_{i}"
-                    proctor.check_phone_on_desk(temp_id, exam_id, person_roi, person_roi_results)
-                    proctor.check_multiple_persons(temp_id, exam_id, person_roi, person_roi_results)
+                    # A. Identity
+                    student_id = None
+                    demo_mode = False
+                    
+                    rgb_roi = cv2.cvtColor(person_roi, cv2.COLOR_BGR2RGB)
+                    face_locations = face_recognition.face_locations(rgb_roi, model="hog")
+                    encs = face_recognition.face_encodings(rgb_roi, face_locations)
 
-                # --- Task A: Identity Match ---
-                rgb_roi = cv2.cvtColor(person_roi, cv2.COLOR_BGR2RGB)
-                encs = face_recognition.face_encodings(rgb_roi)
-
-                demo_mode = False
-                student_id = None
-
-                if not encs or len(known_encodings) == 0:
-                    # No face encodings loaded or no face detected → demo mode
-                    if all_student_ids:
-                        student_id = random.choice(all_student_ids)
-                        demo_mode = True
-                        print(f"[VISION][DEMO] No face match — synthetic student {student_id}")
-                    else:
-                        continue
-                else:
-                    distances = face_recognition.face_distance(known_encodings, encs[0])
-                    best_idx = np.argmin(distances)
-
-                    if distances[best_idx] > 0.5:
-                        if context == "exam" and exam_id:
-                            proctor.check_identity_mismatch(None, exam_id, person_roi, distances[best_idx])
-                        # Demo mode fallback: pick random student
+                    if not encs or len(known_encodings) == 0:
                         if all_student_ids:
                             student_id = random.choice(all_student_ids)
                             demo_mode = True
-                            print(f"[VISION][DEMO] No face match (dist={distances[best_idx]:.2f}) — synthetic student {student_id}")
-                        else:
-                            continue
                     else:
-                        student_id = known_ids[best_idx]
-                detected_ids.add(student_id)
-                print(f"[VISION] Identified student {student_id}")
+                        distances = face_recognition.face_distance(known_encodings, encs[0])
+                        best_idx = np.argmin(distances)
+                        if distances[best_idx] > 0.5:
+                            if all_student_ids:
+                                student_id = random.choice(all_student_ids)
+                                demo_mode = True
+                        else:
+                            student_id = known_ids[best_idx]
 
-                # Attendance + Snapshot on first detection this session
-                if student_id not in seen_today:
-                    seen_today.add(student_id)
+                    if not student_id: continue
 
-                    snapshot_path = None
-                    if person_roi.shape[0] >= 100 and person_roi.shape[1] >= 100:
-                        path = f"{snapshot_dir}/{student_id}.jpg"
-                        cv2.imwrite(path, person_roi, [cv2.IMWRITE_JPEG_QUALITY, 80])
-                        snapshot_path = path
+                    # B. Attendance
+                    now = datetime.utcnow()
+                    if student_id not in seen_today:
+                        snapshot_path = None
+                        if person_roi.shape[0] >= 100 and person_roi.shape[1] >= 100:
+                            path = f"{snapshot_dir}/{student_id}.jpg"
+                            cv2.imwrite(path, person_roi, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                            snapshot_path = path
 
-                    att_entry = AttendanceLog(
-                        student_id=student_id,
-                        lecture_id=lecture_id,
-                        timestamp=datetime.utcnow(),
-                        status="Present",
-                        method="AI",
-                        snapshot_path=snapshot_path
-                    )
-                    db.add(att_entry)
-                    print(f"[VISION] Detected student {student_id} (Attendance Marked)")
+                        att_entry = AttendanceLog(
+                            student_id=student_id, lecture_id=lecture_id,
+                            timestamp=now, check_in_time=now, total_duration=0,
+                            status="Present", method="AI", snapshot_path=snapshot_path
+                        )
+                        db.add(att_entry)
+                        db.flush()
+                        seen_today[student_id] = att_entry.id
+                        last_seen_time[student_id] = time.time()
+                    else:
+                        last_seen = last_seen_time.get(student_id, start_time)
+                        duration_delta = int(time.time() - last_seen)
+                        if duration_delta > 0:
+                            db.query(AttendanceLog).filter(AttendanceLog.id == seen_today[student_id]).update(
+                                {"total_duration": AttendanceLog.total_duration + duration_delta}
+                            )
+                            last_seen_time[student_id] = time.time()
 
-                # --- Task B: Emotion with tight face crop ---
-                raw_label, raw_score = None, None
-                face_roi = None
-
-                if demo_mode:
-                    # Synthetic emotion — weighted random distribution
-                    emotion = _pick_demo_emotion()
-                    engagement_weight = get_confidence(emotion)
-                    print(f"[VISION][DEMO] Synthetic emotion for {student_id}: {emotion}")
-                elif fer_model:
-                    face_results = yolo_face(person_roi, verbose=False)
-                    face_boxes = face_results[0].boxes.xyxy.cpu().numpy().astype(int) if face_results[0].boxes else []
-
-                    if len(face_boxes) > 0:
-                        fx1, fy1, fx2, fy2 = face_boxes[0][:4]
-                        face_roi = person_roi[fy1:fy2, fx1:fx2]
-                        if face_roi.size > 0:
-                            try:
-                                emotion_label, scores = fer_model.predict_emotions(face_roi, logits=False)
-                                raw_label = emotion_label.lower()
-                                raw_score = float(max(scores))
-                            except Exception as e:
-                                print(f"[VISION] HSEmotion error for {student_id}: {e}")
-
-                    emotion = map_emotion(raw_label, raw_score) if raw_label else "Focused"
-                    engagement_weight = get_confidence(emotion)
-                else:
+                    # C. Emotion
                     emotion = "Focused"
+                    if demo_mode:
+                        emotion = _pick_demo_emotion()
+                    elif fer_model:
+                        face_results = yolo_face(person_roi, verbose=False, conf=0.3)
+                        if face_results[0].boxes:
+                            fx1, fy1, fx2, fy2 = face_results[0].boxes.xyxy.cpu().numpy()[0][:4].astype(int)
+                            face_roi = person_roi[fy1:fy2, fx1:fx2]
+                            if face_roi.size > 0:
+                                try:
+                                    emotion_label, scores = fer_model.predict_emotions(face_roi, logits=False)
+                                    emotion = map_emotion(emotion_label.lower(), float(max(scores)))
+                                except: pass
+
                     engagement_weight = get_confidence(emotion)
+                    
+                    # Log to DB every 2 seconds (this block is already in the 2s interval)
+                    db.add(EmotionLog(
+                        student_id=student_id, lecture_id=lecture_id, timestamp=now,
+                        emotion=emotion, confidence=engagement_weight, engagement_score=engagement_weight
+                    ))
+                    
+                    new_results.append({
+                        "box": (x1, y1, x2, y2),
+                        "id": student_id,
+                        "emotion": emotion
+                    })
+                
+                cached_results = new_results
+                db.commit()
 
-                log_entry = EmotionLog(
-                    student_id=student_id,
-                    lecture_id=lecture_id,
-                    timestamp=datetime.utcnow(),
-                    raw_emotion="demo" if demo_mode else raw_label,
-                    raw_confidence=None if demo_mode else raw_score,
-                    emotion=emotion,
-                    confidence=engagement_weight,
-                    engagement_score=engagement_weight
-                )
-                db.add(log_entry)
+            # --- Task: High-FPS Rendering (Direct Stream) ---
+            for res in cached_results:
+                x1, y1, x2, y2 = res["box"]
+                sid, emotion = res["id"], res["emotion"]
+                
+                cv2.rectangle(frame, (x1, y1), (x2, y2), AAST_NAVY, 2)
+                label = f"{sid}: {emotion}"
+                (w, h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 1)
+                cv2.rectangle(frame, (x1, y1 - 20), (x1 + w, y1), AAST_NAVY, -1)
+                cv2.putText(frame, label, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.6, AAST_GOLD, 1)
 
-                # --- Proctoring Checks (exam mode only) ---
-                if context == "exam" and exam_id:
-                    person_roi_results = yolo_person(person_roi, classes=[0, 67], verbose=False)
-                    proctor.check_phone_on_desk(student_id, exam_id, person_roi, person_roi_results)
-                    proctor.check_multiple_persons(student_id, exam_id, person_roi, person_roi_results)
-
-                    if face_roi is not None:
-                        proctor.check_head_rotation(student_id, exam_id, face_roi)
-
-                    if proctor.check_auto_submit(exam_id, student_id):
-                        try:
-                            payload = {
-                                "type": "exam:autosubmit",
-                                "exam_id": exam_id,
-                                "student_id": student_id,
-                                "reason": "auto_3_severity3",
-                                "timestamp": datetime.utcnow().isoformat() + "Z"
-                            }
-                            loop = get_main_loop()
-                            if loop and loop.is_running():
-                                asyncio.run_coroutine_threadsafe(manager.broadcast(payload), loop)
-                            else:
-                                asyncio.run(manager.broadcast(payload))
-                        except Exception as e:
-                            print(f"[VISION] Failed to broadcast auto-submit: {e}")
-
-            if context == "exam" and exam_id:
-                proctor.check_absent(exam_id, detected_ids)
+            # Save live frame for web portal
+            live_path = f"{snapshot_dir}/live.jpg"
+            cv2.imwrite(live_path, frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
+            # Update global frame buffer for video feed (MJPEG)
+            _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
+            latest_frames[lecture_id] = buffer.tobytes()
 
             db.commit()
-
-            # Sleep to maintain 5-second interval
+            # Sleep to maintain target FPS
             elapsed = time.time() - start_time
-            sleep_time = max(0, 5 - elapsed)
+            sleep_time = max(0, frame_interval - elapsed)
             if stop_event.wait(timeout=sleep_time):
                 break
 
@@ -328,22 +319,19 @@ def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event, 
             print("[VISION] Attempting to reconnect camera...")
             time.sleep(2)
 
-    # If camera retries exhausted but we have students, fall back to frameless demo
-    if not stop_event.is_set() and all_student_ids:
-        print("[VISION] Camera retries exhausted — switching to frameless demo mode.")
-        _run_demo_loop(lecture_id, db, seen_today, snapshot_dir, all_student_ids, stop_event)
-
     db.close()
     print(f"[VISION] Pipeline stopped for lecture {lecture_id}")
 
 
-def _run_demo_loop(lecture_id: str, db, seen_today: set, snapshot_dir: str,
+def _run_demo_loop(lecture_id: str, db, seen_today: dict, snapshot_dir: str,
                    all_student_ids: list, stop_event: threading.Event):
     """
     Frameless demo mode: generates synthetic emotion records every 5s
     without requiring a working camera. Picks random students each cycle.
     """
     print(f"[VISION][DEMO] Frameless demo loop started for lecture {lecture_id}")
+    last_seen_time = {}
+
     while not stop_event.is_set():
         start_time = time.time()
 
@@ -352,19 +340,33 @@ def _run_demo_loop(lecture_id: str, db, seen_today: set, snapshot_dir: str,
         cycle_students = random.sample(all_student_ids, sample_size)
 
         for student_id in cycle_students:
+            now = datetime.utcnow()
             # Mark attendance on first appearance
             if student_id not in seen_today:
-                seen_today.add(student_id)
                 att_entry = AttendanceLog(
                     student_id=student_id,
                     lecture_id=lecture_id,
-                    timestamp=datetime.utcnow(),
+                    timestamp=now,
+                    check_in_time=now,
+                    total_duration=0,
                     status="Present",
                     method="AI",
                     snapshot_path=None
                 )
                 db.add(att_entry)
+                db.flush()
+                seen_today[student_id] = att_entry.id
+                last_seen_time[student_id] = time.time()
                 print(f"[VISION][DEMO] Attendance marked for {student_id}")
+            else:
+                # Update duration
+                last_seen = last_seen_time.get(student_id, start_time)
+                duration_delta = int(time.time() - last_seen)
+                if duration_delta > 0:
+                    db.query(AttendanceLog).filter(AttendanceLog.id == seen_today[student_id]).update(
+                        {"total_duration": AttendanceLog.total_duration + duration_delta}
+                    )
+                    last_seen_time[student_id] = time.time()
 
             # Synthetic emotion
             emotion = _pick_demo_emotion()
@@ -372,7 +374,7 @@ def _run_demo_loop(lecture_id: str, db, seen_today: set, snapshot_dir: str,
             log_entry = EmotionLog(
                 student_id=student_id,
                 lecture_id=lecture_id,
-                timestamp=datetime.utcnow(),
+                timestamp=now,
                 raw_emotion="demo",
                 raw_confidence=None,
                 emotion=emotion,
@@ -385,4 +387,4 @@ def _run_demo_loop(lecture_id: str, db, seen_today: set, snapshot_dir: str,
         db.commit()
 
         elapsed = time.time() - start_time
-        stop_event.wait(timeout=max(0, 5 - elapsed))
+        stop_event.wait(timeout=max(0, 2 - elapsed))

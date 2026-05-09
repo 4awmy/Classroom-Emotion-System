@@ -57,7 +57,8 @@ api_call <- function(endpoint, method = "GET", body = NULL, content_type = "appl
 
   req <- request(url) |>
     req_method(method) |>
-    req_headers("Content-Type" = content_type)
+    req_headers("Content-Type" = content_type) |>
+    req_error(is_error = \(resp) FALSE)  # Don't throw - we'll handle manually
 
   if (!is.null(body)) {
     req <- req |> req_body_json(body)
@@ -65,9 +66,27 @@ api_call <- function(endpoint, method = "GET", body = NULL, content_type = "appl
 
   tryCatch({
     resp <- req_perform(req)
+    
+    if (resp_status(resp) >= 400) {
+      err_body <- resp_body_json(resp)
+      # Extract detail if it exists (FastAPI style)
+      detail <- if (!is.null(err_body$detail)) {
+        if (is.list(err_body$detail)) paste(err_body$detail, collapse = "; ") else err_body$detail
+      } else {
+        err_body$message %||% "Internal Server Error"
+      }
+      
+      shinyalert::shinyalert(
+        title = paste("API Error", resp_status(resp)),
+        text = as.character(detail),
+        type = "error"
+      )
+      return(NULL)
+    }
+    
     resp_body_json(resp)
   }, error = function(e) {
-    shinyalert::shinyalert("API Error", as.character(e), type = "error")
+    shinyalert::shinyalert("Network Error", as.character(e), type = "error")
     return(NULL)
   })
 }

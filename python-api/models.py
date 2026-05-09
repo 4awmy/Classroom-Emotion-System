@@ -18,17 +18,35 @@ class Student(Base):
     notifications = relationship("Notification", back_populates="student")
     focus_strikes = relationship("FocusStrike", back_populates="student")
 
+class Schedule(Base):
+    __tablename__ = "schedules"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    lecturer_id = Column(String, nullable=False)
+    subject = Column(String, nullable=False)
+    title = Column(String, nullable=False)
+    day_of_week = Column(Integer, nullable=False)  # 0-6 (Monday-Sunday)
+    scheduled_start = Column(String, nullable=False)  # HH:MM
+    scheduled_end = Column(String, nullable=False)    # HH:MM
+    classroom = Column(String)
+    is_recurring = Column(Integer, default=1)  # 1 = yes, 0 = no
+
+    # Relationships
+    lectures = relationship("Lecture", back_populates="schedule")
+
 class Lecture(Base):
     __tablename__ = "lectures"
     lecture_id = Column(String, primary_key=True)
     lecturer_id = Column(String, nullable=False)
+    schedule_id = Column(Integer, ForeignKey("schedules.id"), nullable=True)
     title = Column(String)
     subject = Column(String)
     start_time = Column(DateTime, default=datetime.datetime.utcnow)
     end_time = Column(DateTime, nullable=True)
+    scheduled_start_time = Column(DateTime, nullable=True)
     slide_url = Column(String)
 
     # Relationships
+    schedule = relationship("Schedule", back_populates="lectures")
     emotions = relationship("EmotionLog", back_populates="lecture")
     attendance = relationship("AttendanceLog", back_populates="lecture")
     materials = relationship("Material", back_populates="lecture")
@@ -57,6 +75,8 @@ class AttendanceLog(Base):
     student_id    = Column(String, ForeignKey("students.student_id"), nullable=False)
     lecture_id    = Column(String, ForeignKey("lectures.lecture_id"), nullable=False)
     timestamp     = Column(DateTime, default=datetime.datetime.utcnow)
+    check_in_time = Column(DateTime, default=datetime.datetime.utcnow)
+    total_duration = Column(Integer, default=0)  # Total seconds present
     status        = Column(String, nullable=False)   # Present | Absent
     method        = Column(String, nullable=False)   # AI | Manual | QR
     snapshot_path = Column(String, nullable=True)    # Path to face ROI crop: data/snapshots/{lecture_id}/{student_id}.jpg

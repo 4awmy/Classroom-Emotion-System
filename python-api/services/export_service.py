@@ -56,6 +56,7 @@ def generate_nightly_plans():
         db.close()
 
 scheduler = BackgroundScheduler()
-scheduler.add_job(export_all, "cron", hour=2, minute=0)
+# Export every 10 seconds for Live Dashboard
+scheduler.add_job(export_all, "interval", seconds=10)
 scheduler.add_job(generate_nightly_plans, "cron", hour=2, minute=30)
 scheduler.start()

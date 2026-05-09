@@ -87,6 +87,16 @@ def get_attendance_snapshot(lecture_id: str, student_id: str):
         return FileResponse(path, media_type="image/jpeg")
     raise HTTPException(status_code=404, detail="Snapshot not found")
 
+@router.get("/live/{lecture_id}")
+def get_live_frame(lecture_id: str):
+    """
+    Returns the latest annotated frame saved by the vision pipeline.
+    """
+    path = f"data/snapshots/{lecture_id}/live.jpg"
+    if os.path.exists(path):
+        return FileResponse(path, media_type="image/jpeg")
+    raise HTTPException(status_code=404, detail="Live frame not found")
+
 @router.post("/notify/lecturer")
 def notify_lecturer(
     student_id: str,

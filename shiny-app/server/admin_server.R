@@ -91,7 +91,7 @@ admin_server <- function(input, output, session) {
   )
 
   # ========================================================================
-  # Panel 2: Confidence Rate Trend
+  # Panel 2: Engagement Rate Trend
   # ========================================================================
 
   output$admin_confidence_trend <- plotly::renderPlotly({
@@ -108,16 +108,20 @@ admin_server <- function(input, output, session) {
       ) |>
       dplyr::group_by(.data$week, .data$lecture_group) |>
       dplyr::summarise(
-        avg_confidence = mean(.data$engagement_score, na.rm = TRUE),
+        avg_engagement = mean(.data$engagement_score, na.rm = TRUE),
         .groups = "drop"
       )
 
-    plotly::plot_ly(trend_data, x = ~week, y = ~avg_confidence, color = ~lecture_group, mode = "lines+markers") |>
-      plotly::layout(title = "Weekly Confidence Rate Trend", xaxis = list(title = "Week"), yaxis = list(title = "Avg Confidence Rate"))
+    plotly::plot_ly(trend_data, x = ~week, y = ~avg_engagement, color = ~lecture_group, mode = "lines+markers") |>
+      plotly::layout(
+        title = "Weekly Engagement Score Trend",
+        xaxis = list(title = "Week"),
+        yaxis = list(title = "Avg Engagement Score", range = c(0, 1))
+      )
   })
 
   # ========================================================================
-  # Panel 3: Department Confidence Rate Heatmap (ggplot2)
+  # Panel 3: Department Engagement Heatmap (ggplot2)
   # ========================================================================
 
   output$admin_dept_heatmap <- shiny::renderPlot({
@@ -132,13 +136,13 @@ admin_server <- function(input, output, session) {
         lecture_group = substr(.data$lecture_id, 1, 2)
       ) |>
       dplyr::group_by(.data$lecture_group, .data$week) |>
-      dplyr::summarise(avg_conf = mean(.data$engagement_score, na.rm = TRUE), .groups = "drop")
+      dplyr::summarise(avg_eng = mean(.data$engagement_score, na.rm = TRUE), .groups = "drop")
 
-    ggplot2::ggplot(heatmap_data, ggplot2::aes(x = .data$week, y = .data$lecture_group, fill = .data$avg_conf)) +
+    ggplot2::ggplot(heatmap_data, ggplot2::aes(x = .data$week, y = .data$lecture_group, fill = .data$avg_eng)) +
       ggplot2::geom_tile() +
       ggplot2::scale_fill_gradient(low = "red", high = "green", limits = c(0, 1)) +
       ggplot2::theme_minimal() +
-      ggplot2::labs(title = "Lecture Group Confidence Rate Heatmap", y = "Lecture Group", fill = "Avg Confidence Rate")
+      ggplot2::labs(title = "Lecture Group Engagement Heatmap", y = "Lecture Group", fill = "Avg Engagement Score")
   })
 
   # ========================================================================
@@ -169,10 +173,10 @@ admin_server <- function(input, output, session) {
       dplyr::slice_tail(n = 1) |>
       dplyr::ungroup() |>
       dplyr::select(
-        `Student ID` = .data$student_id, 
-        `Confidence Rate` = .data$engagement_score, 
-        Drop = .data$drop, 
-        `Lecture ID` = .data$lecture_id, 
+        `Student ID` = .data$student_id,
+        `Engagement Score` = .data$engagement_score,
+        Drop = .data$drop,
+        `Lecture ID` = .data$lecture_id,
         Streak = .data$consec_run
       )
 
@@ -259,11 +263,11 @@ admin_server <- function(input, output, session) {
       ) |>
       dplyr::arrange(dplyr::desc(.data$LES)) |>
       dplyr::select(
-        `Lecture ID` = .data$lecture_id, 
-        `Confidence Rate` = .data$engagement_score, 
-        `Confusion Rate` = .data$confusion_rate, 
-        `Attendance Rate` = .data$attendance_rate, 
-        LES = .data$LES, 
+        `Lecture ID` = .data$lecture_id,
+        `Engagement Score` = .data$engagement_score,
+        `Confusion Rate` = .data$confusion_rate,
+        `Attendance Rate` = .data$attendance_rate,
+        LES = .data$LES,
         Category = .data$LES_category
       )
 
@@ -299,8 +303,34 @@ admin_server <- function(input, output, session) {
       ggplot2::labs(title = "Emotion Distribution by Department", y = "Proportion", fill = "Emotion")
   })
 
+  output$admin_emotion_trend <- plotly::renderPlotly({
+    emotions <- emotions_data()
+    if (nrow(emotions) == 0) {
+      return(plotly::plot_ly() |> plotly::add_text(text = "No data"))
+    }
+
+    emotion_trend <- emotions |>
+      dplyr::mutate(week = lubridate::floor_date(.data$timestamp, "week")) |>
+      dplyr::group_by(.data$week, .data$emotion) |>
+      dplyr::summarise(count = dplyr::n(), .groups = "drop") |>
+      dplyr::group_by(.data$week) |>
+      dplyr::mutate(pct = .data$count / sum(.data$count))
+
+    plotly::plot_ly(emotion_trend, x = ~week, y = ~pct, color = ~emotion,
+                    type = 'scatter', mode = 'lines', stackgroup = 'one',
+                    colors = c(
+                      "Focused" = "#1B5E20", "Engaged" = "#4CAF50", "Confused" = "#FFC107",
+                      "Frustrated" = "#FF9800", "Anxious" = "#9C27B0", "Disengaged" = "#F44336"
+                    )) |>
+      plotly::layout(
+        title = "Weekly Emotion Trend (Stacked)",
+        xaxis = list(title = "Week"),
+        yaxis = list(title = "Proportion", range = c(0, 1))
+      )
+  })
+
   # ========================================================================
-  # Panel 7: Lecturer Cluster Map
+  # Panel 7: Clusters
   # ========================================================================
 
   output$admin_lecturer_clusters <- plotly::renderPlotly({
@@ -339,11 +369,35 @@ admin_server <- function(input, output, session) {
 
     clustered <- cluster_lecturers(eng_metrics, k = min(3, nrow(eng_metrics)))
 
-    plotly::plot_ly(clustered, x = ~LES, y = ~attendance_variance, color = ~cluster_label, mode = "markers", marker = list(size = 10)) |>
+    plotly::plot_ly(clustered, x = ~LES, y = ~attendance_variance, color = ~cluster_label,
+                    text = ~paste("Lecturer:", lecturer_id),
+                    mode = "markers", marker = list(size = 12)) |>
       plotly::layout(
         title = "Lecturer Performance Clusters",
-        xaxis = list(title = "LES Score"),
-        yaxis = list(title = "Confidence Rate Variance")
+        xaxis = list(title = "Avg LES Score"),
+        yaxis = list(title = "Attendance Rate Variance")
+      )
+  })
+
+  output$admin_student_clusters <- plotly::renderPlotly({
+    emotions <- emotions_data()
+    if (nrow(emotions) == 0) {
+      return(plotly::plot_ly() |> plotly::add_text(text = "No data"))
+    }
+
+    clustered <- cluster_student_behavior(emotions, k = min(3, length(unique(emotions$student_id))))
+
+    if (nrow(clustered) == 0) {
+      return(plotly::plot_ly() |> plotly::add_text(text = "Insufficient data for clustering"))
+    }
+
+    plotly::plot_ly(clustered, x = ~avg_engagement_score, y = ~avg_confused, color = ~cluster_label,
+                    text = ~paste("Student:", student_id),
+                    mode = "markers", marker = list(size = 10)) |>
+      plotly::layout(
+        title = "Student Behavior Clusters",
+        xaxis = list(title = "Avg Engagement Score"),
+        yaxis = list(title = "Avg Confusion Rate")
       )
   })
 
@@ -363,13 +417,13 @@ admin_server <- function(input, output, session) {
         weekday = lubridate::wday(.data$timestamp, label = TRUE)
       ) |>
       dplyr::group_by(.data$weekday, .data$hour) |>
-      dplyr::summarise(avg_conf = mean(.data$engagement_score, na.rm = TRUE), .groups = "drop")
+      dplyr::summarise(avg_eng = mean(.data$engagement_score, na.rm = TRUE), .groups = "drop")
 
-    ggplot2::ggplot(tod_data, ggplot2::aes(x = .data$hour, y = .data$weekday, fill = .data$avg_conf)) +
+    ggplot2::ggplot(tod_data, ggplot2::aes(x = .data$hour, y = .data$weekday, fill = .data$avg_eng)) +
       ggplot2::geom_tile() +
       ggplot2::scale_fill_gradient(low = "red", high = "green", limits = c(0, 1)) +
       ggplot2::theme_minimal() +
-      ggplot2::labs(title = "Confidence Rate by Time of Day & Weekday", x = "Hour", y = "Weekday", fill = "Avg Confidence Rate")
+      ggplot2::labs(title = "Engagement Score by Time of Day & Weekday", x = "Hour", y = "Weekday", fill = "Avg Engagement Score")
   })
 
   # ========================================================================
@@ -416,8 +470,8 @@ admin_server <- function(input, output, session) {
     })
 
     if (!is.null(result)) {
-      shinyalert::shinyalert("Success", 
-                             paste("Student", result$name, "added and face encoded successfully."), 
+      shinyalert::shinyalert("Success",
+                             paste("Student", result$name, "added and face encoded successfully."),
                              type = "success")
       # Clear inputs
       shiny::updateTextInput(session, "admin_student_id", value = "")
