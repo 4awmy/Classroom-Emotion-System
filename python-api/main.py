@@ -1,5 +1,6 @@
 import logging
 import threading
+import contextlib
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import emotion, attendance, session, gemini, notes, exam, roster, upload, auth, notify, admin, courses
@@ -11,11 +12,31 @@ import uvicorn
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Fast startup: defer heavy initializations
-def deferred_startup():
+def stop_all_background_tasks():
+    """Ensure clean shutdown of vision threads and schedulers."""
+    logger.info("[SHUTDOWN] Stopping all background tasks...")
+    # 1. Shutdown scheduler
+    try:
+        from services.lecture_scheduler import scheduler
+        if scheduler.running:
+            scheduler.shutdown()
+            logger.info("[SHUTDOWN] Scheduler stopped.")
+    except: pass
+    
+    # 2. Signal all active vision sessions to stop
+    try:
+        from services.session import active_sessions
+        for sid, event in active_sessions.items():
+            logger.info(f"[SHUTDOWN] Signalling session {sid} to stop...")
+            event.set()
+    except: pass
+
+@contextlib.asynccontextmanager
+async def lifespan(app: FastAPI):
+    # --- Startup ---
     logger.info("[INIT] Performing background initializations...")
     try:
-        # 1. Initialize database tables (Fast on local Postgres)
+        # 1. Initialize database tables
         models.Base.metadata.create_all(bind=engine)
         logger.info("[INIT] Database initialized.")
         
@@ -24,9 +45,13 @@ def deferred_startup():
         start_scheduler()
         logger.info("[INIT] Scheduler started.")
     except Exception as e:
-        logger.error(f"[INIT] Deferred startup failed: {e}")
+        logger.error(f"[INIT] Startup failed: {e}")
+        
+    yield
+    # --- Shutdown ---
+    stop_all_background_tasks()
 
-app = FastAPI(title="AAST LMS API (Hybrid v3)")
+app = FastAPI(title="AAST LMS API (Hybrid v3)", lifespan=lifespan)
 
 # Configure CORS
 app.add_middleware(
@@ -56,11 +81,7 @@ app.include_router(roster.router,      prefix="/roster",     tags=["Roster"])
 app.include_router(upload.router,      prefix="/upload",     tags=["Upload"])
 app.include_router(notify.router,      prefix="/notify",     tags=["Notify"])
 
-@app.on_event("startup")
-async def startup_event():
-    # Trigger the heavy lifting in a background thread to keep startup fast
-    threading.Thread(target=deferred_startup, daemon=True).start()
-
 if __name__ == "__main__":
     logger.info("[INIT] Launching server on port 8000...")
+    # reload=False is safer for Windows background threads
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)

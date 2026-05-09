@@ -55,7 +55,7 @@ lecturer_ui <- function() {
           uiOutput("lec_classes_grid")
         ),
 
-        # Live Dashboard (REFACTORED - Command Center)
+        # Live Dashboard
         shinydashboard::tabItem(tabName = "lec_live",
           h2("Live Class Monitoring"),
           tabsetPanel(
@@ -96,13 +96,6 @@ lecturer_ui <- function() {
                   )
                 )
               )
-            ),
-            tabPanel("Session History",
-              br(),
-              wellPanel(
-                uiOutput("lec_past_selector_ui")
-              ),
-              plotly::plotlyOutput("lec_past_analytics_plot", height="450px")
             )
           )
         ),
@@ -113,11 +106,33 @@ lecturer_ui <- function() {
           DT::dataTableOutput("lec_exam_table")
         ),
         
-        # Placeholder tabs
-        shinydashboard::tabItem(tabName = "lec_materials", h2("Materials")),
-        shinydashboard::tabItem(tabName = "lec_attendance", h2("Attendance")),
+        # Materials (Updated with Upload UI)
+        shinydashboard::tabItem(tabName = "lec_materials",
+          h2("Course Materials"),
+          fluidRow(
+            column(4,
+              shinydashboard::box(title = "Upload Material", status = "primary", solidHeader = TRUE, width = NULL,
+                uiOutput("lec_material_class_selector"),
+                textInput("lec_material_title", "Material Title"),
+                fileInput("lec_material_file", "Choose PDF/File"),
+                actionButton("lec_material_upload_btn", "Upload to LMS", class="btn-primary", width="100%")
+              )
+            ),
+            column(8,
+              shinydashboard::box(title = "Class Materials", status = "info", solidHeader = TRUE, width = NULL,
+                DT::dataTableOutput("lec_materials_table")
+              )
+            )
+          )
+        ),
+        
+        # Attendance
+        shinydashboard::tabItem(tabName = "lec_attendance", 
+          h2("Attendance Logs"),
+          DT::dataTableOutput("lec_attendance_table")
+        ),
 
-        # Reports (REFACTORED - Command Center)
+        # Reports
         shinydashboard::tabItem(tabName = "lec_reports",
           h2("Class Analytics & Reports"),
           wellPanel(
@@ -152,7 +167,7 @@ lecturer_ui <- function() {
               )
             )
           )
-        ),
+        )
       )
     )
   )
