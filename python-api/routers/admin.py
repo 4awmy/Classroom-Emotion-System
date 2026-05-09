@@ -4,12 +4,13 @@ import pandas as pd
 import numpy as np
 import cv2
 import face_recognition
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy.orm import Session
 from typing import List
 
 from database import get_db
-from routers.auth import get_current_user
+from routers.auth import get_current_user, get_password_hash
 import models
 import schemas
 
@@ -50,6 +51,63 @@ def generate_face_encoding(photo_b64: str):
         print(f"[ADMIN] Error generating encoding: {e}")
         return None
 
+# --- Admin CRUD ---
+
+@router.get("/admins", response_model=List[schemas.AdminResponse])
+def get_admins(db: Session = Depends(get_db)):
+    return db.query(models.Admin).all()
+
+@router.post("/admins", response_model=schemas.AdminResponse)
+def create_admin(admin: schemas.AdminCreate, db: Session = Depends(get_db)):
+    db_admin = db.query(models.Admin).filter(models.Admin.admin_id == admin.admin_id).first()
+    if db_admin:
+        raise HTTPException(status_code=400, detail="Admin ID already exists")
+    
+    admin_data = admin.model_dump()
+    if "password" in admin_data and admin_data["password"]:
+        admin_data["password_hash"] = get_password_hash(admin_data.pop("password"))
+    else:
+        admin_data.pop("password", None)
+        
+    if not admin_data.get("auth_user_id"):
+        admin_data["auth_user_id"] = str(uuid.uuid4())
+        
+    new_admin = models.Admin(**admin_data)
+    db.add(new_admin)
+    db.commit()
+    db.refresh(new_admin)
+    return new_admin
+
+@router.put("/admins/{admin_id}", response_model=schemas.AdminResponse)
+def update_admin(admin_id: str, admin_update: schemas.AdminUpdate, db: Session = Depends(get_db)):
+    db_admin = db.query(models.Admin).filter(models.Admin.admin_id == admin_id).first()
+    if not db_admin:
+        raise HTTPException(status_code=404, detail="Admin not found")
+    
+    update_data = admin_update.model_dump(exclude_unset=True)
+    if "password" in update_data and update_data["password"]:
+        update_data["password_hash"] = get_password_hash(update_data.pop("password"))
+    else:
+        update_data.pop("password", None)
+        
+    for key, value in update_data.items():
+        setattr(db_admin, key, value)
+        
+    db.commit()
+    db.refresh(db_admin)
+    return db_admin
+
+@router.delete("/admins/{admin_id}")
+def delete_admin(admin_id: str, db: Session = Depends(get_db)):
+    db_admin = db.query(models.Admin).filter(models.Admin.admin_id == admin_id).first()
+    if not db_admin:
+        raise HTTPException(status_code=404, detail="Admin not found")
+    if admin_id == "admin":
+        raise HTTPException(status_code=403, detail="Cannot delete main admin account")
+    db.delete(db_admin)
+    db.commit()
+    return {"detail": "Admin deleted"}
+
 # --- Lecturer CRUD ---
 
 @router.get("/lecturers", response_model=List[schemas.LecturerResponse])
@@ -62,12 +120,14 @@ def create_lecturer(lecturer: schemas.LecturerCreate, db: Session = Depends(get_
     if db_lecturer:
         raise HTTPException(status_code=400, detail="Lecturer already registered")
     
-    # Hash password if provided (REMOVED: Using Supabase Auth)
     lecturer_data = lecturer.model_dump()
-    # if "password" in lecturer_data and lecturer_data["password"]:
-    #     lecturer_data["password_hash"] = get_password_hash(lecturer_data.pop("password"))
-    if "password" in lecturer_data:
-        lecturer_data.pop("password")
+    if "password" in lecturer_data and lecturer_data["password"]:
+        lecturer_data["password_hash"] = get_password_hash(lecturer_data.pop("password"))
+    else:
+        lecturer_data.pop("password", None)
+        
+    if not lecturer_data.get("auth_user_id"):
+        lecturer_data["auth_user_id"] = str(uuid.uuid4())
     
     new_lecturer = models.Lecturer(**lecturer_data)
     db.add(new_lecturer)
@@ -82,8 +142,10 @@ def update_lecturer(lecturer_id: str, lecturer_update: schemas.LecturerUpdate, d
         raise HTTPException(status_code=404, detail="Lecturer not found")
     
     update_data = lecturer_update.model_dump(exclude_unset=True)
-    if "password" in update_data:
-        update_data.pop("password")
+    if "password" in update_data and update_data["password"]:
+        update_data["password_hash"] = get_password_hash(update_data.pop("password"))
+    else:
+        update_data.pop("password", None)
         
     for key, value in update_data.items():
         setattr(db_lecturer, key, value)
@@ -114,18 +176,18 @@ def create_student(student: schemas.StudentCreate, db: Session = Depends(get_db)
         raise HTTPException(status_code=400, detail="Student already registered")
     
     student_data = student.model_dump()
-    
-    # NEW: Generate Face Encoding if photo provided
     if "photo_b64" in student_data and student_data["photo_b64"]:
         encoding = generate_face_encoding(student_data.pop("photo_b64"))
         if encoding:
             student_data["face_encoding"] = encoding
-        else:
-            raise HTTPException(status_code=400, detail="Could not detect face in provided photo")
     
-    # Hash password if provided
     if "password" in student_data and student_data["password"]:
         student_data["password_hash"] = get_password_hash(student_data.pop("password"))
+    else:
+        student_data.pop("password", None)
+        
+    if not student_data.get("auth_user_id"):
+        student_data["auth_user_id"] = str(uuid.uuid4())
         
     new_student = models.Student(**student_data)
     db.add(new_student)
@@ -140,8 +202,10 @@ def update_student(student_id: str, student_update: schemas.StudentUpdate, db: S
         raise HTTPException(status_code=404, detail="Student not found")
     
     update_data = student_update.model_dump(exclude_unset=True)
-    if "password" in update_data:
-        update_data.pop("password")
+    if "password" in update_data and update_data["password"]:
+        update_data["password_hash"] = get_password_hash(update_data.pop("password"))
+    else:
+        update_data.pop("password", None)
         
     for key, value in update_data.items():
         setattr(db_student, key, value)
@@ -158,70 +222,3 @@ def delete_student(student_id: str, db: Session = Depends(get_db)):
     db.delete(db_student)
     db.commit()
     return {"detail": "Student deleted"}
-
-# --- Bulk Uploads ---
-
-@router.post("/lecturers/bulk")
-async def bulk_upload_lecturers(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    if not file.filename.endswith(('.csv', '.xlsx')):
-        raise HTTPException(status_code=400, detail="Invalid file format. Please upload a CSV or XLSX file.")
-    
-    contents = await file.read()
-    try:
-        if file.filename.endswith('.csv'):
-            df = pd.read_csv(io.BytesIO(contents))
-        else:
-            df = pd.read_excel(io.BytesIO(contents))
-            
-        records = df.to_dict(orient="records")
-        added = 0
-        for record in records:
-            lecturer_id = str(record.get('lecturer_id'))
-            if not db.query(models.Lecturer).filter(models.Lecturer.lecturer_id == lecturer_id).first():
-                # Provide a default password for bulk uploads if not present
-                password = record.get('password', 'AAST12345')
-                new_lecturer = models.Lecturer(
-                    lecturer_id=lecturer_id,
-                    name=record.get('name'),
-                    email=record.get('email'),
-                    department=record.get('department'),
-                    auth_user_id=uuid.uuid4() # Placeholder: Should be created in Supabase
-                )
-                db.add(new_lecturer)
-                added += 1
-        db.commit()
-        return {"detail": f"Successfully added {added} lecturers."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
-
-@router.post("/students/bulk")
-async def bulk_upload_students(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    if not file.filename.endswith(('.csv', '.xlsx')):
-        raise HTTPException(status_code=400, detail="Invalid file format. Please upload a CSV or XLSX file.")
-    
-    contents = await file.read()
-    try:
-        if file.filename.endswith('.csv'):
-            df = pd.read_csv(io.BytesIO(contents))
-        else:
-            df = pd.read_excel(io.BytesIO(contents))
-            
-        records = df.to_dict(orient="records")
-        added = 0
-        for record in records:
-            student_id = str(record.get('student_id'))
-            if not db.query(models.Student).filter(models.Student.student_id == student_id).first():
-                # Default password for bulk uploads
-                password = record.get('password', 'AAST12345')
-                new_student = models.Student(
-                    student_id=student_id,
-                    name=record.get('name'),
-                    email=record.get('email'),
-                    auth_user_id=uuid.uuid4() # Placeholder
-                )
-                db.add(new_student)
-                added += 1
-        db.commit()
-        return {"detail": f"Successfully added {added} students."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
