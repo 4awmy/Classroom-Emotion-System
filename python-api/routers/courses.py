@@ -13,11 +13,11 @@ router = APIRouter(
 
 # --- Course CRUD ---
 
-@router.get("/courses", response_model=List[schemas.CourseResponse])
+@router.get("/", response_model=List[schemas.CourseResponse])
 def get_courses(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return db.query(models.Course).offset(skip).limit(limit).all()
 
-@router.post("/courses", response_model=schemas.CourseResponse)
+@router.post("/", response_model=schemas.CourseResponse)
 def create_course(course: schemas.CourseCreate, db: Session = Depends(get_db)):
     db_course = db.query(models.Course).filter(models.Course.course_id == course.course_id).first()
     if db_course:
@@ -28,14 +28,14 @@ def create_course(course: schemas.CourseCreate, db: Session = Depends(get_db)):
     db.refresh(new_course)
     return new_course
 
-@router.get("/courses/{course_id}", response_model=schemas.CourseResponse)
+@router.get("/{course_id}", response_model=schemas.CourseResponse)
 def get_course(course_id: str, db: Session = Depends(get_db)):
     course = db.query(models.Course).filter(models.Course.course_id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
     return course
 
-@router.put("/courses/{course_id}", response_model=schemas.CourseResponse)
+@router.put("/{course_id}", response_model=schemas.CourseResponse)
 def update_course(course_id: str, course_update: schemas.CourseUpdate, db: Session = Depends(get_db)):
     db_course = db.query(models.Course).filter(models.Course.course_id == course_id).first()
     if not db_course:
@@ -46,7 +46,7 @@ def update_course(course_id: str, course_update: schemas.CourseUpdate, db: Sessi
     db.refresh(db_course)
     return db_course
 
-@router.delete("/courses/{course_id}")
+@router.delete("/{course_id}")
 def delete_course(course_id: str, db: Session = Depends(get_db)):
     db_course = db.query(models.Course).filter(models.Course.course_id == course_id).first()
     if not db_course:
@@ -70,15 +70,15 @@ def create_class(class_data: schemas.ClassCreate, db: Session = Depends(get_db))
     return new_class
 
 @router.get("/classes/{class_id}", response_model=schemas.ClassResponse)
-def get_class(class_id: int, db: Session = Depends(get_db)):
-    class_obj = db.query(models.Class).filter(models.Class.id == class_id).first()
+def get_class(class_id: str, db: Session = Depends(get_db)):
+    class_obj = db.query(models.Class).filter(models.Class.class_id == class_id).first()
     if not class_obj:
         raise HTTPException(status_code=404, detail="Class not found")
     return class_obj
 
 @router.put("/classes/{class_id}", response_model=schemas.ClassResponse)
-def update_class(class_id: int, class_update: schemas.ClassUpdate, db: Session = Depends(get_db)):
-    db_class = db.query(models.Class).filter(models.Class.id == class_id).first()
+def update_class(class_id: str, class_update: schemas.ClassUpdate, db: Session = Depends(get_db)):
+    db_class = db.query(models.Class).filter(models.Class.class_id == class_id).first()
     if not db_class:
         raise HTTPException(status_code=404, detail="Class not found")
     for key, value in class_update.model_dump(exclude_unset=True).items():
@@ -88,8 +88,8 @@ def update_class(class_id: int, class_update: schemas.ClassUpdate, db: Session =
     return db_class
 
 @router.delete("/classes/{class_id}")
-def delete_class(class_id: int, db: Session = Depends(get_db)):
-    db_class = db.query(models.Class).filter(models.Class.id == class_id).first()
+def delete_class(class_id: str, db: Session = Depends(get_db)):
+    db_class = db.query(models.Class).filter(models.Class.class_id == class_id).first()
     if not db_class:
         raise HTTPException(status_code=404, detail="Class not found")
     db.delete(db_class)
@@ -111,15 +111,15 @@ def create_schedule(schedule: schemas.ClassScheduleCreate, db: Session = Depends
     return new_schedule
 
 @router.get("/schedules/{schedule_id}", response_model=schemas.ClassScheduleResponse)
-def get_schedule(schedule_id: int, db: Session = Depends(get_db)):
-    schedule = db.query(models.ClassSchedule).filter(models.ClassSchedule.id == schedule_id).first()
+def get_schedule(schedule_id: str, db: Session = Depends(get_db)):
+    schedule = db.query(models.ClassSchedule).filter(models.ClassSchedule.schedule_id == schedule_id).first()
     if not schedule:
         raise HTTPException(status_code=404, detail="Schedule not found")
     return schedule
 
 @router.put("/schedules/{schedule_id}", response_model=schemas.ClassScheduleResponse)
-def update_schedule(schedule_id: int, schedule_update: schemas.ClassScheduleUpdate, db: Session = Depends(get_db)):
-    db_schedule = db.query(models.ClassSchedule).filter(models.ClassSchedule.id == schedule_id).first()
+def update_schedule(schedule_id: str, schedule_update: schemas.ClassScheduleUpdate, db: Session = Depends(get_db)):
+    db_schedule = db.query(models.ClassSchedule).filter(models.ClassSchedule.schedule_id == schedule_id).first()
     if not db_schedule:
         raise HTTPException(status_code=404, detail="Schedule not found")
     for key, value in schedule_update.model_dump(exclude_unset=True).items():
@@ -129,8 +129,8 @@ def update_schedule(schedule_id: int, schedule_update: schemas.ClassScheduleUpda
     return db_schedule
 
 @router.delete("/schedules/{schedule_id}")
-def delete_schedule(schedule_id: int, db: Session = Depends(get_db)):
-    db_schedule = db.query(models.ClassSchedule).filter(models.ClassSchedule.id == schedule_id).first()
+def delete_schedule(schedule_id: str, db: Session = Depends(get_db)):
+    db_schedule = db.query(models.ClassSchedule).filter(models.ClassSchedule.schedule_id == schedule_id).first()
     if not db_schedule:
         raise HTTPException(status_code=404, detail="Schedule not found")
     db.delete(db_schedule)

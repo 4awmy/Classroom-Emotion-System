@@ -44,7 +44,7 @@ class SessionStartRequest(BaseModel):
     lecture_id: str
     lecturer_id: str
     title: Optional[str] = None
-    subject: Optional[str] = None
+    class_id: Optional[str] = None
     slide_url: Optional[str] = None
     camera_url: Optional[str] = None
     context: Optional[str] = "lecture"
@@ -65,23 +65,25 @@ async def start_session(request: SessionStartRequest, db: Session = Depends(get_
         scheduled = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
 
         if not lecture:
-            lecture = models.Lecture(
+            lecture_kwargs = dict(
                 lecture_id=request.lecture_id,
                 lecturer_id=request.lecturer_id,
                 title=request.title or f"Lecture {request.lecture_id}",
-                subject=request.subject or "General",
                 slide_url=request.slide_url,
                 start_time=datetime.utcnow(),
-                scheduled_start_time=scheduled
+                scheduled_start=scheduled
             )
+            if request.class_id is not None:
+                lecture_kwargs["class_id"] = request.class_id
+            lecture = models.Lecture(**lecture_kwargs)
             db.add(lecture)
         else:
             lecture.start_time = datetime.utcnow()
             lecture.end_time = None
             if request.slide_url:
                 lecture.slide_url = request.slide_url
-            if not lecture.scheduled_start_time:
-                lecture.scheduled_start_time = scheduled
+            if not lecture.scheduled_start:
+                lecture.scheduled_start = scheduled
         
         db.commit()
         db.refresh(lecture)

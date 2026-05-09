@@ -104,7 +104,7 @@ class Enrollment(Base):
 class Lecture(Base):
     __tablename__ = "lectures"
     lecture_id: Mapped[str] = mapped_column(String, primary_key=True)
-    class_id: Mapped[str] = mapped_column(ForeignKey("classes.class_id"))
+    class_id: Mapped[Optional[str]] = mapped_column(ForeignKey("classes.class_id"), nullable=True)
     lecturer_id: Mapped[str] = mapped_column(ForeignKey("lecturers.lecturer_id"))
     title: Mapped[Optional[str]] = mapped_column(String)
     session_type: Mapped[Optional[str]] = mapped_column(String, server_default="lecture")
