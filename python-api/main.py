@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import emotion, attendance, session, gemini, notes, exam, roster, upload, auth, notify
-from services import export_service
+from routers import emotion, attendance, session, gemini, notes, exam, upload, auth, notify, admin, courses
 from database import engine
 from sqlalchemy import text
 import models
@@ -47,13 +46,14 @@ def health_check():
 
 # Include routers
 app.include_router(auth.router,        prefix="/auth",       tags=["Auth"])
+app.include_router(admin.router,       prefix="/admin",      tags=["Admin"])
+app.include_router(courses.router,     prefix="/courses",    tags=["Courses"])
 app.include_router(emotion.router,     prefix="/emotion",    tags=["Emotion"])
 app.include_router(attendance.router,  prefix="/attendance", tags=["Attendance"])
 app.include_router(session.router,     prefix="/session",     tags=["Session"])
 app.include_router(gemini.router,      prefix="/gemini",      tags=["Gemini"])
 app.include_router(notes.router,       prefix="/notes",        tags=["Notes"])
 app.include_router(exam.router,        prefix="/exam",        tags=["Exam"])
-app.include_router(roster.router,      prefix="/roster",      tags=["Roster"])
 app.include_router(upload.router,      prefix="/upload",      tags=["Upload"])
 app.include_router(notify.router,      prefix="/notify",      tags=["Notify"])
 

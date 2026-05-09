@@ -1,137 +1,214 @@
-from sqlalchemy import Column, Integer, String, DateTime, Float, ForeignKey, BLOB
-from sqlalchemy.orm import relationship
+from sqlalchemy import String, Integer, Float, Boolean, Time, DateTime, ForeignKey, BigInteger, LargeBinary, Uuid
+from sqlalchemy.orm import relationship, Mapped, mapped_column
+from sqlalchemy.sql import func
 from database import Base
 import datetime
+from typing import List, Optional
+import uuid
+
+class Admin(Base):
+    __tablename__ = "admins"
+    admin_id: Mapped[str] = mapped_column(String, primary_key=True)
+    auth_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, unique=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    phone: Mapped[Optional[str]] = mapped_column(String)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+class Lecturer(Base):
+    __tablename__ = "lecturers"
+    lecturer_id: Mapped[str] = mapped_column(String, primary_key=True)
+    auth_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, unique=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    department: Mapped[Optional[str]] = mapped_column(String)
+    title: Mapped[Optional[str]] = mapped_column(String)
+    phone: Mapped[Optional[str]] = mapped_column(String)
+    photo_url: Mapped[Optional[str]] = mapped_column(String)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    classes: Mapped[List["Class"]] = relationship(back_populates="lecturer")
+    lectures: Mapped[List["Lecture"]] = relationship(back_populates="lecturer")
+    materials: Mapped[List["Material"]] = relationship(back_populates="lecturer")
+    notifications: Mapped[List["Notification"]] = relationship(back_populates="lecturer")
 
 class Student(Base):
     __tablename__ = "students"
-    student_id = Column(String, primary_key=True)  # 9-digit AAST number
-    name = Column(String, nullable=False)
-    email = Column(String)
-    face_encoding = Column(BLOB)  # 128-dim float64 numpy array as bytes
-    enrolled_at = Column(DateTime, default=datetime.datetime.utcnow)
+    student_id: Mapped[str] = mapped_column(String, primary_key=True)
+    auth_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, unique=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    email: Mapped[Optional[str]] = mapped_column(String)
+    department: Mapped[Optional[str]] = mapped_column(String)
+    year: Mapped[Optional[int]] = mapped_column(Integer)
+    face_encoding: Mapped[Optional[bytes]] = mapped_column(LargeBinary)
+    photo_url: Mapped[Optional[str]] = mapped_column(String)
+    enrolled_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    # Relationships
-    emotions = relationship("EmotionLog", back_populates="student")
-    attendance = relationship("AttendanceLog", back_populates="student")
-    incidents = relationship("Incident", back_populates="student")
-    notifications = relationship("Notification", back_populates="student")
-    focus_strikes = relationship("FocusStrike", back_populates="student")
+    enrollments: Mapped[List["Enrollment"]] = relationship(back_populates="student")
+    emotion_logs: Mapped[List["EmotionLog"]] = relationship(back_populates="student")
+    attendance_logs: Mapped[List["AttendanceLog"]] = relationship(back_populates="student")
+    incidents: Mapped[List["Incident"]] = relationship(back_populates="student")
+    notifications: Mapped[List["Notification"]] = relationship(back_populates="student")
+    focus_strikes: Mapped[List["FocusStrike"]] = relationship(back_populates="student")
 
-class Schedule(Base):
-    __tablename__ = "schedules"
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    lecturer_id = Column(String, nullable=False)
-    subject = Column(String, nullable=False)
-    title = Column(String, nullable=False)
-    day_of_week = Column(Integer, nullable=False)  # 0-6 (Monday-Sunday)
-    scheduled_start = Column(String, nullable=False)  # HH:MM
-    scheduled_end = Column(String, nullable=False)    # HH:MM
-    classroom = Column(String)
-    is_recurring = Column(Integer, default=1)  # 1 = yes, 0 = no
+class Course(Base):
+    __tablename__ = "courses"
+    course_id: Mapped[str] = mapped_column(String, primary_key=True)
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    department: Mapped[Optional[str]] = mapped_column(String)
+    credit_hours: Mapped[Optional[int]] = mapped_column(Integer)
+    semester: Mapped[Optional[str]] = mapped_column(String)
+    year: Mapped[Optional[int]] = mapped_column(Integer)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    # Relationships
-    lectures = relationship("Lecture", back_populates="schedule")
+    classes: Mapped[List["Class"]] = relationship(back_populates="course")
+
+class Class(Base):
+    __tablename__ = "classes"
+    class_id: Mapped[str] = mapped_column(String, primary_key=True)
+    course_id: Mapped[str] = mapped_column(ForeignKey("courses.course_id", ondelete="CASCADE"))
+    lecturer_id: Mapped[Optional[str]] = mapped_column(ForeignKey("lecturers.lecturer_id", ondelete="SET NULL"))
+    section_name: Mapped[Optional[str]] = mapped_column(String)
+    room: Mapped[Optional[str]] = mapped_column(String)
+    semester: Mapped[Optional[str]] = mapped_column(String)
+    year: Mapped[Optional[int]] = mapped_column(Integer)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    course: Mapped["Course"] = relationship(back_populates="classes")
+    lecturer: Mapped[Optional["Lecturer"]] = relationship(back_populates="classes")
+    schedules: Mapped[List["ClassSchedule"]] = relationship(back_populates="class_")
+    enrollments: Mapped[List["Enrollment"]] = relationship(back_populates="class_")
+    lectures: Mapped[List["Lecture"]] = relationship(back_populates="class_")
+    exams: Mapped[List["Exam"]] = relationship(back_populates="class_")
+
+class ClassSchedule(Base):
+    __tablename__ = "class_schedule"
+    schedule_id: Mapped[str] = mapped_column(String, primary_key=True)
+    class_id: Mapped[str] = mapped_column(ForeignKey("classes.class_id", ondelete="CASCADE"))
+    day_of_week: Mapped[str] = mapped_column(String, nullable=False)
+    start_time: Mapped[datetime.time] = mapped_column(Time, nullable=False)
+    end_time: Mapped[datetime.time] = mapped_column(Time, nullable=False)
+
+    class_: Mapped["Class"] = relationship(back_populates="schedules")
+
+class Enrollment(Base):
+    __tablename__ = "enrollments"
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    class_id: Mapped[str] = mapped_column(ForeignKey("classes.class_id", ondelete="CASCADE"))
+    student_id: Mapped[str] = mapped_column(ForeignKey("students.student_id", ondelete="CASCADE"))
+    enrolled_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    class_: Mapped["Class"] = relationship(back_populates="enrollments")
+    student: Mapped["Student"] = relationship(back_populates="enrollments")
 
 class Lecture(Base):
     __tablename__ = "lectures"
-    lecture_id = Column(String, primary_key=True)
-    lecturer_id = Column(String, nullable=False)
-    schedule_id = Column(Integer, ForeignKey("schedules.id"), nullable=True)
-    title = Column(String)
-    subject = Column(String)
-    start_time = Column(DateTime, default=datetime.datetime.utcnow)
-    end_time = Column(DateTime, nullable=True)
-    scheduled_start_time = Column(DateTime, nullable=True)
-    slide_url = Column(String)
+    lecture_id: Mapped[str] = mapped_column(String, primary_key=True)
+    class_id: Mapped[str] = mapped_column(ForeignKey("classes.class_id"))
+    lecturer_id: Mapped[str] = mapped_column(ForeignKey("lecturers.lecturer_id"))
+    title: Mapped[Optional[str]] = mapped_column(String)
+    session_type: Mapped[Optional[str]] = mapped_column(String, server_default="lecture")
+    start_time: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True))
+    end_time: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True))
+    scheduled_start: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True))
+    slide_url: Mapped[Optional[str]] = mapped_column(String)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    # Relationships
-    schedule = relationship("Schedule", back_populates="lectures")
-    emotions = relationship("EmotionLog", back_populates="lecture")
-    attendance = relationship("AttendanceLog", back_populates="lecture")
-    materials = relationship("Material", back_populates="lecture")
-    notifications = relationship("Notification", back_populates="lecture")
-    focus_strikes = relationship("FocusStrike", back_populates="lecture")
+    class_: Mapped["Class"] = relationship(back_populates="lectures")
+    lecturer: Mapped["Lecturer"] = relationship(back_populates="lectures")
+    exams: Mapped[List["Exam"]] = relationship(back_populates="lecture")
+    materials: Mapped[List["Material"]] = relationship(back_populates="lecture")
+    emotion_logs: Mapped[List["EmotionLog"]] = relationship(back_populates="lecture")
+    attendance_logs: Mapped[List["AttendanceLog"]] = relationship(back_populates="lecture")
+    notifications: Mapped[List["Notification"]] = relationship(back_populates="lecture")
+    focus_strikes: Mapped[List["FocusStrike"]] = relationship(back_populates="lecture")
 
-class EmotionLog(Base):
-    __tablename__ = "emotion_log"
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    student_id = Column(String, ForeignKey("students.student_id"), nullable=False)
-    lecture_id = Column(String, ForeignKey("lectures.lecture_id"), nullable=False)
-    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
-    raw_emotion = Column(String, nullable=True)   # HSEmotion raw label: happy | neutral | sad | angry | fear | disgust | surprise
-    raw_confidence = Column(Float, nullable=True)  # Model softmax score (0.0–1.0) — how sure the model is
-    emotion = Column(String, nullable=False)       # Mapped educational state: Focused | Engaged | Confused | Anxious | Frustrated | Disengaged
-    confidence = Column(Float, nullable=False)     # Fixed engagement weight per state (CLAUDE.md §8.2) — NOT model confidence
-    engagement_score = Column(Float, nullable=False)  # == confidence (engagement weight)
+class Exam(Base):
+    __tablename__ = "exams"
+    exam_id: Mapped[str] = mapped_column(String, primary_key=True)
+    class_id: Mapped[str] = mapped_column(ForeignKey("classes.class_id"))
+    lecture_id: Mapped[Optional[str]] = mapped_column(ForeignKey("lectures.lecture_id"))
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    scheduled_start: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True))
+    end_time: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True))
+    auto_submit: Mapped[Optional[bool]] = mapped_column(Boolean, server_default="true")
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    # Relationships
-    student = relationship("Student", back_populates="emotions")
-    lecture = relationship("Lecture", back_populates="emotions")
-
-class AttendanceLog(Base):
-    __tablename__ = "attendance_log"
-    id            = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    student_id    = Column(String, ForeignKey("students.student_id"), nullable=False)
-    lecture_id    = Column(String, ForeignKey("lectures.lecture_id"), nullable=False)
-    timestamp     = Column(DateTime, default=datetime.datetime.utcnow)
-    check_in_time = Column(DateTime, default=datetime.datetime.utcnow)
-    total_duration = Column(Integer, default=0)  # Total seconds present
-    status        = Column(String, nullable=False)   # Present | Absent
-    method        = Column(String, nullable=False)   # AI | Manual | QR
-    snapshot_path = Column(String, nullable=True)    # Path to face ROI crop: data/snapshots/{lecture_id}/{student_id}.jpg
-
-    # Relationships
-    student = relationship("Student", back_populates="attendance")
-    lecture = relationship("Lecture", back_populates="attendance")
+    class_: Mapped["Class"] = relationship(back_populates="exams")
+    lecture: Mapped[Optional["Lecture"]] = relationship(back_populates="exams")
+    incidents: Mapped[List["Incident"]] = relationship(back_populates="exam")
 
 class Material(Base):
     __tablename__ = "materials"
-    material_id = Column(String, primary_key=True)
-    lecture_id = Column(String, ForeignKey("lectures.lecture_id"), nullable=False)
-    lecturer_id = Column(String, nullable=False)
-    title = Column(String, nullable=False)
-    drive_link = Column(String)
-    uploaded_at = Column(DateTime, default=datetime.datetime.utcnow)
+    material_id: Mapped[str] = mapped_column(String, primary_key=True)
+    lecture_id: Mapped[str] = mapped_column(ForeignKey("lectures.lecture_id"))
+    lecturer_id: Mapped[str] = mapped_column(ForeignKey("lecturers.lecturer_id"))
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    drive_link: Mapped[Optional[str]] = mapped_column(String)
+    uploaded_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    # Relationships
-    lecture = relationship("Lecture", back_populates="materials")
+    lecture: Mapped["Lecture"] = relationship(back_populates="materials")
+    lecturer: Mapped["Lecturer"] = relationship(back_populates="materials")
+
+class EmotionLog(Base):
+    __tablename__ = "emotion_log"
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    student_id: Mapped[str] = mapped_column(ForeignKey("students.student_id"))
+    lecture_id: Mapped[str] = mapped_column(ForeignKey("lectures.lecture_id"))
+    timestamp: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    emotion: Mapped[str] = mapped_column(String, nullable=False)
+    confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    engagement_score: Mapped[float] = mapped_column(Float, nullable=False)
+
+    student: Mapped["Student"] = relationship(back_populates="emotion_logs")
+    lecture: Mapped["Lecture"] = relationship(back_populates="emotion_logs")
+
+class AttendanceLog(Base):
+    __tablename__ = "attendance_log"
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    student_id: Mapped[str] = mapped_column(ForeignKey("students.student_id"))
+    lecture_id: Mapped[str] = mapped_column(ForeignKey("lectures.lecture_id"))
+    timestamp: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    status: Mapped[str] = mapped_column(String, nullable=False)
+    method: Mapped[str] = mapped_column(String, nullable=False)
+
+    student: Mapped["Student"] = relationship(back_populates="attendance_logs")
+    lecture: Mapped["Lecture"] = relationship(back_populates="attendance_logs")
 
 class Incident(Base):
     __tablename__ = "incidents"
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    student_id = Column(String, ForeignKey("students.student_id"))
-    exam_id = Column(String)
-    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
-    flag_type = Column(String, nullable=False)
-    severity = Column(Integer, nullable=False)  # 1 low | 2 medium | 3 high
-    evidence_path = Column(String)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    student_id: Mapped[Optional[str]] = mapped_column(ForeignKey("students.student_id"))
+    exam_id: Mapped[str] = mapped_column(ForeignKey("exams.exam_id"))
+    timestamp: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    flag_type: Mapped[str] = mapped_column(String, nullable=False)
+    severity: Mapped[int] = mapped_column(Integer, nullable=False)
+    evidence_path: Mapped[Optional[str]] = mapped_column(String)
 
-    # Relationships
-    student = relationship("Student", back_populates="incidents")
+    student: Mapped[Optional["Student"]] = relationship(back_populates="incidents")
+    exam: Mapped["Exam"] = relationship(back_populates="incidents")
 
 class Notification(Base):
     __tablename__ = "notifications"
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    student_id = Column(String, ForeignKey("students.student_id"), nullable=False)
-    lecturer_id = Column(String, nullable=False)
-    lecture_id = Column(String, ForeignKey("lectures.lecture_id"))
-    reason = Column(String, nullable=False)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    read = Column(Integer, default=0)  # 0 = unread | 1 = read
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    student_id: Mapped[Optional[str]] = mapped_column(ForeignKey("students.student_id"))
+    lecturer_id: Mapped[str] = mapped_column(ForeignKey("lecturers.lecturer_id"))
+    lecture_id: Mapped[Optional[str]] = mapped_column(ForeignKey("lectures.lecture_id"))
+    reason: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    read: Mapped[Optional[bool]] = mapped_column(Boolean, server_default="false")
 
-    # Relationships
-    student = relationship("Student", back_populates="notifications")
-    lecture = relationship("Lecture", back_populates="notifications")
+    student: Mapped[Optional["Student"]] = relationship(back_populates="notifications")
+    lecturer: Mapped["Lecturer"] = relationship(back_populates="notifications")
+    lecture: Mapped[Optional["Lecture"]] = relationship(back_populates="notifications")
 
 class FocusStrike(Base):
     __tablename__ = "focus_strikes"
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    student_id = Column(String, ForeignKey("students.student_id"), nullable=False)
-    lecture_id = Column(String, ForeignKey("lectures.lecture_id"), nullable=False)
-    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
-    strike_type = Column(String, nullable=False)  # app_background
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    student_id: Mapped[str] = mapped_column(ForeignKey("students.student_id"))
+    lecture_id: Mapped[str] = mapped_column(ForeignKey("lectures.lecture_id"))
+    timestamp: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    strike_type: Mapped[str] = mapped_column(String, nullable=False)
 
-    # Relationships
-    student = relationship("Student", back_populates="focus_strikes")
-    lecture = relationship("Lecture", back_populates="focus_strikes")
+    student: Mapped["Student"] = relationship(back_populates="focus_strikes")
+    lecture: Mapped["Lecture"] = relationship(back_populates="focus_strikes")
