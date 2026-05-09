@@ -139,13 +139,14 @@ Response 401: {"detail": "Invalid credentials"}
 
 JWT payload: {"student_id": "S01", "role": "student", "exp": <unix_ts>}
 ```
-
 ### 3.3 Session Management
 
 ```
 POST /session/start
 Body:    {"lecture_id": "L1", "lecturer_id": "LECT01", "slide_url": "https://drive.google.com/..."}
 Response 200: {"status": "started", "lecture_id": "L1"}
+```
+
 Side-effects:
   - INSERT into lectures table
   - Spawns vision_pipeline thread (background)

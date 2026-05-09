@@ -3,8 +3,8 @@ fastapi
 uvicorn[standard]
 sqlalchemy
 alembic
-python-dotenv
 psycopg2-binary
+python-dotenv
 
 # Auth
 python-jose[cryptography]
@@ -27,3 +27,5 @@ hsemotion-onnx
 face-recognition
 google-generativeai
 pdfplumber
+opencv-python
+mediapipe

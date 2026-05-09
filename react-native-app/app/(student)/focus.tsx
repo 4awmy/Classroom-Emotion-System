@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -6,319 +6,342 @@ import {
   AppState,
   AppStateStatus,
   ScrollView,
-  Alert,
+  SafeAreaView,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { wsAPI } from "@/services/api";
 import { useStore } from "@/store/useStore";
+import FocusOverlay from "@/components/FocusOverlay";
+import { Colors, DarkColors, Radius, Shadow, Spacing } from "@/constants/theme";
 
-/**
- * Focus Mode Screen (P1-S4-05)
- *
- * Logs AppState changes (background/foreground transitions)
- * Tracks focus strikes when app goes to background
- */
 export default function FocusScreen() {
-  const { studentId, activeLectureId, focusActive, strikes, setStrikes } =
+  const { studentId, activeLectureId, focusActive, strikes, setStrikes, isDark } =
     useStore();
+  const C = isDark ? DarkColors : Colors;
+  const styles = useMemo(() => makeStyles(C), [isDark]);
 
-  // useRef avoids the stale-closure problem: the subscription registered in
-  // useEffect always reads the *current* app state via the ref, regardless of
-  // how many re-renders have occurred since the subscription was created.
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const strikesRef = useRef(strikes);
-  const [appState, setAppState] = useState<AppStateStatus>(
-    AppState.currentState,
-  );
+  const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
   const [logs, setLogs] = useState<Array<{ time: string; state: string }>>([]);
+  const [showOverlay, setShowOverlay] = useState(false);
 
   useEffect(() => {
     strikesRef.current = strikes;
   }, [strikes]);
 
-  /**
-   * Monitor AppState changes
-   * Logs: "2025-04-30 10:45:23 → background" when app goes to background
-   * Logs: "2025-04-30 10:45:30 → active" when app returns to foreground
-   */
   useEffect(() => {
-    console.log("[FocusMode] Setting up AppState listener");
-
-    const subscription = AppState.addEventListener(
-      "change",
-      handleAppStateChange,
-    );
-
-    return () => {
-      console.log("[FocusMode] Removing AppState listener");
-      subscription.remove();
-    };
+    const subscription = AppState.addEventListener("change", handleAppStateChange);
+    return () => subscription.remove();
   }, [focusActive, activeLectureId]);
 
   const handleAppStateChange = (nextAppState: AppStateStatus) => {
-    // Read previous state from the ref — always current, never stale.
-    const previousAppState = appStateRef.current;
+    const prev = appStateRef.current;
     appStateRef.current = nextAppState;
 
-    const timestamp = new Date().toLocaleTimeString("en-US", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
+    const time = new Date().toLocaleTimeString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
       hour12: false,
     });
 
-    // Log the transition
-    const transitionLog = `${timestamp} → ${nextAppState}`;
-    console.log("[FocusMode] AppState change:", transitionLog);
-
-    // Update logs display (keep last 20)
-    setLogs((prevLogs) =>
-      [{ time: timestamp, state: nextAppState }, ...prevLogs].slice(0, 20),
+    setLogs((prev) =>
+      [{ time, state: nextAppState }, ...prev].slice(0, 20)
     );
-
     setAppState(nextAppState);
 
-    /**
-     * When app goes to background during active focus mode:
-     * - Increment strike counter
-     * - Emit WebSocket strike event (Phase 2)
-     * - Alert lecturer in real-time
-     */
-    if (
-      previousAppState === "active" &&
-      nextAppState !== "active" &&
-      focusActive
-    ) {
+    if (prev === "active" && nextAppState !== "active" && focusActive) {
       handleFocusStrike(nextAppState);
     }
   };
 
   const handleFocusStrike = (state: AppStateStatus) => {
-    const timestamp = new Date().toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    });
-
-    console.log("[FocusMode] ⚠️  STRIKE RECORDED:", {
-      student_id: studentId,
-      lecture_id: activeLectureId,
-      type: "app_background",
-      state,
-      timestamp,
-    });
-
-    const nextStrikeCount = strikesRef.current + 1;
-    strikesRef.current = nextStrikeCount;
-
-    // Increment strike counter
-    setStrikes(nextStrikeCount);
+    const next = strikesRef.current + 1;
+    strikesRef.current = next;
+    setStrikes(next);
+    setShowOverlay(true);
 
     if (studentId && activeLectureId) {
       wsAPI.emitStrike(studentId, activeLectureId, "app_background");
-    } else {
-      console.warn("[FocusMode] Strike not emitted: missing student/lecture id");
     }
-
-    // Show local alert (can be removed in production)
-    Alert.alert(
-      "Focus Mode Alert",
-      `App went to ${state}. Strike #${nextStrikeCount} recorded.`,
-      [{ text: "OK", onPress: () => {} }],
-      { cancelable: false },
-    );
   };
 
+  const isActive = focusActive && !!activeLectureId;
+
   return (
-    <ScrollView style={styles.container}>
-      {/* Header */}
+    <SafeAreaView style={styles.root}>
+      {/* ── Header ──────────────────────────────────── */}
       <View style={styles.header}>
-        <Text style={styles.title}>Focus Mode</Text>
-        <Text style={styles.subtitle}>
-          {focusActive ? "🟢 Active" : "🔴 Inactive"}
-        </Text>
+        <Text style={styles.headerTitle}>Focus Mode</Text>
+        <View style={[styles.statusBadge, isActive ? styles.statusActive : styles.statusInactive]}>
+          <View style={[styles.statusDot, { backgroundColor: isActive ? "#4ADE80" : "#F87171" }]} />
+          <Text style={styles.statusText}>{isActive ? "Active" : "Inactive"}</Text>
+        </View>
       </View>
 
-      {/* Status Cards */}
-      <View style={styles.statusSection}>
-        <View style={styles.statusCard}>
-          <Text style={styles.statusLabel}>Student ID</Text>
-          <Text style={styles.statusValue}>{studentId || "N/A"}</Text>
-        </View>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
 
-        <View style={styles.statusCard}>
-          <Text style={styles.statusLabel}>Lecture ID</Text>
-          <Text style={styles.statusValue}>{activeLectureId || "None"}</Text>
-        </View>
-
-        <View
-          style={[
-            styles.statusCard,
-            { backgroundColor: strikes > 0 ? "#ffebee" : "#e8f5e9" },
-          ]}
-        >
-          <Text style={styles.statusLabel}>Strikes</Text>
-          <Text
+        {/* ── Stats Row ────────────────────────────────── */}
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <Ionicons name="person-outline" size={18} color={C.navy} />
+            <Text style={styles.statLabel}>Student</Text>
+            <Text style={styles.statValue}>{studentId ?? "—"}</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Ionicons name="library-outline" size={18} color={C.navy} />
+            <Text style={styles.statLabel}>Lecture</Text>
+            <Text style={styles.statValue}>{activeLectureId ?? "None"}</Text>
+          </View>
+          <View
             style={[
-              styles.statusValue,
-              { color: strikes > 0 ? "#c62828" : "#2e7d32" },
+              styles.statCard,
+              strikes > 0 && { backgroundColor: isDark ? "#3D0000" : "#FEF2F2" },
             ]}
           >
-            {strikes}
-          </Text>
+            <Ionicons name="warning-outline" size={18} color={strikes > 0 ? C.error : C.navy} />
+            <Text style={styles.statLabel}>Strikes</Text>
+            <Text style={[styles.statValue, strikes > 0 && { color: C.error }]}>
+              {strikes}
+            </Text>
+          </View>
         </View>
 
-        <View style={styles.statusCard}>
-          <Text style={styles.statusLabel}>Current State</Text>
-          <Text style={styles.statusValue}>{appState}</Text>
+        {/* ── App State Indicator ──────────────────────── */}
+        <View style={styles.appStateCard}>
+          <View style={styles.appStateRow}>
+            <Ionicons
+              name={appState === "active" ? "phone-portrait" : "phone-portrait-outline"}
+              size={22}
+              color={appState === "active" ? C.success : C.textMuted}
+            />
+            <View>
+              <Text style={styles.appStateLabel}>Current App State</Text>
+              <Text
+                style={[
+                  styles.appStateValue,
+                  { color: appState === "active" ? C.success : C.error },
+                ]}
+              >
+                {appState.toUpperCase()}
+              </Text>
+            </View>
+          </View>
         </View>
-      </View>
 
-      {/* AppState Logs */}
-      <View style={styles.logsSection}>
-        <Text style={styles.logsTitle}>AppState Transition Log</Text>
-        <View style={styles.logsList}>
+        {/* ── Info Banner ─────────────────────────────── */}
+        {!isActive && (
+          <View
+            style={[
+              styles.infoBanner,
+              { backgroundColor: isDark ? "#0F2044" : "#EFF6FF" },
+            ]}
+          >
+            <Ionicons
+              name="information-circle-outline"
+              size={18}
+              color={isDark ? "#60A5FA" : "#3B82F6"}
+            />
+            <Text style={[styles.infoText, { color: isDark ? "#60A5FA" : "#1D4ED8" }]}>
+              Join a lecture from the Home tab to activate focus mode.
+            </Text>
+          </View>
+        )}
+
+        {/* ── Transition Log ───────────────────────────── */}
+        <Text style={styles.sectionTitle}>AppState Log</Text>
+        <View style={styles.logCard}>
           {logs.length === 0 ? (
-            <Text style={styles.noLogs}>No transitions logged yet</Text>
+            <Text style={styles.emptyLog}>No transitions yet</Text>
           ) : (
-            logs.map((log, index) => (
-              <View key={index} style={styles.logEntry}>
+            logs.map((log, i) => (
+              <View key={i} style={styles.logRow}>
                 <Text style={styles.logTime}>{log.time}</Text>
-                <Text
+                <View
                   style={[
-                    styles.logState,
+                    styles.logBadge,
                     {
-                      color: log.state === "active" ? "#2e7d32" : "#c62828",
+                      backgroundColor:
+                        log.state === "active"
+                          ? (isDark ? "#052E16" : "#D1FAE5")
+                          : (isDark ? "#3D0000" : "#FEE2E2"),
                     },
                   ]}
                 >
-                  {log.state}
-                </Text>
+                  <Text
+                    style={[
+                      styles.logState,
+                      {
+                        color:
+                          log.state === "active"
+                            ? (isDark ? "#4ADE80" : "#065F46")
+                            : (isDark ? "#F87171" : "#991B1B"),
+                      },
+                    ]}
+                  >
+                    {log.state}
+                  </Text>
+                </View>
               </View>
             ))
           )}
         </View>
-      </View>
+      </ScrollView>
 
-      {/* Info Section */}
-      <View style={styles.infoSection}>
-        <Text style={styles.infoTitle}>How It Works</Text>
-        <Text style={styles.infoText}>
-          • Monitors when your app goes to background/foreground{"\n"}• Each
-          background transition = 1 strike{"\n"}• Strikes are logged in
-          real-time{"\n"}• Lecturer receives live notifications
-        </Text>
-      </View>
-    </ScrollView>
+      {/* ── FocusOverlay (appears on strike) ────────── */}
+      {showOverlay && (
+        <FocusOverlay
+          strikes={strikes}
+          onDismiss={() => setShowOverlay(false)}
+        />
+      )}
+    </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
+const makeStyles = (C: typeof Colors) => StyleSheet.create({
+  root: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
-    padding: 16,
+    backgroundColor: C.background,
   },
   header: {
-    marginBottom: 24,
+    backgroundColor: C.navy,
+    paddingHorizontal: Spacing.md,
+    paddingTop: 16,
     paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#002147", // AAST navy
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#666",
-  },
-  statusSection: {
-    marginBottom: 24,
-  },
-  statusCard: {
-    backgroundColor: "#fff",
-    padding: 12,
-    marginBottom: 8,
-    borderRadius: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: "#002147",
-  },
-  statusLabel: {
-    fontSize: 12,
-    color: "#999",
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  statusValue: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  logsSection: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 24,
-  },
-  logsTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#002147",
-    marginBottom: 12,
-  },
-  logsList: {
-    maxHeight: 300,
-  },
-  logEntry: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    marginBottom: 4,
-    backgroundColor: "#f9f9f9",
-    borderRadius: 4,
-    borderLeftWidth: 3,
-    borderLeftColor: "#002147",
   },
-  logTime: {
-    fontSize: 12,
-    color: "#666",
-    fontFamily: "monospace",
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: Colors.white,
   },
-  logState: {
-    fontSize: 13,
+  statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: Radius.xl,
+  },
+  statusActive: { backgroundColor: "#14532D" },
+  statusInactive: { backgroundColor: "#7F1D1D" },
+  statusDot: { width: 8, height: 8, borderRadius: 4 },
+  statusText: { fontSize: 12, fontWeight: "600", color: Colors.white },
+
+  scroll: { flex: 1 },
+  scrollContent: { padding: Spacing.md, paddingBottom: 32 },
+
+  /* Stats */
+  statsRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: Spacing.md,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: C.white,
+    borderRadius: Radius.md,
+    padding: 12,
+    alignItems: "center",
+    gap: 4,
+    ...Shadow.card,
+  },
+  statLabel: {
+    fontSize: 10,
+    color: C.textMuted,
     fontWeight: "600",
     textTransform: "uppercase",
   },
-  noLogs: {
+  statValue: {
     fontSize: 14,
-    color: "#999",
-    fontStyle: "italic",
-    textAlign: "center",
-    paddingVertical: 16,
+    fontWeight: "700",
+    color: C.textPrimary,
   },
-  infoSection: {
-    backgroundColor: "#e3f2fd",
-    borderRadius: 8,
+
+  /* App State */
+  appStateCard: {
+    backgroundColor: C.white,
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    ...Shadow.card,
+  },
+  appStateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  appStateLabel: {
+    fontSize: 11,
+    color: C.textMuted,
+    fontWeight: "600",
+  },
+  appStateValue: {
+    fontSize: 16,
+    fontWeight: "800",
+    letterSpacing: 1,
+  },
+
+  /* Info banner */
+  infoBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    borderRadius: Radius.md,
     padding: 12,
-    marginBottom: 24,
-  },
-  infoTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#1565c0",
-    marginBottom: 8,
+    marginBottom: Spacing.md,
   },
   infoText: {
+    flex: 1,
     fontSize: 13,
-    color: "#0d47a1",
-    lineHeight: 20,
+    lineHeight: 18,
+  },
+
+  /* Log */
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: C.textPrimary,
+    marginBottom: 8,
+  },
+  logCard: {
+    backgroundColor: C.white,
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    ...Shadow.card,
+  },
+  logRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+  },
+  logTime: {
+    fontSize: 12,
+    color: C.textSecondary,
+    fontFamily: "monospace",
+  },
+  logBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: Radius.sm,
+  },
+  logState: {
+    fontSize: 11,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  emptyLog: {
+    fontSize: 13,
+    color: C.textMuted,
+    textAlign: "center",
+    paddingVertical: 16,
+    fontStyle: "italic",
   },
 });

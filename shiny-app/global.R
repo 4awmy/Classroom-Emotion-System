@@ -17,26 +17,29 @@ library(dplyr)
 library(lubridate)
 library(httr2)
 library(curl)             # curl::form_file() for multipart roster/material uploads
+library(base64enc)        # base64decode() for QR image rendering
 library(openxlsx)
 library(rmarkdown)
 library(bslib)
-library(aws.s3)
+if (requireNamespace("aws.s3", quietly = TRUE)) library(aws.s3)
+library(config)
 
 # ============================================================================
 # Configuration
 # ============================================================================
 
-# FastAPI Base URL - change based on environment
-# Local development:
-FASTAPI_BASE <- "http://localhost:8000"
+# Load configuration from config.yml
+# Use Sys.setenv(R_CONFIG_ACTIVE = "production") to switch to production
+cfg <- config::get(file = "config.yml")
 
-# Production (after Railway deployment):
-# FASTAPI_BASE <- "https://your-railway-app.railway.app"
+# FastAPI Base URL
+FASTAPI_BASE <- cfg$fastapi_base
 
 # S3 Configuration (Digital Ocean Spaces)
-SPACES_BUCKET <- Sys.getenv("SPACES_BUCKET")
-SPACES_REGION <- Sys.getenv("SPACES_REGION")
-SPACES_ENDPOINT <- Sys.getenv("SPACES_ENDPOINT")
+# Use config values as defaults, but allow environment variable overrides for secrets
+SPACES_BUCKET <- Sys.getenv("SPACES_BUCKET", cfg$spaces_bucket)
+SPACES_REGION <- Sys.getenv("SPACES_REGION", cfg$spaces_region)
+SPACES_ENDPOINT <- Sys.getenv("SPACES_ENDPOINT", cfg$spaces_endpoint)
 
 # Set AWS credentials for aws.s3 package
 Sys.setenv(
@@ -54,7 +57,8 @@ api_call <- function(endpoint, method = "GET", body = NULL, content_type = "appl
 
   req <- request(url) |>
     req_method(method) |>
-    req_headers("Content-Type" = content_type)
+    req_headers("Content-Type" = content_type) |>
+    req_error(is_error = \(resp) FALSE)  # Don't throw - we'll handle manually
 
   if (!is.null(body)) {
     req <- req |> req_body_json(body)
@@ -62,9 +66,27 @@ api_call <- function(endpoint, method = "GET", body = NULL, content_type = "appl
 
   tryCatch({
     resp <- req_perform(req)
+    
+    if (resp_status(resp) >= 400) {
+      err_body <- resp_body_json(resp)
+      # Extract detail if it exists (FastAPI style)
+      detail <- if (!is.null(err_body$detail)) {
+        if (is.list(err_body$detail)) paste(err_body$detail, collapse = "; ") else err_body$detail
+      } else {
+        err_body$message %||% "Internal Server Error"
+      }
+      
+      shinyalert::shinyalert(
+        title = paste("API Error", resp_status(resp)),
+        text = as.character(detail),
+        type = "error"
+      )
+      return(NULL)
+    }
+    
     resp_body_json(resp)
   }, error = function(e) {
-    shinyalert::shinyalert("API Error", as.character(e), type = "error")
+    shinyalert::shinyalert("Network Error", as.character(e), type = "error")
     return(NULL)
   })
 }
@@ -119,7 +141,7 @@ get_emotion_color <- function(emotion) {
 
 # Get file modification time (local or S3)
 get_file_mtime <- function(filepath) {
-  if (SPACES_BUCKET != "") {
+  if (SPACES_BUCKET != "" && requireNamespace("aws.s3", quietly = TRUE)) {
     filename <- basename(filepath)
     tryCatch({
       meta <- aws.s3::head_object(
@@ -142,7 +164,7 @@ get_file_mtime <- function(filepath) {
 
 # Load CSV with error handling (local or S3)
 load_csv <- function(filepath) {
-  if (SPACES_BUCKET != "") {
+  if (SPACES_BUCKET != "" && requireNamespace("aws.s3", quietly = TRUE)) {
     filename <- basename(filepath)
     tryCatch({
       aws.s3::s3read_using(
