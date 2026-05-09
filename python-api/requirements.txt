@@ -3,8 +3,8 @@ fastapi
 uvicorn[standard]
 sqlalchemy
 alembic
-python-dotenv
 psycopg2-binary
+python-dotenv
 
 # Auth
 python-jose[cryptography]
@@ -17,7 +17,6 @@ numpy
 openpyxl
 requests
 qrcode[pil]
-boto3
 
 # Scheduling
 apscheduler
@@ -28,3 +27,5 @@ hsemotion-onnx
 face-recognition
 google-generativeai
 pdfplumber
+opencv-python
+mediapipe

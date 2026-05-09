@@ -1,23 +1,58 @@
-import { Stack } from "expo-router";
+import { Tabs } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { Colors, DarkColors } from "@/constants/theme";
+import { useStore } from "@/store/useStore";
 
-/**
- * Layout for the (student) route group.
- * Uses a Stack navigator so home → focus → notes push/pop correctly.
- * Individual screens control their own header title via `<Stack.Screen
- * options={{ title: '...' }}>` or the route options prop.
- */
 export default function StudentLayout() {
+  const { isDark } = useStore();
+  const C = isDark ? DarkColors : Colors;
+
   return (
-    <Stack
+    <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: "#002147" },
-        headerTintColor: "#fff",
-        headerTitleStyle: { fontWeight: "bold" },
+        headerShown: false,
+        tabBarActiveTintColor: C.gold,
+        tabBarInactiveTintColor: C.textSecondary,
+        tabBarStyle: {
+          backgroundColor: C.white,
+          borderTopColor: C.border,
+          height: 62,
+          paddingBottom: 8,
+          paddingTop: 6,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "600",
+        },
       }}
     >
-      <Stack.Screen name="home" options={{ title: "AAST LMS" }} />
-      <Stack.Screen name="focus" options={{ title: "Focus Mode" }} />
-      <Stack.Screen name="notes" options={{ title: "Smart Notes" }} />
-    </Stack>
+      <Tabs.Screen
+        name="home"
+        options={{
+          title: "Home",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="focus"
+        options={{
+          title: "Focus",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="eye" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="notes"
+        options={{
+          title: "Notes",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="book" size={size} color={color} />
+          ),
+        }}
+      />
+    </Tabs>
   );
 }

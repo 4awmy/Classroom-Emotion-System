@@ -11,7 +11,21 @@
       "Bash(uvx:*)",
       "Bash(export:*)",
       "Bash(gh label:*)",
-      "Bash(do gh:*)"
+      "Bash(do gh:*)",
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "Bash(.venv/Scripts/python:*)",
+      "Bash(.venv/Scripts/pip install:*)",
+      "Bash(/c/Users/omarh/projects/Classroom-Emotion-System/.venv/Scripts/python:*)",
+      "Bash(uv run:*)",
+      "Bash(uv add:*)",
+      "Bash(netstat:*)",
+      "Bash(curl:*)",
+      "Bash(ipconfig:*)",
+      "Bash(powershell:*)",
+      "Bash(netsh interface:*)",
+      "Bash(sed:*)",
+      "Bash(npx expo:*)"
     ]
   }
 }

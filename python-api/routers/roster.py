@@ -153,3 +153,23 @@ def list_students(db: Session = Depends(get_db)):
             "has_encoding": s.face_encoding is not None
         })
     return results
+
+
+@router.get("/students/{student_id}/photo")
+def proxy_student_photo(student_id: str, db: Session = Depends(get_db)):
+    """
+    Proxies the enrolled Drive photo thumbnail for a student.
+    Avoids CORS issues when Shiny embeds Drive photos directly.
+    Returns 404 if student not found or no photo available.
+    """
+    from fastapi import Response as FastAPIResponse
+    from fastapi.responses import StreamingResponse
+    import io
+
+    student = db.query(Student).filter(Student.student_id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    # Use enrolled photo_link if stored — for now derive from email or raise 404
+    # (photo_link is not stored in DB; this endpoint is a placeholder for Drive proxy)
+    raise HTTPException(status_code=404, detail="No enrolled photo stored for this student")

@@ -1,0 +1,11 @@
+default:
+  fastapi_base: "http://localhost:8000"
+  spaces_bucket: ""
+  spaces_region: "fra1"
+  spaces_endpoint: "https://fra1.digitaloceanspaces.com"
+
+production:
+  fastapi_base: "https://aast-lms-api.up.railway.app"
+  spaces_bucket: "aast-lms-storage"
+  spaces_region: "fra1"
+  spaces_endpoint: "https://fra1.digitaloceanspaces.com"

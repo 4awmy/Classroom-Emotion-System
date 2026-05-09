@@ -11,7 +11,7 @@ if GEMINI_API_KEY:
 else:
     model = None
 
-async def generate_smart_notes(transcript: str, distraction_ts: List[datetime]) -> str:
+def generate_smart_notes(transcript: str, distraction_ts: List[datetime]) -> str:
     """
     Generates smart notes with ✱ markers for distracted moments.
     """
@@ -32,12 +32,12 @@ async def generate_smart_notes(transcript: str, distraction_ts: List[datetime]) 
     """
 
     try:
-        response = await model.generate_content_async(prompt)
+        response = model.generate_content(prompt)
         return response.text
     except Exception as e:
         return f"Error generating notes: {e}"
 
-async def generate_fresh_brainer(slide_text: str) -> str:
+def generate_fresh_brainer(slide_text: str) -> str:
     """
     Generates a clarifying question based on slide content.
     """
@@ -53,12 +53,12 @@ async def generate_fresh_brainer(slide_text: str) -> str:
     """
 
     try:
-        response = await model.generate_content_async(prompt)
+        response = model.generate_content(prompt)
         return response.text.strip()
     except Exception as e:
         return "Can you explain the main concept on this slide in your own words?"
 
-async def generate_intervention_plan(emotion_history: List[dict]) -> str:
+def generate_intervention_plan(emotion_history: List[dict]) -> str:
     """
     Generates a 3-step intervention plan based on student emotion trends.
     """
@@ -75,7 +75,7 @@ async def generate_intervention_plan(emotion_history: List[dict]) -> str:
     """
 
     try:
-        response = await model.generate_content_async(prompt)
+        response = model.generate_content(prompt)
         return response.text
     except Exception as e:
         return "1. Schedule a 1-on-1 with the instructor.\n2. Review the confusing topics identified by AI.\n3. Form a study group with peers."

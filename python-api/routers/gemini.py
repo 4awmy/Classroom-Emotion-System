@@ -63,9 +63,9 @@ async def process_question_task(lecture_id: str, slide_url: Optional[str]):
         except Exception as e:
             print(f"[GEMINI] Slide extraction error: {e}")
 
-    question = await gemini_service.generate_fresh_brainer(slide_text)
+    question = gemini_service.generate_fresh_brainer(slide_text)
     await manager.broadcast({
-        "type": "CLARIFYING_QUESTION",
+        "type": "freshbrainer",
         "lecture_id": lecture_id,
         "question": question
     })

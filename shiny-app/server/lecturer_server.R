@@ -1,20 +1,41 @@
 # lecturer_server.R - Server logic for 5 lecturer submodules
-# Submodules: A-Roster, B-Materials, C-Attendance, D-Live, E-Reports
 
 lecturer_server <- function(input, output, session) {
   source("modules/engagement_score.R", local = TRUE)
   source("modules/clustering.R", local = TRUE)
   source("modules/attendance.R", local = TRUE)
 
-  # Reactive data
+  # Reactive data - accelerated for Live Dashboard
   emotions_data <- shiny::reactivePoll(
-    intervalMillis = 10000,
+    intervalMillis = 2000,
     session = session,
     checkFunc = function() {
       get_file_mtime("../python-api/data/exports/emotions.csv")
     },
     valueFunc = function() {
       load_csv("../python-api/data/exports/emotions.csv")
+    }
+  )
+
+  attendance_data <- shiny::reactivePoll(
+    intervalMillis = 2000,
+    session = session,
+    checkFunc = function() {
+      get_file_mtime("../python-api/data/exports/attendance.csv")
+    },
+    valueFunc = function() {
+      load_csv("../python-api/data/exports/attendance.csv")
+    }
+  )
+
+  incidents_data <- shiny::reactivePoll(
+    intervalMillis = 2000,
+    session = session,
+    checkFunc = function() {
+      get_file_mtime("../python-api/data/exports/incidents.csv")
+    },
+    valueFunc = function() {
+      load_csv("../python-api/data/exports/incidents.csv")
     }
   )
 
@@ -30,7 +51,10 @@ lecturer_server <- function(input, output, session) {
     result <- tryCatch({
       httr2::request(paste0(FASTAPI_BASE, "/roster/upload")) |>
         httr2::req_body_multipart(
-          roster_xlsx = curl::form_file(file_info$datapath, type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+          roster_xlsx = curl::form_file(
+            file_info$datapath,
+            type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          )
         ) |>
         httr2::req_perform() |>
         httr2::resp_body_json()
@@ -43,8 +67,8 @@ lecturer_server <- function(input, output, session) {
       output$lecturer_roster_status <- shiny::renderUI({
         shiny::div(
           class = "alert alert-success",
-          sprintf("✓ Upload complete: %d students, %d face encodings saved",
-                  result$students_created, result$encodings_saved)
+          sprintf("✓ Upload complete: %d students created, %d face encodings saved",
+                  result$students_created %||% 0, result$encodings_saved %||% 0)
         )
       })
     }
@@ -56,89 +80,159 @@ lecturer_server <- function(input, output, session) {
 
   output$lecturer_materials_table <- DT::renderDataTable({
     materials <- load_csv("../python-api/data/exports/materials.csv")
-    if (nrow(materials) == 0) {
-      return(data.frame())
-    }
+    if (nrow(materials) == 0) return(data.frame())
     DT::datatable(
-      materials |> dplyr::select(.data$title, .data$lecturer_id, .data$uploaded_at),
+      materials |> dplyr::select(dplyr::any_of(c("title", "lecture_id", "lecturer_id", "uploaded_at"))),
       options = list(pageLength = 10)
     )
   })
 
   shiny::observeEvent(input$lecturer_material_upload, {
-    req(input$lecturer_material_file, input$lecturer_lecture_select, input$lecturer_material_title)
+    req(input$lecturer_material_file, input$lecturer_lecture_select,
+        input$lecturer_material_title)
 
-    file <- input$lecturer_material_file
-    body <- list(
-      title = input$lecturer_material_title,
-      lecture_id = input$lecturer_lecture_select
-    )
+    file_info <- input$lecturer_material_file
 
-    result <- api_call("/upload/material", method = "POST", body = body)
+    result <- tryCatch({
+      httr2::request(paste0(FASTAPI_BASE, "/upload/material")) |>
+        httr2::req_body_multipart(
+          lecture_id  = input$lecturer_lecture_select,
+          lecturer_id = "LECTURER_1",   # TODO: replace with session user_id
+          title       = input$lecturer_material_title,
+          file        = curl::form_file(file_info$datapath, type = file_info$type)
+        ) |>
+        httr2::req_perform() |>
+        httr2::resp_body_json()
+    }, error = function(e) {
+      shinyalert::shinyalert("Upload Failed", as.character(e), type = "error")
+      NULL
+    })
+
     if (!is.null(result)) {
-      shinyalert::shinyalert("Success", "Material uploaded", type = "success")
+      shinyalert::shinyalert("Success", "Material uploaded successfully.", type = "success")
     }
   })
 
   # ========================================================================
-  # Submodule C: Attendance (Visual Proof)
+  # Submodule C: Attendance (Photo Card Grid)
   # ========================================================================
 
   attendance_list <- shiny::reactiveVal(list())
 
-  # Helper to fetch latest student list with attendance
+  # Helper: resolve lecture_id from either attendance or live lecture inputs
+  get_attendance_lecture_id <- function() {
+    lid <- input$lecturer_attendance_lecture
+    if (is.null(lid) || nchar(trimws(lid)) == 0) return("")
+    trimws(lid)
+  }
+
   refresh_attendance <- function() {
-    students <- api_call("/roster/students")
+    students <- tryCatch({
+      httr2::request(paste0(FASTAPI_BASE, "/roster/students")) |>
+        httr2::req_perform() |>
+        httr2::resp_body_json()
+    }, error = function(e) NULL)
+
     if (is.null(students)) return()
 
-    # Get live attendance from export/memory or API?
-    # For MVP, we'll fetch from API if lecture is active, or use CSV
-    # Simplified: fetch all students and current status
-    # In real app: students <- api_call(paste0("/attendance/status/", lecture_id))
-    
-    # Mock statuses for UI demo
+    att_df   <- attendance_data()
+    lecture_id <- get_attendance_lecture_id()
+
     for (i in seq_along(students)) {
+      sid <- students[[i]]$student_id
+      if (nrow(att_df) > 0 && nchar(lecture_id) > 0) {
+        student_att <- att_df |>
+          dplyr::filter(.data$student_id == sid, .data$lecture_id == lecture_id) |>
+          dplyr::arrange(dplyr::desc(.data$timestamp)) |>
+          dplyr::slice(1)
+        students[[i]]$status <- if (nrow(student_att) > 0) student_att$status else "Absent"
+      } else {
         students[[i]]$status <- "Absent"
-        students[[i]]$reason <- ""
+      }
     }
     attendance_list(students)
   }
 
   output$lecturer_attendance_grid <- shiny::renderUI({
-    students <- attendance_list()
+    students  <- attendance_list()
+    emotions  <- emotions_data()
+    lecture_id <- get_attendance_lecture_id()
+
     if (length(students) == 0) {
-      return(shiny::div(class = "alert alert-info", "No students found. Upload a roster first."))
+      return(shiny::div(class = "alert alert-info",
+                        "No students found. Upload a roster first."))
     }
 
     shiny::div(class = "attendance-grid",
       lapply(students, function(s) {
         status_class <- if (s$status == "Present") "present" else "absent"
-        
-        # Photo URL
-        photo_url <- if (!is.null(input$lecturer_lecture_select)) {
-            paste0(FASTAPI_BASE, "/attendance/snapshot/", input$lecturer_lecture_select, "/", s$student_id)
+
+        # Photo: use snapshot if present, else enrolled Drive photo or placeholder
+        snapshot_url <- if (nchar(lecture_id) > 0) {
+          paste0(FASTAPI_BASE, "/attendance/snapshot/", lecture_id, "/", s$student_id)
         } else {
-            "default_student.png"
+          ""
         }
 
+        # Latest engagement score for this student
+        latest_eng <- if (nrow(emotions) > 0) {
+          emotions |>
+            dplyr::filter(.data$student_id == s$student_id) |>
+            dplyr::arrange(dplyr::desc(.data$timestamp)) |>
+            dplyr::slice(1) |>
+            dplyr::pull(.data$engagement_score)
+        } else {
+          numeric(0)
+        }
+
+        eng_display <- if (length(latest_eng) > 0 && !is.na(latest_eng)) {
+          sprintf("%.0f%%", latest_eng * 100)
+        } else {
+          "N/A"
+        }
+
+        eng_class <- if (length(latest_eng) > 0 && !is.na(latest_eng)) {
+          if (latest_eng >= 0.75) "confidence-high"
+          else if (latest_eng >= 0.45) "confidence-med"
+          else "confidence-low"
+        } else ""
+
         shiny::div(class = paste("student-card", status_class),
-          shiny::img(src = photo_url, class = "student-photo", 
-                     onerror = "this.src='default_student.png'"),
+          # Photo with fallback — onerror hides broken image gracefully
+          if (nchar(snapshot_url) > 0) {
+            shiny::tags$img(
+              src = snapshot_url, class = "student-photo",
+              onerror = "this.style.display='none'"
+            )
+          } else {
+            shiny::div(
+              style = "width:110px;height:110px;border-radius:50%;background:#e0e0e0;margin:0 auto 15px;display:flex;align-items:center;justify-content:center;",
+              shiny::icon("user", style = "font-size:3rem;color:#aaa;")
+            )
+          },
           shiny::div(class = "student-id", s$student_id),
           shiny::div(class = "student-name", s$name),
+          shiny::div(
+            class = "confidence-rate-label",
+            "Engagement: ",
+            shiny::span(class = eng_class, eng_display)
+          ),
           shiny::div(class = "card-actions",
             shinyWidgets::materialSwitch(
               inputId = paste0("att_", s$student_id),
-              label = "Present",
-              value = (s$status == "Present"),
-              status = "success"
-            ),
-            shiny::textInput(paste0("reason_", s$student_id), NULL, 
-                             value = s$reason, placeholder = "Reason (optional)")
+              label   = if (s$status == "Present") "Present" else "Absent",
+              value   = (s$status == "Present"),
+              status  = "success"
+            )
           )
         )
       })
     )
+  })
+
+  shiny::observe({
+    attendance_data()
+    refresh_attendance()
   })
 
   shiny::observeEvent(input$lecturer_attendance_refresh, {
@@ -146,62 +240,198 @@ lecturer_server <- function(input, output, session) {
   })
 
   shiny::observeEvent(input$lecturer_attendance_save, {
-    students <- attendance_list()
+    students   <- attendance_list()
+    lecture_id <- get_attendance_lecture_id()
+    if (length(students) == 0 || nchar(lecture_id) == 0) return()
+
     payload <- lapply(students, function(s) {
-        list(
-            student_id = s$student_id,
-            lecture_id = input$lecturer_lecture_select,
-            status = if (input[[paste0("att_", s$student_id)]]) "Present" else "Absent",
-            reason = input[[paste0("reason_", s$student_id)]]
-        )
+      list(
+        student_id = s$student_id,
+        lecture_id = lecture_id,
+        status     = if (isTRUE(input[[paste0("att_", s$student_id)]])) "Present" else "Absent"
+      )
     })
-    
-    result <- api_call("/attendance/manual", method = "POST", body = payload)
+
+    result <- tryCatch({
+      httr2::request(paste0(FASTAPI_BASE, "/attendance/manual")) |>
+        httr2::req_url_query(lecture_id = lecture_id) |>
+        httr2::req_body_json(payload) |>
+        httr2::req_perform() |>
+        httr2::resp_body_json()
+    }, error = function(e) NULL)
+
     if (!is.null(result)) {
-      shinyalert::shinyalert("Success", "Attendance records updated", type = "success")
+      shinyalert::shinyalert("Success", "Attendance records updated.", type = "success")
+    }
+  })
+
+  # QR code
+  shiny::observeEvent(input$lecturer_qr_generate, {
+    lecture_id <- get_attendance_lecture_id()
+    if (nchar(lecture_id) == 0) {
+      shinyalert::shinyalert("Error", "Enter a Lecture ID first.", type = "error")
+      return()
+    }
+    result <- tryCatch({
+      httr2::request(paste0(FASTAPI_BASE, "/attendance/qr/", lecture_id)) |>
+        httr2::req_perform() |>
+        httr2::resp_body_json()
+    }, error = function(e) NULL)
+
+    if (!is.null(result) && !is.null(result$qr_image_base64)) {
+      output$lecturer_qr_image <- shiny::renderImage({
+        tmp <- tempfile(fileext = ".png")
+        writeBin(base64enc::base64decode(result$qr_image_base64), tmp)
+        list(src = tmp, contentType = "image/png", width = 300, height = 300)
+      }, deleteFile = TRUE)
     }
   })
 
   # ========================================================================
-  # Submodule D: Live Dashboard (D1-D7 panels)
+  # Submodule D: Live Dashboard (D1-D7)
+  # Uses input$lecturer_live_lecture for lecture_id
   # ========================================================================
 
-  live_reactive <- shiny::reactiveTimer(10000)
+  live_reactive <- shiny::reactiveTimer(2000)
 
-  output$lecturer_d1_gauge <- plotly::renderPlotly({
-    live_reactive()
-    emotions <- emotions_data()
-    if (nrow(emotions) == 0) {
-      return(plotly::plot_ly())
+  get_live_lecture_id <- function() {
+    lid <- input$lecturer_live_lecture
+    if (is.null(lid) || nchar(trimws(lid)) == 0) return(NULL)
+    trimws(lid)
+  }
+
+  output$lecturer_live_custom_cam_ui <- shiny::renderUI({
+    if (input$lecturer_live_camera == "custom") {
+      textInput("lecturer_live_custom_cam", "Custom URL (RTSP/HTTP)", placeholder = "rtsp://...")
+    }
+  })
+
+  output$lecturer_live_stream_ui <- shiny::renderUI({
+    # Static render of stream URL - browser handles the MJPEG flow
+    lecture_id <- get_live_lecture_id()
+    if (is.null(lecture_id)) {
+      return(shiny::div(
+        style = "color:#fff;padding:170px 20px;",
+        "Enter a Lecture ID and start the lecture."
+      ))
     }
 
-    avg_eng <- mean(emotions$engagement_score, na.rm = TRUE)
-    plotly::plot_ly(
-      type = "indicator",
-      mode = "gauge+number",
-      value = avg_eng,
-      domain = list(x = c(0, 1), y = c(0, 1)),
-      gauge = list(
-        axis = list(range = list(0, 1)),
-        bar = list(color = "darkblue"),
-        steps = list(
-          list(range = c(0, 0.25), color = "lightpink"),
-          list(range = c(0.25, 0.45), color = "lightyellow"),
-          list(range = c(0.45, 0.75), color = "lightgreen"),
-          list(range = c(0.75, 1), color = "darkgreen")
-        )
-      )
+    shiny::tags$img(
+      src = paste0(FASTAPI_BASE, "/session/video_feed/", lecture_id),
+      style = "max-width:100%;width:100%;height:auto;display:block;",
+      onerror = "this.style.display='none';"
     )
   })
 
+  output$lecturer_live_sentiment_ticker <- shiny::renderUI({
+    live_reactive()
+    emotions <- emotions_data()
+    lecture_id <- get_live_lecture_id()
+    if (nrow(emotions) == 0 || is.null(lecture_id)) {
+      return(shiny::div("No live sentiment yet."))
+    }
+
+    recent <- emotions |>
+      dplyr::filter(.data$lecture_id == lecture_id) |>
+      dplyr::arrange(dplyr::desc(.data$timestamp)) |>
+      head(5)
+
+    if (nrow(recent) == 0) {
+      return(shiny::div("No live sentiment yet."))
+    }
+
+    shiny::tags$ul(
+      class = "list-unstyled",
+      lapply(seq_len(nrow(recent)), function(i) {
+        shiny::tags$li(
+          shiny::strong(recent$student_id[i]),
+          paste("-", recent$emotion[i], sprintf("(%.0f%%)", recent$engagement_score[i] * 100))
+        )
+      })
+    )
+  })
+
+  shiny::observeEvent(input$lecturer_live_start, {
+    lecture_id <- get_live_lecture_id()
+    if (is.null(lecture_id)) {
+      shinyalert::shinyalert("Error", "Enter a Lecture ID first.", type = "error")
+      return()
+    }
+
+    cam_url <- if (input$lecturer_live_camera == "custom") {
+      input$lecturer_live_custom_cam
+    } else {
+      input$lecturer_live_camera
+    }
+
+    if (is.null(cam_url) || nchar(trimws(cam_url)) == 0) cam_url <- "0"
+
+    result <- api_call("/session/start", method = "POST", body = list(
+      lecture_id  = lecture_id,
+      lecturer_id = "LECTURER_1",
+      camera_url  = trimws(cam_url)
+    ))
+
+    if (!is.null(result)) {
+      shinyalert::shinyalert("Lecture Started",
+                             paste("Lecture", lecture_id, "is now live using camera:", cam_url), type = "success")
+    }
+  })
+
+  shiny::observeEvent(input$lecturer_live_end, {
+    lecture_id <- get_live_lecture_id()
+    if (is.null(lecture_id)) return()
+    tryCatch({
+      httr2::request(paste0(FASTAPI_BASE, "/session/end")) |>
+        httr2::req_body_json(list(lecture_id = lecture_id)) |>
+        httr2::req_perform()
+    }, error = function(e) NULL)
+    shinyalert::shinyalert("Lecture Ended", "", type = "info")
+  })
+
+  # D1: Engagement Gauge
+  output$lecturer_d1_gauge <- plotly::renderPlotly({
+    live_reactive()
+    emotions <- emotions_data()
+    lecture_id <- get_live_lecture_id()
+
+    if (nrow(emotions) == 0 || is.null(lecture_id)) return(plotly::plot_ly())
+
+    recent <- emotions |>
+      dplyr::filter(.data$lecture_id == lecture_id) |>
+      tail(60)
+    if (nrow(recent) == 0) return(plotly::plot_ly())
+
+    avg_eng <- mean(recent$engagement_score, na.rm = TRUE)
+    plotly::plot_ly(
+      type = "indicator", mode = "gauge+number",
+      value = round(avg_eng, 2),
+      domain = list(x = c(0, 1), y = c(0, 1)),
+      gauge = list(
+        axis = list(range = list(0, 1)),
+        bar  = list(color = "#002147"),
+        steps = list(
+          list(range = c(0, 0.25),   color = "#f8d7da"),
+          list(range = c(0.25, 0.45), color = "#fff3cd"),
+          list(range = c(0.45, 0.75), color = "#d4edda"),
+          list(range = c(0.75, 1),    color = "#155724")
+        )
+      )
+    ) |>
+      plotly::layout(margin = list(t = 20, b = 20))
+  })
+
+  # D2: Emotion Timeline
   output$lecturer_d2_timeline <- plotly::renderPlotly({
     live_reactive()
     emotions <- emotions_data()
-    if (nrow(emotions) == 0) {
-      return(plotly::plot_ly() |> plotly::add_text(text = "No live data"))
-    }
+    lecture_id <- get_live_lecture_id()
+    if (nrow(emotions) == 0 || is.null(lecture_id)) return(plotly::plot_ly())
 
-    timeline_data <- emotions |>
+    recent <- emotions |> dplyr::filter(.data$lecture_id == lecture_id)
+    if (nrow(recent) == 0) return(plotly::plot_ly())
+
+    timeline_data <- recent |>
       dplyr::mutate(time_bucket = lubridate::floor_date(.data$timestamp, "2 minutes")) |>
       dplyr::group_by(.data$time_bucket, .data$emotion) |>
       dplyr::summarise(count = dplyr::n(), .groups = "drop") |>
@@ -209,70 +439,112 @@ lecturer_server <- function(input, output, session) {
       dplyr::mutate(pct = .data$count / sum(.data$count))
 
     plotly::plot_ly(timeline_data, x = ~time_bucket) |>
-      plotly::add_trace(y = ~pct, color = ~emotion, type = "scatter", mode = "lines", stackgroup = "one")
+      plotly::add_trace(y = ~pct, color = ~emotion, type = "scatter",
+                        mode = "lines", stackgroup = "one") |>
+      plotly::layout(yaxis = list(title = "% of class"),
+                     xaxis = list(title = "Time"))
   })
 
+  # D3: Cognitive Load
   output$lecturer_d3_load <- shiny::renderUI({
     live_reactive()
     emotions <- emotions_data()
-    if (nrow(emotions) == 0) {
-      return(shiny::div("No data"))
-    }
+    lecture_id <- get_live_lecture_id()
+    if (nrow(emotions) == 0 || is.null(lecture_id)) return(shiny::div("No data"))
+
+    recent <- emotions |> dplyr::filter(.data$lecture_id == lecture_id) |> tail(120)
+    if (nrow(recent) == 0) return(shiny::div("No data"))
 
     cog_load <- mean(
-      (emotions$emotion == "Confused") + (emotions$emotion == "Frustrated"),
+      (recent$emotion == "Confused") + (recent$emotion == "Frustrated"),
       na.rm = TRUE
     )
-
     status_color <- if (cog_load > 0.5) "danger" else if (cog_load > 0.3) "warning" else "success"
 
     shiny::div(
       class = paste0("alert alert-", status_color),
-      sprintf("Cognitive Load: %.1f%%", cog_load * 100),
+      shiny::strong(sprintf("%.1f%%", cog_load * 100)),
       if (cog_load > 0.5) shiny::p("⚠ Overloaded — consider slowing down") else NULL
     )
   })
 
+  # D4: Class Valence
+  output$lecturer_d4_valence <- plotly::renderPlotly({
+    live_reactive()
+    emotions <- emotions_data()
+    lecture_id <- get_live_lecture_id()
+    if (nrow(emotions) == 0 || is.null(lecture_id)) return(plotly::plot_ly())
+
+    recent <- emotions |> dplyr::filter(.data$lecture_id == lecture_id) |> tail(120)
+    if (nrow(recent) == 0) return(plotly::plot_ly())
+
+    valence <- mean(
+      (recent$emotion %in% c("Focused", "Engaged")) -
+        (recent$emotion %in% c("Frustrated", "Disengaged", "Anxious")),
+      na.rm = TRUE
+    )
+    plotly::plot_ly(
+      type = "indicator", mode = "gauge+number",
+      value = round(valence, 2),
+      domain = list(x = c(0, 1), y = c(0, 1)),
+      gauge = list(
+        axis  = list(range = list(-1, 1)),
+        bar   = list(color = if (valence >= 0) "#28a745" else "#dc3545"),
+        steps = list(
+          list(range = c(-1, 0), color = "#fff3cd"),
+          list(range = c(0, 1),  color = "#d4edda")
+        )
+      )
+    )
+  })
+
+  # D5: Per-Student Heatmap
   output$lecturer_d5_heatmap <- shiny::renderPlot({
     live_reactive()
     emotions <- emotions_data()
-    if (nrow(emotions) == 0) {
-      return(NULL)
-    }
+    lecture_id <- get_live_lecture_id()
+    if (nrow(emotions) == 0 || is.null(lecture_id)) return(NULL)
 
-    heatmap_data <- emotions |>
+    recent <- emotions |> dplyr::filter(.data$lecture_id == lecture_id)
+    if (nrow(recent) == 0) return(NULL)
+
+    heatmap_data <- recent |>
       dplyr::mutate(time_bucket = lubridate::floor_date(.data$timestamp, "5 minutes")) |>
       dplyr::group_by(.data$student_id, .data$time_bucket) |>
       dplyr::slice(1) |>
       dplyr::ungroup()
 
-    ggplot2::ggplot(heatmap_data, ggplot2::aes(x = .data$time_bucket, y = .data$student_id, fill = .data$emotion)) +
+    ggplot2::ggplot(heatmap_data, ggplot2::aes(x = .data$time_bucket,
+                                                y = .data$student_id,
+                                                fill = .data$emotion)) +
       ggplot2::geom_tile() +
-      ggplot2::scale_fill_manual(
-        values = c(
-          "Focused" = "#1B5E20", "Engaged" = "#4CAF50", "Confused" = "#FFC107",
-          "Frustrated" = "#FF9800", "Anxious" = "#9C27B0", "Disengaged" = "#F44336"
-        )
-      ) +
+      ggplot2::scale_fill_manual(values = c(
+        "Focused" = "#1B5E20", "Engaged" = "#4CAF50", "Confused" = "#FFC107",
+        "Frustrated" = "#FF9800", "Anxious" = "#9C27B0", "Disengaged" = "#F44336"
+      )) +
       ggplot2::theme_minimal() +
       ggplot2::theme(axis.text.y = ggplot2::element_blank()) +
-      ggplot2::labs(title = "Per-Student Emotion Heatmap", x = "Time", y = "Students", fill = "Emotion")
+      ggplot2::labs(x = "Time", y = "Students", fill = "Emotion")
   })
 
+  # D6: Persistent Struggle Alert
   output$lecturer_d6_struggle <- DT::renderDataTable({
     live_reactive()
     emotions <- emotions_data()
-    if (nrow(emotions) == 0) {
-      return(data.frame())
-    }
+    lecture_id <- get_live_lecture_id()
+    if (nrow(emotions) == 0 || is.null(lecture_id)) return(data.frame())
 
-    struggle <- emotions |>
+    recent <- emotions |> dplyr::filter(.data$lecture_id == lecture_id)
+    if (nrow(recent) == 0) return(data.frame())
+
+    struggle <- recent |>
       dplyr::arrange(.data$student_id, .data$timestamp) |>
       dplyr::group_by(.data$student_id) |>
       dplyr::mutate(
         is_struggling = .data$emotion %in% c("Confused", "Frustrated"),
-        streak = cumsum(!.data$is_struggling),
-        consecutive = ave(as.numeric(.data$is_struggling), .data$student_id, .data$streak, FUN = cumsum)
+        streak        = cumsum(!.data$is_struggling),
+        consecutive   = ave(as.numeric(.data$is_struggling),
+                            .data$student_id, .data$streak, FUN = cumsum)
       ) |>
       dplyr::filter(.data$consecutive >= 3) |>
       dplyr::slice_tail(n = 1) |>
@@ -283,39 +555,17 @@ lecturer_server <- function(input, output, session) {
     DT::datatable(struggle, options = list(pageLength = 10))
   })
 
-  # D4: Class Valence Meter (-1.0 to +1.0)
-  output$lecturer_d4_valence <- plotly::renderPlotly({
-    live_reactive()
-    emotions <- emotions_data()
-    if (nrow(emotions) == 0) return(plotly::plot_ly())
-
-    valence <- mean(
-      (emotions$emotion %in% c("Focused", "Engaged")) -
-        (emotions$emotion %in% c("Frustrated", "Disengaged", "Anxious")),
-      na.rm = TRUE
-    )
-    plotly::plot_ly(
-      type = "indicator", mode = "gauge+number",
-      value = round(valence, 2),
-      domain = list(x = c(0, 1), y = c(0, 1)),
-      gauge = list(
-        axis  = list(range = list(-1, 1)),
-        bar   = list(color = if (valence >= 0) "green" else "red"),
-        steps = list(
-          list(range = c(-1, 0), color = "lightyellow"),
-          list(range = c(0, 1),  color = "lightgreen")
-        )
-      )
-    )
-  })
-
   # D7: Peak Confusion Moment
   output$lecturer_d7_peak <- shiny::renderUI({
     live_reactive()
     emotions <- emotions_data()
-    if (nrow(emotions) == 0) return(shiny::div("No data"))
+    lecture_id <- get_live_lecture_id()
+    if (nrow(emotions) == 0 || is.null(lecture_id)) return(shiny::div("No data"))
 
-    peak <- emotions |>
+    recent <- emotions |> dplyr::filter(.data$lecture_id == lecture_id)
+    if (nrow(recent) == 0) return(shiny::div("No data"))
+
+    peak <- recent |>
       dplyr::mutate(time_bucket = lubridate::floor_date(.data$timestamp, "2 minutes")) |>
       dplyr::group_by(.data$time_bucket) |>
       dplyr::summarise(
@@ -328,34 +578,30 @@ lecturer_server <- function(input, output, session) {
 
     shiny::div(
       class = "alert alert-info",
-      shiny::strong("Most confusing moment:"),
+      shiny::strong("Peak confusion at:"),
       format(peak$time_bucket[1], "%I:%M %p"),
       shiny::br(),
-      sprintf("%.0f%% of class showed Confused/Frustrated", peak$confused_pct[1] * 100)
+      sprintf("%.0f%% Confused/Frustrated", peak$confused_pct[1] * 100)
     )
   })
 
-  # ========================================================================
-  # Confusion Spike Observer — T045
-  # Fires when confusion_rate >= 0.40 over the last 120 emotion rows (~2 min)
-  # Fetches a Gemini clarifying question and presents a shinyalert popup.
-  # ========================================================================
-
+  # Confusion Spike Observer — Gemini alert
   confusion_alerted <- shiny::reactiveVal(FALSE)
 
   shiny::observe({
     live_reactive()
     emotions <- emotions_data()
-    if (nrow(emotions) == 0) return()
+    lecture_id <- get_live_lecture_id()
+    if (nrow(emotions) == 0 || is.null(lecture_id)) return()
 
-    # Evaluate last 120 rows (~2 minutes of data at 1 record/5s per student)
-    recent <- tail(emotions, 120)
+    recent <- emotions |>
+      dplyr::filter(.data$lecture_id == lecture_id) |>
+      tail(120)
     confusion_rate <- mean(
       recent$emotion %in% c("Confused", "Frustrated"),
       na.rm = TRUE
     )
 
-    # Only alert once per spike (reset when rate drops below threshold)
     if (confusion_rate < 0.40) {
       confusion_alerted(FALSE)
       return()
@@ -363,8 +609,6 @@ lecturer_server <- function(input, output, session) {
     if (isTRUE(confusion_alerted())) return()
     confusion_alerted(TRUE)
 
-    # Fetch Gemini clarifying question
-    lecture_id <- input$lecturer_lecture_select
     question <- tryCatch({
       result <- httr2::request(paste0(FASTAPI_BASE, "/gemini/question")) |>
         httr2::req_url_query(lecture_id = lecture_id) |>
@@ -401,33 +645,52 @@ lecturer_server <- function(input, output, session) {
   # Submodule E: Student Reports
   # ========================================================================
 
+  shiny::observe({
+    emotions <- emotions_data()
+    if (nrow(emotions) == 0) return()
+
+    # Build choices from students that appear in emotion data
+    name_col <- if ("name" %in% names(emotions)) "name" else "student_id"
+    students <- emotions |>
+      dplyr::select(dplyr::all_of(c("student_id", name_col))) |>
+      dplyr::distinct() |>
+      dplyr::arrange(.data[[name_col]])
+
+    choices <- students$student_id
+    names(choices) <- paste0(students[[name_col]], " (", students$student_id, ")")
+
+    shiny::updateSelectInput(session, "lecturer_student_select", choices = choices)
+  })
+
   output$lecturer_student_trend <- plotly::renderPlotly({
     req(input$lecturer_student_select)
     emotions <- emotions_data()
-    if (nrow(emotions) == 0) {
-      return(plotly::plot_ly())
-    }
+    if (nrow(emotions) == 0) return(plotly::plot_ly())
 
     student_data <- emotions |>
       dplyr::filter(.data$student_id == input$lecturer_student_select) |>
       dplyr::arrange(.data$timestamp)
+    if (nrow(student_data) == 0) return(plotly::plot_ly())
 
-    plotly::plot_ly(student_data, x = ~timestamp, y = ~engagement_score, type = "scatter", mode = "lines+markers")
+    plotly::plot_ly(student_data, x = ~timestamp, y = ~engagement_score,
+                   type = "scatter", mode = "lines+markers",
+                   line   = list(color = AAST_NAVY),
+                   marker = list(color = AAST_GOLD)) |>
+      plotly::layout(yaxis = list(range = c(0, 1), title = "Engagement Score"))
   })
 
   output$lecturer_student_emotions <- plotly::renderPlotly({
     req(input$lecturer_student_select)
     emotions <- emotions_data()
-    if (nrow(emotions) == 0) {
-      return(plotly::plot_ly())
-    }
+    if (nrow(emotions) == 0) return(plotly::plot_ly())
 
     emotion_counts <- emotions |>
       dplyr::filter(.data$student_id == input$lecturer_student_select) |>
       dplyr::group_by(.data$emotion) |>
       dplyr::summarise(count = dplyr::n(), .groups = "drop")
 
-    plotly::plot_ly(emotion_counts, x = ~emotion, y = ~count, type = "bar")
+    plotly::plot_ly(emotion_counts, x = ~emotion, y = ~count, type = "bar",
+                   marker = list(color = AAST_NAVY))
   })
 
   output$lecturer_student_load <- plotly::renderPlotly({
@@ -444,17 +707,12 @@ lecturer_server <- function(input, output, session) {
         .groups = "drop"
       )
 
+    if (nrow(load_data) == 0) return(plotly::plot_ly())
+
     plotly::plot_ly(load_data, x = ~time_bucket, y = ~cognitive_load,
                    type = "scatter", mode = "lines+markers",
                    line = list(color = "orange")) |>
-      plotly::layout(
-        title = "Cognitive Load Timeline",
-        yaxis = list(range = c(0, 1), title = "Load"),
-        shapes = list(
-          list(type = "line", x0 = min(load_data$time_bucket), x1 = max(load_data$time_bucket),
-               y0 = 0.5, y1 = 0.5, line = list(color = "red", dash = "dot"))
-        )
-      )
+      plotly::layout(yaxis = list(range = c(0, 1), title = "Cognitive Load"))
   })
 
   output$lecturer_student_plan_ui <- shiny::renderUI({
@@ -464,13 +722,10 @@ lecturer_server <- function(input, output, session) {
     }, error = function(e) NULL)
 
     if (is.null(result) || is.null(result$plan)) {
-      return(shiny::div(class = "alert alert-info", "No AI plan available yet for this student."))
+      return(shiny::div(class = "alert alert-info",
+                        "No AI plan available yet for this student."))
     }
-
-    shiny::div(
-      class = "card p-3",
-      shiny::markdown(result$plan)
-    )
+    shiny::div(class = "card p-3", shiny::markdown(result$plan))
   })
 
   output$lecturer_student_pdf <- shiny::downloadHandler(
@@ -482,8 +737,213 @@ lecturer_server <- function(input, output, session) {
         "reports/student_report.Rmd",
         output_file = file,
         params = list(student_id = input$lecturer_student_select),
-        quiet = TRUE
+        quiet  = TRUE
       )
     }
   )
+
+  # ========================================================================
+  # Class Insights: Server Logic (Ported from Admin)
+  # ========================================================================
+
+  # 0. Attendance Log
+  output$lecturer_attendance_log_table <- DT::renderDataTable({
+    data <- attendance_data()
+    if (nrow(data) == 0) return(data.frame())
+    data |>
+      dplyr::select(.data$student_id, .data$lecture_id, .data$status, .data$method, .data$timestamp) |>
+      DT::datatable(options = list(pageLength = 25))
+  })
+
+  # 1. Engagement Trend
+  output$lecturer_class_engagement_trend <- plotly::renderPlotly({
+    emotions <- emotions_data()
+    if (nrow(emotions) == 0) return(plotly::plot_ly() |> plotly::add_text(text = "No data"))
+
+    trend_data <- emotions |>
+      dplyr::mutate(week = lubridate::floor_date(.data$timestamp, "week")) |>
+      dplyr::group_by(.data$week) |>
+      dplyr::summarise(avg_engagement = mean(.data$engagement_score, na.rm = TRUE), .groups = "drop")
+
+    plotly::plot_ly(trend_data, x = ~week, y = ~avg_engagement, type = "scatter", mode = "lines+markers") |>
+      plotly::layout(
+        xaxis = list(title = "Week"),
+        yaxis = list(title = "Avg Engagement Score", range = c(0, 1))
+      )
+  })
+
+  # 1.5 Course Heatmap
+  output$lecturer_course_heatmap <- shiny::renderPlot({
+    emotions <- emotions_data()
+    if (nrow(emotions) == 0) return(NULL)
+
+    heatmap_data <- emotions |>
+      dplyr::mutate(
+        week          = lubridate::floor_date(.data$timestamp, "week"),
+        lecture_group = substr(.data$lecture_id, 1, 2)
+      ) |>
+      dplyr::group_by(.data$lecture_group, .data$week) |>
+      dplyr::summarise(avg_eng = mean(.data$engagement_score, na.rm = TRUE), .groups = "drop")
+
+    ggplot2::ggplot(heatmap_data, ggplot2::aes(x = .data$week, y = .data$lecture_group, fill = .data$avg_eng)) +
+      ggplot2::geom_tile() +
+      ggplot2::scale_fill_gradient(low = "red", high = "green", limits = c(0, 1)) +
+      ggplot2::theme_minimal() +
+      ggplot2::labs(y = "Course Group", fill = "Avg Engagement")
+  })
+
+  # 2. Emotion Analysis
+  output$lecturer_class_emotion_mix <- shiny::renderPlot({
+    emotions <- emotions_data()
+    if (nrow(emotions) == 0) return(NULL)
+
+    emotion_dist <- emotions |>
+      dplyr::group_by(.data$emotion) |>
+      dplyr::summarise(count = dplyr::n(), .groups = "drop") |>
+      dplyr::mutate(pct = .data$count / sum(.data$count))
+
+    ggplot2::ggplot(emotion_dist, ggplot2::aes(x = "", y = .data$pct, fill = .data$emotion)) +
+      ggplot2::geom_col(width = 1) +
+      ggplot2::coord_polar("y", start = 0) +
+      ggplot2::scale_fill_manual(values = c(
+        "Focused" = "#1B5E20", "Engaged" = "#4CAF50", "Confused" = "#FFC107",
+        "Frustrated" = "#FF9800", "Anxious" = "#9C27B0", "Disengaged" = "#F44336"
+      )) +
+      ggplot2::theme_void() +
+      ggplot2::labs(title = "Overall Emotion Mix", fill = "Emotion")
+  })
+
+  output$lecturer_class_emotion_trend <- plotly::renderPlotly({
+    emotions <- emotions_data()
+    if (nrow(emotions) == 0) return(plotly::plot_ly() |> plotly::add_text(text = "No data"))
+
+    emotion_trend <- emotions |>
+      dplyr::mutate(week = lubridate::floor_date(.data$timestamp, "week")) |>
+      dplyr::group_by(.data$week, .data$emotion) |>
+      dplyr::summarise(count = dplyr::n(), .groups = "drop") |>
+      dplyr::group_by(.data$week) |>
+      dplyr::mutate(pct = .data$count / sum(.data$count))
+
+    plotly::plot_ly(emotion_trend, x = ~week, y = ~pct, color = ~emotion,
+                    type = 'scatter', mode = 'lines', stackgroup = 'one',
+                    colors = c(
+                      "Focused" = "#1B5E20", "Engaged" = "#4CAF50", "Confused" = "#FFC107",
+                      "Frustrated" = "#FF9800", "Anxious" = "#9C27B0", "Disengaged" = "#F44336"
+                    )) |>
+      plotly::layout(
+        xaxis = list(title = "Week"),
+        yaxis = list(title = "Proportion", range = c(0, 1))
+      )
+  })
+
+  # 3. Performance Clusters
+  output$lecturer_student_clusters <- plotly::renderPlotly({
+    emotions <- emotions_data()
+    if (nrow(emotions) == 0) return(plotly::plot_ly() |> plotly::add_text(text = "No data"))
+
+    clustered <- cluster_student_behavior(emotions, k = min(3, length(unique(emotions$student_id))))
+    if (nrow(clustered) == 0) return(plotly::plot_ly() |> plotly::add_text(text = "Insufficient data"))
+
+    plotly::plot_ly(clustered, x = ~avg_engagement_score, y = ~avg_confused, color = ~cluster_label,
+                    text = ~paste("Student:", student_id),
+                    mode = "markers", marker = list(size = 12)) |>
+      plotly::layout(
+        xaxis = list(title = "Avg Engagement Score"),
+        yaxis = list(title = "Avg Confusion Rate")
+      )
+  })
+
+  # 4. At-Risk Students
+  output$lecturer_at_risk_table <- DT::renderDataTable({
+    emotions <- emotions_data()
+    if (nrow(emotions) == 0) return(data.frame())
+
+    eng_metrics <- compute_engagement(emotions)$by_lecture |>
+      dplyr::arrange(.data$student_id, .data$lecture_id)
+
+    at_risk <- eng_metrics |>
+      dplyr::group_by(.data$student_id) |>
+      dplyr::mutate(
+        lag_score  = dplyr::lag(.data$engagement_score),
+        drop       = .data$lag_score - .data$engagement_score,
+        is_drop    = !is.na(.data$drop) & .data$drop > 0.20,
+        streak_id  = cumsum(!.data$is_drop),
+        consec_run = ave(as.integer(.data$is_drop), .data$student_id, .data$streak_id, FUN = cumsum)
+      ) |>
+      dplyr::filter(.data$consec_run >= 3) |>
+      dplyr::slice_tail(n = 1) |>
+      dplyr::ungroup() |>
+      dplyr::select(
+        `Student ID` = .data$student_id,
+        `Engagement Score` = .data$engagement_score,
+        Drop = .data$drop,
+        `Latest Lecture` = .data$lecture_id,
+        Streak = .data$consec_run
+      )
+
+    DT::datatable(at_risk, options = list(pageLength = 10))
+  })
+
+  # 5. Effectiveness (LES)
+  output$lecturer_les_table <- DT::renderDataTable({
+    emotions <- emotions_data()
+    attendance <- attendance_data()
+    if (nrow(emotions) == 0 || nrow(attendance) == 0) return(data.frame())
+
+    eng_metrics <- compute_engagement(emotions)$by_lecture
+    att_metrics <- attendance |>
+      dplyr::mutate(present = .data$status == "Present") |>
+      dplyr::group_by(.data$lecture_id) |>
+      dplyr::summarise(attendance_rate = mean(.data$present, na.rm = TRUE), .groups = "drop")
+
+    les_data <- eng_metrics |>
+      dplyr::left_join(att_metrics, by = "lecture_id") |>
+      dplyr::mutate(
+        LES = 0.5 * .data$engagement_score + 0.3 * (1 - .data$confusion_rate) + 0.2 * .data$attendance_rate,
+        Category = dplyr::if_else(.data$LES >= 0.7, "Excellent", dplyr::if_else(.data$LES >= 0.5, "Good", "Needs Improvement"))
+      ) |>
+      dplyr::arrange(dplyr::desc(.data$LES)) |>
+      dplyr::select(`Lecture ID` = .data$lecture_id, `Engagement` = .data$engagement_score, 
+                    `Confusion` = .data$confusion_rate, `Attendance` = .data$attendance_rate, LES, Category)
+
+    DT::datatable(les_data, options = list(pageLength = 10))
+  })
+
+  # 6. Time-of-Day Heatmap
+  output$lecturer_tod_heatmap <- shiny::renderPlot({
+    emotions <- emotions_data()
+    if (nrow(emotions) == 0) return(NULL)
+
+    tod_data <- emotions |>
+      dplyr::mutate(
+        hour = lubridate::hour(.data$timestamp),
+        weekday = lubridate::wday(.data$timestamp, label = TRUE)
+      ) |>
+      dplyr::group_by(.data$weekday, .data$hour) |>
+      dplyr::summarise(avg_eng = mean(.data$engagement_score, na.rm = TRUE), .groups = "drop")
+
+    ggplot2::ggplot(tod_data, ggplot2::aes(x = .data$hour, y = .data$weekday, fill = .data$avg_eng)) +
+      ggplot2::geom_tile() +
+      ggplot2::scale_fill_gradient(low = "red", high = "green", limits = c(0, 1)) +
+      ggplot2::theme_minimal() +
+      ggplot2::labs(x = "Hour", y = "Weekday", fill = "Avg Engagement")
+  })
+
+  # 7. Exam Incidents
+  output$lecturer_incidents_table <- DT::renderDataTable({
+    data <- incidents_data()
+    if (nrow(data) == 0) return(data.frame())
+
+    data <- data |>
+      dplyr::mutate(
+        evidence = ifelse(is.na(.data$evidence_path) | .data$evidence_path == "",
+                         "No Photo",
+                         sprintf('<a href="%s/attendance/evidence/%s" target="_blank">View Photo</a>',
+                                 FASTAPI_BASE, basename(.data$evidence_path)))
+      ) |>
+      dplyr::select(`Student ID` = .data$student_id, `Exam ID` = .data$exam_id, 
+                    `Type` = .data$flag_type, Severity = .data$severity, Timestamp = .data$timestamp, evidence)
+
+    DT::datatable(data, escape = FALSE, options = list(pageLength = 25))
+  })
 }

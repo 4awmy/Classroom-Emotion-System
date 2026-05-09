@@ -1,205 +1,386 @@
-# Lecturer UI - 5 Submodules
-# Submodules: Roster, Materials, Attendance, Live Dashboard, Reports
+# Lecturer UI - 5 Submodules (shinydashboard sidebar layout)
 
 lecturer_ui <- function() {
-  navbarPage(
-    title = "AAST LMS - Lecturer Portal",
-    theme = bslib::bs_theme(
-      version = 5,
-      primary = AAST_NAVY,
-      secondary = AAST_GOLD
-    ),
-    # ========================================================================
-    # Submodule A: Roster Setup
-    # ========================================================================
-    tabPanel(
-      "Roster Setup",
-      br(),
-      h2("Student Roster & Face Encoding"),
-      p("Upload the student roster XLSX file (StudentPicsDataset.xlsx). Face images are fetched automatically from Google Drive links in the sheet."),
-      br(),
-      fileInput("lecturer_roster_xlsx", "Select Roster XLSX File",
-               accept = c(".xlsx")),
-      helpText("XLSX columns: student_id, name, email, drive_photo_link"),
-      br(),
-      actionButton("lecturer_roster_upload", "Upload Roster", class = "btn-primary"),
-      br(), br(),
-      uiOutput("lecturer_roster_status")
-    ),
-    # ========================================================================
-    # Submodule B: Material Upload
-    # ========================================================================
-    tabPanel(
-      "Material Upload",
-      br(),
-      h2("Lecture Materials Management"),
-      br(),
-      fluidRow(
-        column(
-          4,
-          selectInput("lecturer_lecture_select", "Select Lecture:",
-                     choices = c("Loading..." = ""))
-        ),
-        column(
-          8,
-          textInput("lecturer_material_title", "Material Title")
-        )
+  shinydashboard::dashboardPage(
+    skin = "blue",  # overridden by custom.css
+    shinydashboard::dashboardHeader(
+      title = tags$span(
+        tags$strong("AAST LMS"),
+        tags$small(" | Lecturer", style = "font-size:0.8em; margin-right:4px;")
       ),
-      br(),
-      fileInput("lecturer_material_file", "Select File (PDF, PPT, etc.)",
-               accept = c(".pdf", ".pptx", ".xlsx", ".docx")),
-      br(),
-      actionButton("lecturer_material_upload", "Upload Material", class = "btn-primary"),
-      br(), br(),
-      h3("Recent Materials"),
-      DT::dataTableOutput("lecturer_materials_table")
+      titleWidth = 280,
+      tags$li(
+        class = "dropdown",
+        actionLink(
+          "logout_btn",
+          label = tagList(icon("sign-out-alt"), " Logout"),
+          style = "color: #C9A84C; padding: 15px 20px;"
+        )
+      )
     ),
-    # ========================================================================
-    # Submodule C: Attendance
-    # ========================================================================
-    tabPanel(
-      "Attendance",
-      br(),
-      h2("Class Attendance Management"),
-      p("Verify student presence with visual proof from the live vision pipeline."),
-      br(),
-      tabsetPanel(
-        tabPanel(
-          "Visual Verification",
+    shinydashboard::dashboardSidebar(
+      width = 260,
+      shinydashboard::sidebarMenu(
+        id = "lecturer_menu",
+        shinydashboard::menuItem(
+          "Roster",
+          tabName = "lec_roster",
+          icon = icon("upload")
+        ),
+        shinydashboard::menuItem(
+          "LMS Materials",
+          tabName = "lec_materials",
+          icon = icon("book")
+        ),
+        shinydashboard::menuItem(
+          "Attendance",
+          tabName = "lec_attendance",
+          icon = icon("check-square")
+        ),
+        shinydashboard::menuItem(
+          "Live Dashboard",
+          tabName = "lec_live",
+          icon = icon("tv"),
+          badgeLabel = "LIVE",
+          badgeColor = "green"
+        ),
+        shinydashboard::menuItem(
+          "Reports",
+          tabName = "lec_reports",
+          icon = icon("file-alt")
+        )
+      )
+    ),
+    shinydashboard::dashboardBody(
+      tags$head(
+        tags$link(rel = "stylesheet", type = "text/css", href = "custom.css")
+      ),
+      shinydashboard::tabItems(
+
+        # ====================================================================
+        # Submodule A: Roster Setup
+        # ====================================================================
+        shinydashboard::tabItem(
+          tabName = "lec_roster",
+          h2("Student Roster Setup"),
+          p("Upload the student roster XLSX file. Face images are fetched automatically from Google Drive links."),
           br(),
-          fluidRow(
-            column(12,
-              actionButton("lecturer_attendance_save", "Save Changes", class = "btn-success"),
-              actionButton("lecturer_attendance_refresh", "Refresh List", class = "btn-info")
-            )
+          wellPanel(
+            fileInput("lecturer_roster_xlsx", "Select Roster XLSX File",
+                     accept = c(".xlsx")),
+            helpText("Expected columns: student_id, name, email, photo_link"),
+            br(),
+            actionButton("lecturer_roster_upload", "Upload Roster",
+                        class = "btn-primary", icon = icon("upload"))
           ),
           br(),
-          uiOutput("lecturer_attendance_grid")
+          uiOutput("lecturer_roster_status")
         ),
-        tabPanel(
-          "QR Code",
+
+        # ====================================================================
+        # Submodule B: LMS Materials
+        # ====================================================================
+        shinydashboard::tabItem(
+          tabName = "lec_materials",
+          h2("LMS Content Management"),
+          p("Organize materials by academic week."),
           br(),
-          p("Generate QR code for students to scan"),
-          actionButton("lecturer_qr_generate", "Generate QR Code", class = "btn-primary"),
-          br(), br(),
-          imageOutput("lecturer_qr_image")
-        )
-      )
-    ),
-    # ========================================================================
-    # Submodule D: Live Lecture Dashboard (D1-D7 panels)
-    # ========================================================================
-    tabPanel(
-      "Live Dashboard",
-      br(),
-      h2("Live Class Monitoring"),
-      actionButton("lecturer_live_start", "Start Lecture", class = "btn-success"),
-      actionButton("lecturer_live_end", "End Lecture", class = "btn-danger"),
-      br(), br(),
-      # D1: Engagement Gauge
-      fluidRow(
-        column(
-          3,
-          h3("D1: Engagement Gauge"),
-          plotly::plotlyOutput("lecturer_d1_gauge")
-        ),
-        # D2: Emotion Timeline
-        column(
-          9,
-          h3("D2: Emotion Timeline"),
-          plotly::plotlyOutput("lecturer_d2_timeline")
-        )
-      ),
-      hr(),
-      # D3: Cognitive Load
-      fluidRow(
-        column(
-          4,
-          h3("D3: Cognitive Load"),
-          uiOutput("lecturer_d3_load")
-        ),
-        # D4: Class Valence
-        column(
-          4,
-          h3("D4: Class Valence"),
-          plotly::plotlyOutput("lecturer_d4_valence")
-        ),
-        # D7: Peak Confusion
-        column(
-          4,
-          h3("D7: Peak Confusion"),
-          uiOutput("lecturer_d7_peak")
-        )
-      ),
-      hr(),
-      # D5: Per-Student Heatmap
-      fluidRow(
-        column(
-          12,
-          h3("D5: Per-Student Emotion Heatmap"),
-          plotOutput("lecturer_d5_heatmap", height = "400px")
-        )
-      ),
-      hr(),
-      # D6: Persistent Struggle Alert
-      fluidRow(
-        column(
-          12,
-          h3("D6: Persistent Struggle Alerts"),
-          DT::dataTableOutput("lecturer_d6_struggle")
-        )
-      )
-    ),
-    # ========================================================================
-    # Submodule E: Student Reports
-    # ========================================================================
-    tabPanel(
-      "Student Reports",
-      br(),
-      h2("Individual Student Performance Reports"),
-      br(),
-      fluidRow(
-        column(
-          4,
-          selectInput("lecturer_student_select", "Select Student:",
-                     choices = c("Loading..." = ""))
-        ),
-        column(
-          4,
-          downloadButton("lecturer_student_pdf", "Download PDF Report")
-        )
-      ),
-      br(),
-      tabsetPanel(
-        tabPanel(
-          "Dashboard",
-          br(),
-          fluidRow(
-            column(
-              6,
-              h3("Engagement Trend"),
-              plotly::plotlyOutput("lecturer_student_trend")
+          wellPanel(
+            fluidRow(
+              column(4,
+                textInput("lecturer_lecture_select", "Lecture ID",
+                          placeholder = "e.g. L1")
+              ),
+              column(4,
+                selectInput("lecturer_week_select", "Academic Week",
+                           choices = paste("Week", 1:16))
+              ),
+              column(4,
+                textInput("lecturer_material_title", "Material Title")
+              )
             ),
-            column(
-              6,
-              h3("Emotion Distribution"),
-              plotly::plotlyOutput("lecturer_student_emotions")
+            fileInput("lecturer_material_file", "Select File (PDF, PPT, etc.)",
+                     accept = c(".pdf", ".pptx", ".xlsx", ".docx")),
+            actionButton("lecturer_material_upload", "Upload to LMS",
+                        class = "btn-primary", icon = icon("upload"))
+          ),
+          br(),
+          DT::dataTableOutput("lecturer_materials_table")
+        ),
+
+        # ====================================================================
+        # Submodule C: Attendance
+        # ====================================================================
+        shinydashboard::tabItem(
+          tabName = "lec_attendance",
+          h2("Class Attendance"),
+          p("Verify student presence with visual proof from the vision pipeline."),
+          br(),
+          fluidRow(
+            column(4,
+              textInput("lecturer_attendance_lecture", "Lecture ID",
+                       placeholder = "e.g. L1")
+            ),
+            column(4,
+              br(),
+              actionButton("lecturer_attendance_refresh", "Refresh",
+                          class = "btn-info", icon = icon("sync"))
+            ),
+            column(4,
+              br(),
+              actionButton("lecturer_attendance_save", "Save Changes",
+                          class = "btn-success", icon = icon("save"))
             )
           ),
           br(),
-          fluidRow(
-            column(
-              12,
-              h3("Cognitive Load Timeline"),
-              plotly::plotlyOutput("lecturer_student_load")
+          tabsetPanel(
+            tabPanel(
+              "Visual Grid",
+              br(),
+              uiOutput("lecturer_attendance_grid")
+            ),
+            tabPanel(
+              "QR Code",
+              br(),
+              p("Generate QR code for student self-check-in."),
+              actionButton("lecturer_qr_generate", "Generate QR",
+                          class = "btn-primary"),
+              br(), br(),
+              imageOutput("lecturer_qr_image")
             )
           )
         ),
-        tabPanel(
-          "AI Plan",
+
+        # ====================================================================
+        # Submodule D: Live Lecture Dashboard (D1–D7 + Analytics)
+        # ====================================================================
+        shinydashboard::tabItem(
+          tabName = "lec_live",
+          h2("Live Class Monitoring"),
+          fluidRow(
+            column(3,
+              textInput("lecturer_live_lecture", "Lecture ID",
+                       placeholder = "e.g. L1")
+            ),
+            column(3,
+              selectInput("lecturer_live_camera", "Camera",
+                         choices = list("Default (0)" = "0", "Phone Camera" = "1", "External Cam" = "2", "Custom URL" = "custom"),
+                         selected = "0"),
+              uiOutput("lecturer_live_custom_cam_ui")
+            ),
+            column(3,
+              br(),
+              actionButton("lecturer_live_start", "Start Lecture",
+                          class = "btn-success", icon = icon("play"))
+            ),
+            column(3,
+              br(),
+              actionButton("lecturer_live_end", "End Lecture",
+                          class = "btn-danger", icon = icon("stop"))
+            )
+          ),
           br(),
-          h3("AI Intervention Plan"),
-          uiOutput("lecturer_student_plan_ui")
+
+          shinydashboard::tabBox(
+            id = "lecturer_live_tabs",
+            width = 12,
+            
+            # Tab 1: Live Feed & Primary Metrics
+            tabPanel(
+              title = "Live Stream", icon = icon("video"),
+              fluidRow(
+                column(8,
+                  shinydashboard::box(
+                    title = "Live AI Video Feed", status = "primary", solidHeader = TRUE, width = 12,
+                    shiny::div(
+                      style = "text-align: center; background: #000; min-height: 400px; border-radius: 8px; overflow: hidden; position: relative;",
+                      shiny::uiOutput("lecturer_live_stream_ui")
+                    )
+                  )
+                ),
+                column(4,
+                  shinydashboard::box(
+                    title = "Live Sentiment Ticker", status = "warning", solidHeader = TRUE, width = 12,
+                    shiny::uiOutput("lecturer_live_sentiment_ticker")
+                  ),
+                  shinydashboard::box(
+                    title = "Engagement Gauge", status = "primary", solidHeader = TRUE, width = 12,
+                    plotly::plotlyOutput("lecturer_d1_gauge", height = "200px")
+                  )
+                )
+              )
+            ),
+
+            # Tab 2: Real-time Indicators
+            tabPanel(
+              title = "Activity Monitors", icon = icon("clock"),
+              fluidRow(
+                shinydashboard::box(
+                  title = "Emotion Timeline", status = "primary", solidHeader = TRUE, width = 12,
+                  plotly::plotlyOutput("lecturer_d2_timeline", height = "350px")
+                )
+              ),
+              fluidRow(
+                shinydashboard::box(
+                  title = "Cognitive Load", status = "warning", solidHeader = TRUE, width = 4,
+                  uiOutput("lecturer_d3_load")
+                ),
+                shinydashboard::box(
+                  title = "Class Valence", status = "info", solidHeader = TRUE, width = 4,
+                  plotly::plotlyOutput("lecturer_d4_valence", height = "200px")
+                ),
+                shinydashboard::box(
+                  title = "Peak Confusion", status = "danger", solidHeader = TRUE, width = 4,
+                  uiOutput("lecturer_d7_peak")
+                )
+              )
+            ),
+
+            # Tab 3: Behavioral Heatmaps
+            tabPanel(
+              title = "Heatmaps", icon = icon("th"),
+              fluidRow(
+                shinydashboard::box(
+                  title = "Per-Student Emotion Heatmap", status = "primary", solidHeader = TRUE, width = 12,
+                  plotOutput("lecturer_d5_heatmap", height = "400px")
+                )
+              ),
+              fluidRow(
+                shinydashboard::box(
+                  title = "Course Engagement Heatmap", status = "info", solidHeader = TRUE, width = 12,
+                  plotOutput("lecturer_course_heatmap", height = "400px")
+                )
+              )
+            ),
+
+            # Tab 4: Performance Analytics
+            tabPanel(
+              title = "Insights & Trends", icon = icon("chart-line"),
+              fluidRow(
+                column(6,
+                  shinydashboard::box(
+                    title = "Engagement Trend", width = NULL, status = "primary", solidHeader = TRUE,
+                    plotly::plotlyOutput("lecturer_class_engagement_trend", height = "350px")
+                  )
+                ),
+                column(6,
+                  shinydashboard::box(
+                    title = "Student Behavior Clusters", width = NULL, status = "info", solidHeader = TRUE,
+                    plotly::plotlyOutput("lecturer_student_clusters", height = "350px")
+                  )
+                )
+              ),
+              fluidRow(
+                shinydashboard::box(
+                  title = "Lecture Effectiveness Score (LES)", status = "success", solidHeader = TRUE, width = 12,
+                  DT::dataTableOutput("lecturer_les_table")
+                )
+              )
+            ),
+
+            # Tab 5: Attention & Attendance
+            tabPanel(
+              title = "Student Status", icon = icon("user-check"),
+              fluidRow(
+                column(6,
+                  shinydashboard::box(
+                    title = "At-Risk Students", status = "danger", solidHeader = TRUE, width = 12,
+                    DT::dataTableOutput("lecturer_at_risk_table")
+                  )
+                ),
+                column(6,
+                  shinydashboard::box(
+                    title = "Persistent Struggle Alerts", status = "warning", solidHeader = TRUE, width = 12,
+                    DT::dataTableOutput("lecturer_d6_struggle")
+                  )
+                )
+              ),
+              fluidRow(
+                shinydashboard::box(
+                  title = "Full Attendance Log", status = "primary", solidHeader = TRUE, width = 12,
+                  DT::dataTableOutput("lecturer_attendance_log_table")
+                )
+              )
+            ),
+
+            # Tab 6: Exam & Time Analysis
+            tabPanel(
+              title = "Exam & Time", icon = icon("shield-alt"),
+              fluidRow(
+                shinydashboard::box(
+                  title = "Peak Engagement by Time of Day", status = "primary", solidHeader = TRUE, width = 12,
+                  plotOutput("lecturer_tod_heatmap", height = "400px")
+                )
+              ),
+              fluidRow(
+                shinydashboard::box(
+                  title = "Proctoring Incident Logs", status = "danger", solidHeader = TRUE, width = 12,
+                  DT::dataTableOutput("lecturer_incidents_table")
+                )
+              )
+            )
+          )
+        ),
+
+        # ====================================================================
+        # Submodule E: Student Reports
+        # ====================================================================
+        shinydashboard::tabItem(
+          tabName = "lec_reports",
+          h2("Student Performance Reports"),
+          br(),
+          fluidRow(
+            column(5,
+              selectInput("lecturer_student_select", "Select Student:",
+                         choices = c("Loading..." = ""))
+            ),
+            column(4,
+              br(),
+              downloadButton("lecturer_student_pdf", "Download PDF",
+                            class = "btn-primary")
+            )
+          ),
+          br(),
+          tabsetPanel(
+            tabPanel(
+              "Dashboard",
+              br(),
+              fluidRow(
+                column(6,
+                  shinydashboard::box(
+                    title = "Engagement Trend",
+                    width = 12,
+                    plotly::plotlyOutput("lecturer_student_trend")
+                  )
+                ),
+                column(6,
+                  shinydashboard::box(
+                    title = "Emotion Distribution",
+                    width = 12,
+                    plotly::plotlyOutput("lecturer_student_emotions")
+                  )
+                )
+              ),
+              fluidRow(
+                column(12,
+                  shinydashboard::box(
+                    title = "Cognitive Load Timeline",
+                    width = 12,
+                    plotly::plotlyOutput("lecturer_student_load")
+                  )
+                )
+              )
+            ),
+            tabPanel(
+              "AI Plan",
+              br(),
+              shinydashboard::box(
+                title = "AI Intervention Plan",
+                width = 12,
+                uiOutput("lecturer_student_plan_ui")
+              )
+            )
+          )
         )
       )
     )
