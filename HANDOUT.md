@@ -5,74 +5,68 @@
 
 ---
 
-## 1. Quick Start (From Fresh Clone)
+## 1. Quick Start (Instant Database Setup)
 
-If you are setting this up on a new machine, follow these steps exactly:
+If you are setting this up on a new machine, use this "Instant Restore" method to get the exact same environment used in the demo.
 
-### **Step 1: Clone the Repository**
+### **Step 1: Clone & Start Docker**
 ```bash
 git clone https://github.com/4awmy/Classroom-Emotion-System.git
 cd Classroom-Emotion-System
 git checkout dev
+docker-compose up -d
 ```
 
-### **Step 2: Initialize the Database (Docker)**
-The project uses a local PostgreSQL database inside Docker.
-1. Make sure **Docker Desktop** is running.
-2. Run: `docker-compose up -d`
-3. Verify: Open Docker Desktop and check that the `classroom_emotions` container is green.
+### **Step 2: Instant Database Restore (RECOMMENDED)**
+Run this single command to import all 119 students, classes, and biometric encodings:
+```bash
+docker exec -i aast_lms_db psql -U postgres classroom_emotions < full_database_backup.sql
+```
+*Note: Make sure Docker is running and the container `aast_lms_db` is active.*
 
-### **Step 3: Setup the Python Backend**
+### **Step 3: Alternative Rebuild (Plan B)**
+If the SQL dump fails, you can rebuild the database from scratch using the Python script:
+```bash
+python rebuild_database.py
+```
+
+---
+
+## 2. Technical Setup
+
+### **Backend (Python)**
 1. `cd python-api`
-2. Create a virtual environment: `python -m venv venv`
-3. Activate it: `venv\Scripts\activate` (Windows) or `source venv/bin/activate` (Mac/Linux)
-4. Install dependencies: `pip install -r requirements.txt`
-5. **CRITICAL: Initialize the Schema & Data:**
-   Run these two scripts to build the tables and load the real students/courses:
-   ```bash
-   python scripts/import_real_lms.py     # Imports the 119 real students
-   python scripts/seed_academic_glue.py   # Assigns classes, lecturers, and schedules
-   python scripts/final_db_fix.py         # Adds the latest audit columns
-   ```
-6. Start the server: `python main.py`
+2. `python -m venv venv`
+3. `venv\Scripts\activate` (Windows)
+4. `pip install -r requirements.txt`
+5. `python main.py`
+   * *API URL:* `http://localhost:8000`
 
-### **Step 4: Setup the R/Shiny Portal**
-1. Open RStudio.
-2. Go to File -> Open Project -> Select the `Classroom-Emotion-System` folder.
-3. Install required R packages:
-   ```R
-   install.packages(c("shiny", "shinydashboard", "shinyalert", "shinyjs", "plotly", "DT", "dplyr", "lubridate", "httr2", "RPostgres"))
-   ```
-4. Open `shiny-app/app.R` and click **"Run App"**.
+### **Portal (R/Shiny)**
+1. Open `shiny-app/app.R` in RStudio.
+2. Install dependencies: `install.packages(c("shiny", "shinydashboard", "shinyalert", "plotly", "DT", "dplyr", "RPostgres"))`
+3. Click **"Run App"**.
+   * *Portal URL:* `http://localhost:3838`
 
 ---
 
-## 2. Database State & Persistence
-*   **The Schema:** The database structure is defined in `python-api/models.py`. 
-*   **The Data:** Since the data lives in Docker, it is not "inside" the Git files. However, the `scripts/` folder contains everything needed to **completely rebuild** the database from zero in less than 60 seconds.
-*   **Student Biometrics:** The 128-d face vectors are stored in the `students` table. To refresh them from the Google Drive dataset, run `python python-api/re_encode_dataset.py`.
-
----
-
-## 3. Defense Logic (The "Why")
-
-When the examiners ask about your implementation, use these technical justifications:
+## 3. Defense Logic (Theoretical Backing)
 
 | Feature | Chapter | Technical Defense |
 | :--- | :--- | :--- |
-| **Systematic Sampling** | 5 | "We capture frames at a constant interval $k=5s$ to ensure our sample is an unbiased representation of the 2-hour population." |
-| **Confidence Intervals** | 6 | "We use the Standard Error formula to calculate 95% Confidence Intervals for engagement. If uptime drops, the margin of error increases, and the quality score is penalized to maintain statistical integrity." |
-| **Hypothesis Testing** | 7 | "We perform a two-sample T-test comparing the start and end of the lecture. If $p < 0.05$, we mathematically prove a significant drop in engagement, flagging a premature conclusion." |
-| **K-Means Clustering** | 12 | "We use unsupervised learning to group students into behavioral clusters based on their long-term emotional signatures, revealing patterns that simple averages miss." |
+| **Systematic Sampling** | 5 | "Captured frames every 5s ($k=5$) for an unbiased sample." |
+| **Confidence Intervals** | 6 | "Calculated 95% CI to adjust quality scores based on system uptime." |
+| **Hypothesis Testing** | 7 | "Used Two-Sample T-Tests to detect significant engagement drops." |
+| **K-Means Clustering** | 12 | "Unsupervised learning to identify behavioral student patterns." |
 
 ---
 
 ## 4. Key Developer Commands
-*   **Kill Port 8000:** `taskkill /F /IM python.exe /T` (Use this if the server crashes or won't restart).
-*   **Reset Admin Password:** Run `python scripts/manual_reset.py` to set a user back to default.
-*   **Verify Database:** Run `python scripts/verify_postgres_data.py`.
+* **Kill Port 8000:** `taskkill /F /IM python.exe /T`
+* **Test Camera:** `python python-api/scripts/test_cam.py`
+* **Reset Passwords:** `python python-api/scripts/manual_reset.py`
 
 ---
-**Handover Status:** 100% COMPLETE
-**Branch:** `dev` (All changes pushed and verified)
-**Architect Signature:** Gemini CLI Senior Backend Architect
+**Handover Status:** 100% COMPLETE & SYNCED.
+**Branch:** `dev`
+**Architect:** Gemini CLI Senior Backend Architect
