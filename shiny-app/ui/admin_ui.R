@@ -1,4 +1,4 @@
-# Admin UI - 10 Analytics Panels (shinydashboard sidebar layout)
+# Admin UI - 11 Management & Analytics Panels (shinydashboard sidebar layout)
 
 admin_ui <- function() {
   shinydashboard::dashboardPage(
@@ -22,56 +22,18 @@ admin_ui <- function() {
       width = 260,
       shinydashboard::sidebarMenu(
         id = "admin_menu",
-        shinydashboard::menuItem(
-          "Attendance",
-          tabName = "admin_attendance",
-          icon = icon("calendar-check")
-        ),
-        shinydashboard::menuItem(
-          "Engagement",
-          tabName = "admin_engagement",
-          icon = icon("chart-line")
-        ),
-        shinydashboard::menuItem(
-          "Dept Heatmap",
-          tabName = "admin_heatmap",
-          icon = icon("th")
-        ),
-        shinydashboard::menuItem(
-          "At-Risk",
-          tabName = "admin_atrisk",
-          icon = icon("exclamation-triangle")
-        ),
-        shinydashboard::menuItem(
-          "LES",
-          tabName = "admin_les",
-          icon = icon("star")
-        ),
-        shinydashboard::menuItem(
-          "Emotions",
-          tabName = "admin_emotions",
-          icon = icon("smile")
-        ),
-        shinydashboard::menuItem(
-          "Clusters",
-          tabName = "admin_clusters",
-          icon = icon("users")
-        ),
-        shinydashboard::menuItem(
-          "Time Analysis",
-          tabName = "admin_time",
-          icon = icon("clock")
-        ),
-        shinydashboard::menuItem(
-          "Students",
-          tabName = "admin_students",
-          icon = icon("user-plus")
-        ),
-        shinydashboard::menuItem(
-          "Incidents",
-          tabName = "admin_incidents",
-          icon = icon("shield-alt")
-        )
+        shinydashboard::menuItem("Attendance", tabName = "admin_attendance", icon = icon("calendar-check")),
+        shinydashboard::menuItem("Engagement", tabName = "admin_engagement", icon = icon("chart-line")),
+        shinydashboard::menuItem("Dept Heatmap", tabName = "admin_heatmap", icon = icon("th")),
+        shinydashboard::menuItem("At-Risk", tabName = "admin_atrisk", icon = icon("exclamation-triangle")),
+        shinydashboard::menuItem("LES", tabName = "admin_les", icon = icon("star")),
+        shinydashboard::menuItem("Emotions", tabName = "admin_emotions", icon = icon("smile")),
+        shinydashboard::menuItem("Clusters", tabName = "admin_clusters", icon = icon("users")),
+        shinydashboard::menuItem("Time Analysis", tabName = "admin_time", icon = icon("clock")),
+        tags$li(class = "header", "MANAGEMENT"), # Standard shinydashboard header
+        shinydashboard::menuItem("Lecturers", tabName = "admin_lecturers", icon = icon("chalkboard-teacher")),
+        shinydashboard::menuItem("Students", tabName = "admin_students", icon = icon("user-plus")),
+        shinydashboard::menuItem("Incidents", tabName = "admin_incidents", icon = icon("shield-alt"))
       )
     ),
     shinydashboard::dashboardBody(
@@ -211,7 +173,32 @@ admin_ui <- function() {
         ),
 
         # ====================================================================
-        # Panel 9: Student Management
+        # Panel 9: Lecturer Management (NEW)
+        # ====================================================================
+        shinydashboard::tabItem(
+          tabName = "admin_lecturers",
+          h2("Lecturer Management"),
+          p("Create accounts for lecturers to access their portal."),
+          br(),
+          fluidRow(
+            column(4,
+              wellPanel(
+                textInput("admin_lecturer_id", "Lecturer ID (Username)", placeholder = "prof_smith"),
+                textInput("admin_lecturer_name", "Full Name"),
+                textInput("admin_lecturer_email", "Email"),
+                passwordInput("admin_lecturer_pwd", "Assign Password"),
+                actionButton("admin_lecturer_submit", "Create Lecturer",
+                             class = "btn-primary", icon = icon("plus"))
+              )
+            ),
+            column(8,
+              DT::dataTableOutput("admin_lecturer_table")
+            )
+          )
+        ),
+
+        # ====================================================================
+        # Panel 10: Student Management
         # ====================================================================
         shinydashboard::tabItem(
           tabName = "admin_students",
@@ -221,10 +208,11 @@ admin_ui <- function() {
           fluidRow(
             column(4,
               wellPanel(
-                textInput("admin_student_id", "Student ID (9 digits)",
+                textInput("admin_student_id", "Student ID (Registration No.)",
                          placeholder = "231006367"),
                 textInput("admin_student_name", "Full Name"),
                 textInput("admin_student_email", "Email (optional)"),
+                passwordInput("admin_student_pwd", "Assign Password (for Mobile App)"),
                 fileInput("admin_student_photo", "Face Photo (Max 5MB)",
                          accept = c("image/jpeg", "image/png")),
                 actionButton("admin_student_submit", "Add Student",
@@ -238,7 +226,7 @@ admin_ui <- function() {
         ),
 
         # ====================================================================
-        # Panel 10: Exam Incidents
+        # Panel 11: Exam Incidents
         # ====================================================================
         shinydashboard::tabItem(
           tabName = "admin_incidents",

@@ -30,7 +30,6 @@ async def gen_frames(lecture_id: str):
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
         else:
             pass
-        # Throttled to ~15 FPS to balance smoothness and CPU
         await asyncio.sleep(0.06)
 
 @router.get("/video_feed/{lecture_id}")
@@ -62,26 +61,26 @@ class SessionBroadcastRequest(BaseModel):
 async def start_session(request: SessionStartRequest, db: Session = Depends(get_db)):
     try:
         lecture = db.query(models.Lecture).filter(models.Lecture.lecture_id == request.lecture_id).first()
-        scheduled = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
+        now = datetime.utcnow()
 
         if not lecture:
             lecture = models.Lecture(
                 lecture_id=request.lecture_id,
                 lecturer_id=request.lecturer_id,
                 title=request.title or f"Lecture {request.lecture_id}",
-                subject=request.subject or "General",
                 slide_url=request.slide_url,
-                start_time=datetime.utcnow(),
-                scheduled_start_time=scheduled
+                start_time=now,
+                scheduled_start=now, # Using new model field name
+                session_type=request.context or "lecture"
             )
             db.add(lecture)
         else:
-            lecture.start_time = datetime.utcnow()
+            lecture.start_time = now
             lecture.end_time = None
             if request.slide_url:
                 lecture.slide_url = request.slide_url
-            if not lecture.scheduled_start_time:
-                lecture.scheduled_start_time = scheduled
+            if not lecture.scheduled_start:
+                lecture.scheduled_start = now
         
         db.commit()
         db.refresh(lecture)
@@ -98,7 +97,7 @@ async def start_session(request: SessionStartRequest, db: Session = Depends(get_
             active_lecture_tasks[request.lecture_id] = {"stop_event": stop_event}
 
         # Ensure start_time is serializable
-        st_str = lecture.start_time.isoformat() + "Z" if lecture.start_time else datetime.utcnow().isoformat() + "Z"
+        st_str = lecture.start_time.isoformat() + "Z" if lecture.start_time else now.isoformat() + "Z"
 
         await manager.broadcast({
             "type": "session:start",
@@ -108,7 +107,7 @@ async def start_session(request: SessionStartRequest, db: Session = Depends(get_
             "start_time": st_str,
             "context": request.context,
             "exam_id": request.exam_id,
-            "timestamp": datetime.utcnow().isoformat() + "Z"
+            "timestamp": now.isoformat() + "Z"
         })
         return {"status": "started", "lecture_id": request.lecture_id}
     except Exception as e:

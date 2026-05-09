@@ -6,16 +6,17 @@ from sqlalchemy.orm import sessionmaker, DeclarativeBase
 # Load environment variables
 load_dotenv()
 
-# Enforce Supabase PostgreSQL usage
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL must be set in .env for PostgreSQL connection.")
+# Use local SQLite for stability (v2 schema)
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data/classroom_v2.db")
 
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-
-# Supabase PostgreSQL engine
-engine = create_engine(DATABASE_URL)
+# SQLite needs connect_args for FastAPI
+if DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(
+        DATABASE_URL, 
+        connect_args={"check_same_thread": False}
+    )
+else:
+    engine = create_engine(DATABASE_URL)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

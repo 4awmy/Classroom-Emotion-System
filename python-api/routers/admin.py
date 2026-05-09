@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from database import get_db
-from routers.auth import get_current_user
+from routers.auth import get_current_user, get_password_hash
 import models
 import schemas
 
@@ -24,7 +24,13 @@ def create_lecturer(lecturer: schemas.LecturerCreate, db: Session = Depends(get_
     db_lecturer = db.query(models.Lecturer).filter(models.Lecturer.lecturer_id == lecturer.lecturer_id).first()
     if db_lecturer:
         raise HTTPException(status_code=400, detail="Lecturer already registered")
-    new_lecturer = models.Lecturer(**lecturer.model_dump())
+    
+    # Hash password if provided
+    lecturer_data = lecturer.model_dump()
+    if "password" in lecturer_data and lecturer_data["password"]:
+        lecturer_data["password_hash"] = get_password_hash(lecturer_data.pop("password"))
+    
+    new_lecturer = models.Lecturer(**lecturer_data)
     db.add(new_lecturer)
     db.commit()
     db.refresh(new_lecturer)
@@ -42,8 +48,14 @@ def update_lecturer(lecturer_id: str, lecturer_update: schemas.LecturerUpdate, d
     db_lecturer = db.query(models.Lecturer).filter(models.Lecturer.lecturer_id == lecturer_id).first()
     if not db_lecturer:
         raise HTTPException(status_code=404, detail="Lecturer not found")
-    for key, value in lecturer_update.model_dump(exclude_unset=True).items():
+    
+    update_data = lecturer_update.model_dump(exclude_unset=True)
+    if "password" in update_data and update_data["password"]:
+        update_data["password_hash"] = get_password_hash(update_data.pop("password"))
+        
+    for key, value in update_data.items():
         setattr(db_lecturer, key, value)
+        
     db.commit()
     db.refresh(db_lecturer)
     return db_lecturer
@@ -68,7 +80,13 @@ def create_student(student: schemas.StudentCreate, db: Session = Depends(get_db)
     db_student = db.query(models.Student).filter(models.Student.student_id == student.student_id).first()
     if db_student:
         raise HTTPException(status_code=400, detail="Student already registered")
-    new_student = models.Student(**student.model_dump())
+    
+    # Hash password if provided
+    student_data = student.model_dump()
+    if "password" in student_data and student_data["password"]:
+        student_data["password_hash"] = get_password_hash(student_data.pop("password"))
+        
+    new_student = models.Student(**student_data)
     db.add(new_student)
     db.commit()
     db.refresh(new_student)
@@ -86,8 +104,14 @@ def update_student(student_id: str, student_update: schemas.StudentUpdate, db: S
     db_student = db.query(models.Student).filter(models.Student.student_id == student_id).first()
     if not db_student:
         raise HTTPException(status_code=404, detail="Student not found")
-    for key, value in student_update.model_dump(exclude_unset=True).items():
+    
+    update_data = student_update.model_dump(exclude_unset=True)
+    if "password" in update_data and update_data["password"]:
+        update_data["password_hash"] = get_password_hash(update_data.pop("password"))
+        
+    for key, value in update_data.items():
         setattr(db_student, key, value)
+        
     db.commit()
     db.refresh(db_student)
     return db_student
@@ -120,11 +144,14 @@ async def bulk_upload_lecturers(file: UploadFile = File(...), db: Session = Depe
         for record in records:
             lecturer_id = str(record.get('lecturer_id'))
             if not db.query(models.Lecturer).filter(models.Lecturer.lecturer_id == lecturer_id).first():
+                # Provide a default password for bulk uploads if not present
+                password = record.get('password', 'AAST12345')
                 new_lecturer = models.Lecturer(
                     lecturer_id=lecturer_id,
                     name=record.get('name'),
                     email=record.get('email'),
-                    department=record.get('department')
+                    department=record.get('department'),
+                    password_hash=get_password_hash(password)
                 )
                 db.add(new_lecturer)
                 added += 1
@@ -150,10 +177,13 @@ async def bulk_upload_students(file: UploadFile = File(...), db: Session = Depen
         for record in records:
             student_id = str(record.get('student_id'))
             if not db.query(models.Student).filter(models.Student.student_id == student_id).first():
+                # Default password for bulk uploads
+                password = record.get('password', 'AAST12345')
                 new_student = models.Student(
                     student_id=student_id,
                     name=record.get('name'),
-                    email=record.get('email')
+                    email=record.get('email'),
+                    password_hash=get_password_hash(password)
                 )
                 db.add(new_student)
                 added += 1

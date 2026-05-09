@@ -13,12 +13,12 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useStore } from "@/store/useStore";
-import { authAPI, connectWebSocket } from "@/services/api";
+import { authAPI, connectWebSocket, setAuthToken } from "@/services/api";
 import { Colors, Radius, Shadow } from "@/constants/theme";
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { setStudentId, setAuthToken } = useStore();
+  const { setStudentId, setAuthToken: setStoreAuthToken } = useStore();
 
   const [studentId, setStudentIdInput] = useState("");
   const [password, setPassword] = useState("");
@@ -33,6 +33,7 @@ export default function LoginScreen() {
       // Demo credentials
       if (studentId.trim() === "demo" && password === "demo") {
         const mockToken = "mock.jwt.token.for.demo";
+        setStoreAuthToken(mockToken);
         setAuthToken(mockToken);
         setStudentId(studentId.trim());
         connectWebSocket();
@@ -42,16 +43,19 @@ export default function LoginScreen() {
 
       // Real API login
       const response = await authAPI.login(studentId.trim(), password);
-      if (response?.token) {
-        setAuthToken(response.token);
+      
+      if (response?.access_token) {
+        setStoreAuthToken(response.access_token);
+        setAuthToken(response.access_token);
         setStudentId(studentId.trim());
         connectWebSocket();
         router.replace("/(student)/home");
       } else {
         Alert.alert("Login Failed", "Invalid credentials. Please try again.");
       }
-    } catch {
-      Alert.alert("Login Failed", "Invalid credentials. Please try again.");
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || "Invalid credentials. Please try again.";
+      Alert.alert("Login Failed", msg);
     } finally {
       setLoading(false);
     }
@@ -134,8 +138,8 @@ export default function LoginScreen() {
           {/* Demo hint */}
           <View style={styles.demoBox}>
             <Text style={styles.demoText}>
-              Demo: Registration <Text style={styles.demoBold}>demo</Text> / Password{" "}
-              <Text style={styles.demoBold}>demo</Text>
+              Local Login: Registration <Text style={styles.demoBold}>admin</Text> / Password{" "}
+              <Text style={styles.demoBold}>admin</Text>
             </Text>
           </View>
         </View>
@@ -152,8 +156,6 @@ const styles = StyleSheet.create({
   scroll: {
     flexGrow: 1,
   },
-
-  /* Navy header — matches real app ~45% height */
   header: {
     backgroundColor: Colors.navy,
     alignItems: "center",
@@ -187,8 +189,6 @@ const styles = StyleSheet.create({
     color: Colors.white,
     opacity: 0.8,
   },
-
-  /* Light body */
   body: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -202,8 +202,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 28,
   },
-
-  /* Input cards — white rounded, exactly like real app */
   inputCard: {
     backgroundColor: Colors.white,
     borderRadius: Radius.md,
@@ -216,8 +214,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.textPrimary,
   },
-
-  /* Sign In button */
   button: {
     borderRadius: Radius.xl,
     paddingVertical: 15,
@@ -242,8 +238,6 @@ const styles = StyleSheet.create({
   buttonTextInactive: {
     color: Colors.white,
   },
-
-  /* Demo hint */
   demoBox: {
     backgroundColor: '#EFF6FF',
     borderRadius: Radius.sm,

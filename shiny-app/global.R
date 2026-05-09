@@ -23,7 +23,7 @@ library(rmarkdown)
 library(bslib)
 library(config)
 library(DBI)
-library(RPostgres)
+library(RSQLite) # Changed from RPostgres
 
 # ============================================================================
 # Configuration
@@ -36,31 +36,18 @@ FASTAPI_BASE <- cfg$fastapi_base
 # Database Connection Manager
 # ============================================================================
 
-# Function to get a fresh DB connection with retry logic and better error handling
+# Function to get a fresh DB connection for local SQLite
 get_db_con <- function() {
-  # We use the pooler host as it's more stable across different networks
-  # Host: aws-0-eu-central-1.pooler.supabase.com
-  # Port: 6543 (Transaction mode)
-  # User: postgres.[project_ref]
-  
-  host <- Sys.getenv("SUPABASE_DB_HOST", "aws-0-eu-central-1.pooler.supabase.com")
-  port <- as.integer(Sys.getenv("SUPABASE_DB_PORT", "6543"))
-  user <- Sys.getenv("SUPABASE_DB_USER", "postgres.asefcgykjadlekhwwzar")
-  pw   <- Sys.getenv("SUPABASE_DB_PASSWORD", "kdJTnejv0XYhud5C")
+  db_path <- "../python-api/data/classroom_v2.db"
   
   tryCatch({
     con <- dbConnect(
-      RPostgres::Postgres(),
-      dbname   = "postgres",
-      host     = host,
-      port     = port,
-      user     = user,
-      password = pw,
-      sslmode  = "require"  # CRITICAL: Supabase requires SSL
+      RSQLite::SQLite(),
+      dbname = db_path
     )
     return(con)
   }, error = function(e) {
-    message("ERROR: Database connection failed: ", e$message)
+    message("ERROR: Local database connection failed: ", e$message)
     return(NULL)
   })
 }
@@ -72,13 +59,17 @@ con <- get_db_con()
 # API Client Helper Function
 # ============================================================================
 
-api_call <- function(endpoint, method = "GET", body = NULL, content_type = "application/json") {
+api_call <- function(endpoint, method = "GET", body = NULL, auth_token = NULL, content_type = "application/json") {
   url <- paste0(FASTAPI_BASE, endpoint)
 
   req <- request(url) |>
     req_method(method) |>
     req_headers("Content-Type" = content_type) |>
     req_error(is_error = \(resp) FALSE)
+
+  if (!is.null(auth_token)) {
+    req <- req |> req_headers("Authorization" = paste("Bearer", auth_token))
+  }
 
   if (!is.null(body)) {
     req <- req |> req_body_json(body)
@@ -95,17 +86,21 @@ api_call <- function(endpoint, method = "GET", body = NULL, content_type = "appl
         err_body$message %||% "Internal Server Error"
       }
       
-      shinyalert::shinyalert(
-        title = paste("API Error", resp_status(resp)),
-        text = as.character(detail),
-        type = "error"
-      )
+      # Only show alert if it's not a generic auth check
+      if (resp_status(resp) != 401) {
+        shinyalert::shinyalert(
+          title = paste("API Error", resp_status(resp)),
+          text = as.character(detail),
+          type = "error"
+        )
+      }
       return(NULL)
     }
     
     resp_body_json(resp)
   }, error = function(e) {
-    shinyalert::shinyalert("Network Error", as.character(e), type = "error")
+    # Silence network errors during background checks
+    # shinyalert::shinyalert("Network Error", as.character(e), type = "error")
     return(NULL)
   })
 }
@@ -158,6 +153,6 @@ get_emotion_color <- function(emotion) {
 if (is.null(con)) {
   cat("! WARNING: Shiny started WITHOUT active Database connection\n")
 } else {
-  cat("✓ Shiny Global.R loaded successfully\n")
+  cat("✓ Shiny Global.R loaded successfully (SQLite)\n")
 }
 cat("✓ FastAPI Base:", FASTAPI_BASE, "\n")

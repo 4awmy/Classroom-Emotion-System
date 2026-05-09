@@ -59,14 +59,7 @@ export default function HomeScreen() {
           title: "Introduction to Algorithms",
           subject: "CCS3002",
           start_time: new Date().toISOString(),
-          lecturer_id: "PROF_001",
-        },
-        {
-          lecture_id: "L2",
-          title: "Data Structures Advanced",
-          subject: "CCS3003",
-          start_time: new Date(Date.now() + 7200000).toISOString(),
-          lecturer_id: "PROF_002",
+          lecturer_id: "admin",
         },
       ]);
     } finally {

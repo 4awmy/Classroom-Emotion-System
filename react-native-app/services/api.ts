@@ -23,7 +23,7 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Native WebSocket client (compatible with FastAPI standard WS endpoints)
+// Native WebSocket client
 let wsConnection: WebSocket | null = null;
 type FocusStrikeMessage = {
   type: "focus_strike";
@@ -31,6 +31,7 @@ type FocusStrikeMessage = {
   lecture_id: string;
   strike_type: string;
   timestamp: string;
+  context?: "exam" | "lecture";
 };
 
 const pendingStrikeMessages: FocusStrikeMessage[] = [];
@@ -79,6 +80,7 @@ export const connectWebSocket = (): WebSocket => {
     try {
       const data = JSON.parse(event.data as string);
       console.log("[WebSocket] Message received:", data);
+      messageListeners.forEach((cb) => cb(data));
     } catch {
       console.log("[WebSocket] Raw message:", event.data);
     }
@@ -90,18 +92,21 @@ export const connectWebSocket = (): WebSocket => {
 export const getWebSocket = (): WebSocket | null => wsConnection;
 
 /**
- * API Service Methods (P1-S3 stubs)
- * These will be implemented in Phase 2
+ * Local API Service Methods
  */
 
 export const authAPI = {
-  login: async (studentId: string, password: string) => {
+  login: async (userId: string, password: string) => {
     const response = await apiClient.post("/auth/login", {
-      student_id: studentId,
+      user_id: userId,
       password,
     });
-    return response.data;
+    return response.data; // Expected { access_token, token_type }
   },
+  getMe: async () => {
+    const response = await apiClient.get("/auth/me");
+    return response.data;
+  }
 };
 
 export const sessionAPI = {
@@ -134,12 +139,16 @@ export const notesAPI = {
   },
 };
 
+// WebSocket message listeners
+const messageListeners: Array<(data: Record<string, unknown>) => void> = [];
+
 // WebSocket events wrapper
 export const wsAPI = {
   emitStrike: (
     studentId: string,
     lectureId: string,
     strikeType: string,
+    context?: "exam" | "lecture",
   ): boolean => {
     const ws = getWebSocket();
     const message: FocusStrikeMessage = {
@@ -148,6 +157,7 @@ export const wsAPI = {
       lecture_id: lectureId,
       strike_type: strikeType,
       timestamp: new Date().toISOString(),
+      context,
     };
 
     if (ws?.readyState === WebSocket.OPEN) {
@@ -160,5 +170,30 @@ export const wsAPI = {
     connectWebSocket();
     console.log("[WebSocket] Strike queued:", message);
     return false;
+  },
+
+  onMessage: (cb: (data: Record<string, unknown>) => void) => {
+    messageListeners.push(cb);
+    return () => {
+      const idx = messageListeners.indexOf(cb);
+      if (idx >= 0) messageListeners.splice(idx, 1);
+    };
+  },
+};
+
+export const examAPI = {
+  start: async (examId: string, studentId: string) => {
+    const response = await apiClient.post("/exam", {
+      class_id: examId,
+      student_id: studentId,
+    });
+    return response.data;
+  },
+  submit: async (examId: string, studentId: string) => {
+    const response = await apiClient.post("/exam/submit", {
+      exam_id: examId,
+      student_id: studentId,
+    });
+    return response.data;
   },
 };

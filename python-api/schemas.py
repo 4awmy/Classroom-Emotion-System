@@ -11,15 +11,17 @@ class AdminBase(BaseModel):
     phone: Optional[str] = None
 
 class AdminCreate(AdminBase):
-    auth_user_id: Optional[uuid.UUID] = None
+    auth_user_id: Optional[str] = None
+    password: Optional[str] = None # Added for local auth
 
 class AdminUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
+    password: Optional[str] = None
 
 class AdminResponse(AdminBase):
-    auth_user_id: Optional[uuid.UUID] = None
+    auth_user_id: Optional[str] = None
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
@@ -34,7 +36,8 @@ class LecturerBase(BaseModel):
     photo_url: Optional[str] = None
 
 class LecturerCreate(LecturerBase):
-    auth_user_id: Optional[uuid.UUID] = None
+    auth_user_id: Optional[str] = None
+    password: Optional[str] = None # Added for local auth
 
 class LecturerUpdate(BaseModel):
     name: Optional[str] = None
@@ -43,9 +46,10 @@ class LecturerUpdate(BaseModel):
     title: Optional[str] = None
     phone: Optional[str] = None
     photo_url: Optional[str] = None
+    password: Optional[str] = None
 
 class LecturerResponse(LecturerBase):
-    auth_user_id: Optional[uuid.UUID] = None
+    auth_user_id: Optional[str] = None
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
@@ -59,7 +63,8 @@ class StudentBase(BaseModel):
     photo_url: Optional[str] = None
 
 class StudentCreate(StudentBase):
-    auth_user_id: Optional[uuid.UUID] = None
+    auth_user_id: Optional[str] = None
+    password: Optional[str] = None # Added for local auth
     face_encoding: Optional[bytes] = None
 
 class StudentUpdate(BaseModel):
@@ -69,9 +74,10 @@ class StudentUpdate(BaseModel):
     year: Optional[int] = None
     photo_url: Optional[str] = None
     face_encoding: Optional[bytes] = None
+    password: Optional[str] = None
 
 class StudentResponse(StudentBase):
-    auth_user_id: Optional[uuid.UUID] = None
+    auth_user_id: Optional[str] = None
     enrolled_at: datetime
     model_config = ConfigDict(from_attributes=True)
 

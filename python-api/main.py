@@ -1,3 +1,4 @@
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import emotion, attendance, session, gemini, notes, exam, roster, upload, auth, notify, admin, courses
@@ -6,11 +7,21 @@ from database import engine
 import models
 import uvicorn
 
-# Create database tables
-models.Base.metadata.create_all(bind=engine)
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Initialize database tables (Fast on SQLite)
+logger.info("[INIT] Initializing SQLite database...")
+try:
+    models.Base.metadata.create_all(bind=engine)
+    logger.info("[INIT] Database initialized.")
+except Exception as e:
+    logger.error(f"[INIT] Database initialization failed: {e}")
 
 # Start background schedulers
-start_scheduler()  # auto-start/end lectures from class schedule (every 1 min)
+logger.info("[INIT] Starting background scheduler...")
+start_scheduler()
 
 app = FastAPI(title="AAST LMS API")
 
@@ -43,4 +54,5 @@ app.include_router(upload.router,      prefix="/upload",     tags=["Upload"])
 app.include_router(notify.router,      prefix="/notify",     tags=["Notify"])
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    logger.info("[INIT] Launching server on port 8000...")
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)

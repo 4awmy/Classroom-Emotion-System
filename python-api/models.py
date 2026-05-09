@@ -1,26 +1,28 @@
-from sqlalchemy import String, Integer, Float, Boolean, Time, DateTime, ForeignKey, BigInteger, LargeBinary, Uuid
+from sqlalchemy import String, Integer, Float, Boolean, Time, DateTime, ForeignKey, BigInteger, LargeBinary
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.sql import func
 from database import Base
 import datetime
 from typing import List, Optional
-import uuid
 
 class Admin(Base):
     __tablename__ = "admins"
     admin_id: Mapped[str] = mapped_column(String, primary_key=True)
-    auth_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, unique=True)
+    # Changed from Uuid to String for SQLite compatibility
+    auth_user_id: Mapped[Optional[str]] = mapped_column(String, unique=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    password_hash: Mapped[Optional[str]] = mapped_column(String) # NEW: For local auth
     phone: Mapped[Optional[str]] = mapped_column(String)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 class Lecturer(Base):
     __tablename__ = "lecturers"
     lecturer_id: Mapped[str] = mapped_column(String, primary_key=True)
-    auth_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, unique=True)
+    auth_user_id: Mapped[Optional[str]] = mapped_column(String, unique=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    password_hash: Mapped[Optional[str]] = mapped_column(String) # NEW: For local auth
     department: Mapped[Optional[str]] = mapped_column(String)
     title: Mapped[Optional[str]] = mapped_column(String)
     phone: Mapped[Optional[str]] = mapped_column(String)
@@ -35,9 +37,10 @@ class Lecturer(Base):
 class Student(Base):
     __tablename__ = "students"
     student_id: Mapped[str] = mapped_column(String, primary_key=True)
-    auth_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, unique=True)
+    auth_user_id: Mapped[Optional[str]] = mapped_column(String, unique=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     email: Mapped[Optional[str]] = mapped_column(String)
+    password_hash: Mapped[Optional[str]] = mapped_column(String) # NEW: For local auth
     department: Mapped[Optional[str]] = mapped_column(String)
     year: Mapped[Optional[int]] = mapped_column(Integer)
     face_encoding: Mapped[Optional[bytes]] = mapped_column(LargeBinary)
@@ -191,7 +194,7 @@ class Notification(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     student_id: Mapped[Optional[str]] = mapped_column(ForeignKey("students.student_id"))
     lecturer_id: Mapped[str] = mapped_column(ForeignKey("lecturers.lecturer_id"))
-    lecture_id: Mapped[Optional[str]] = mapped_column(ForeignKey("lectures.lecture_id"))
+    lecture_id_fk: Mapped[Optional[str]] = mapped_column(ForeignKey("lectures.lecture_id")) # Renamed to avoid collision
     reason: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     read: Mapped[Optional[bool]] = mapped_column(Boolean, server_default="false")

@@ -216,3 +216,44 @@ Week 14-16: S3 polishes (T070-T071, T073)
             S2 final deploy (T074)
             ALL integration test (T072)
 ```
+
+---
+
+## Deployment Issues & Decisions
+
+### Database: Supabase PostgreSQL → SQLite (Local) + Decision for Production
+
+**Problem encountered:**
+Direct psycopg2 connections to Supabase PostgreSQL fail on Windows in all configurations:
+- Port 443: `server closed the connection unexpectedly`
+- Port 5432: timeout
+- Port 6543: timeout
+- Root cause: DNS for `db.<project-ref>.supabase.co` does not resolve on Windows locally.
+- Supabase REST API (PostgREST) works fine — only direct DB connections fail from Windows.
+
+**Current state:** Switched to SQLite locally for development/testing.
+- `DATABASE_URL=sqlite:///./data/classroom_v2.db` in `python-api/.env`
+- `database.py` detects `sqlite://` prefix and applies `check_same_thread=False`
+- All 17 tables created and verified with `create_all()`
+
+**Options considered for production:**
+
+| Option | Cost | Notes |
+|---|---|---|
+| **Self-hosted PostgreSQL on DO Droplet** | ~$6/mo | PostgreSQL + FastAPI on same machine → localhost connection, no DNS issues. Full control. |
+| **Railway PostgreSQL** | Free tier / ~$5/mo | Managed addon on same platform as FastAPI. Easiest integration. |
+| **Supabase (REST only)** | Free | Works via PostgREST but requires rewriting all DB calls to HTTP — too invasive. |
+| **SQLite in production** | Free | Works but not suitable for concurrent multi-user production load. |
+
+**Decided architecture for production:**
+- **DigitalOcean Droplet** ($6/mo) hosts both FastAPI + PostgreSQL (same machine, localhost connection)
+- **Supabase Auth kept** for JWT authentication (REST API works, free tier sufficient)
+- Switch is transparent — just change `DATABASE_URL` env var from `sqlite://` to `postgresql://`
+- No code changes needed (SQLAlchemy handles both dialects)
+
+**Action required (S3):**
+1. Provision DO Droplet (Ubuntu 22.04, 1GB RAM minimum)
+2. Install PostgreSQL: `apt install postgresql`
+3. Create DB and user, set `DATABASE_URL=postgresql://user:pass@localhost/aast_lms`
+4. Run `python -c "from database import engine; import models; models.Base.metadata.create_all(bind=engine)"`
+5. Update `python-api/.env` on server (never commit real credentials)
