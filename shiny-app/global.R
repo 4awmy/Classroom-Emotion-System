@@ -1,5 +1,5 @@
-# Global Setup for Shiny Application
-# Loads libraries, sets configuration, and initializes utilities
+# Global Setup for Shiny Application - Hybrid v3
+# Local PostgreSQL for Data + FastAPI for Auth
 
 # ============================================================================
 # Load Libraries
@@ -23,7 +23,7 @@ library(rmarkdown)
 library(bslib)
 library(config)
 library(DBI)
-library(RSQLite) # Changed from RPostgres
+library(RPostgres)
 
 # ============================================================================
 # Configuration
@@ -36,18 +36,26 @@ FASTAPI_BASE <- cfg$fastapi_base
 # Database Connection Manager
 # ============================================================================
 
-# Function to get a fresh DB connection for local SQLite
 get_db_con <- function() {
-  db_path <- "../python-api/data/classroom_v2.db"
+  # Connecting to LOCAL PostgreSQL (Docker)
+  host <- Sys.getenv("LOCAL_DB_HOST", "localhost")
+  port <- as.integer(Sys.getenv("LOCAL_DB_PORT", "5432"))
+  user <- Sys.getenv("LOCAL_DB_USER", "postgres")
+  pw   <- Sys.getenv("LOCAL_DB_PASSWORD", "password123")
+  db   <- Sys.getenv("LOCAL_DB_NAME", "classroom_emotions")
   
   tryCatch({
     con <- dbConnect(
-      RSQLite::SQLite(),
-      dbname = db_path
+      RPostgres::Postgres(),
+      dbname   = db,
+      host     = host,
+      port     = port,
+      user     = user,
+      password = pw
     )
     return(con)
   }, error = function(e) {
-    message("ERROR: Local database connection failed: ", e$message)
+    message("ERROR: Local PostgreSQL connection failed: ", e$message)
     return(NULL)
   })
 }
@@ -56,7 +64,7 @@ get_db_con <- function() {
 con <- get_db_con()
 
 # ============================================================================
-# API Client Helper Function
+# API Client Helper Function (FastAPI)
 # ============================================================================
 
 api_call <- function(endpoint, method = "GET", body = NULL, auth_token = NULL, content_type = "application/json") {
@@ -79,65 +87,48 @@ api_call <- function(endpoint, method = "GET", body = NULL, auth_token = NULL, c
     resp <- req_perform(req)
     
     if (resp_status(resp) >= 400) {
-      err_body <- resp_body_json(resp)
-      detail <- if (!is.null(err_body$detail)) {
-        if (is.list(err_body$detail)) paste(err_body$detail, collapse = "; ") else err_body$detail
-      } else {
-        err_body$message %||% "Internal Server Error"
-      }
-      
-      # Only show alert if it's not a generic auth check
-      if (resp_status(resp) != 401) {
-        shinyalert::shinyalert(
-          title = paste("API Error", resp_status(resp)),
-          text = as.character(detail),
-          type = "error"
-        )
-      }
+      # Handle common error responses
+      try({
+        err_body <- resp_body_json(resp)
+        detail <- if (!is.null(err_body$detail)) {
+          if (is.list(err_body$detail)) paste(err_body$detail, collapse = "; ") else err_body$detail
+        } else {
+          err_body$message %||% "Internal Server Error"
+        }
+        
+        if (resp_status(resp) != 401) {
+          shinyalert::shinyalert(
+            title = paste("API Error", resp_status(resp)),
+            text = as.character(detail),
+            type = "error"
+          )
+        }
+      }, silent = TRUE)
       return(NULL)
     }
     
     resp_body_json(resp)
   }, error = function(e) {
-    # Silence network errors during background checks
-    # shinyalert::shinyalert("Network Error", as.character(e), type = "error")
+    # Silence or log network errors
     return(NULL)
   })
 }
 
 # ============================================================================
-# Theme Configuration (AAST Branding)
+# Theme & Utilities
 # ============================================================================
 
 AAST_NAVY <- "#002147"
 AAST_GOLD <- "#C9A84C"
-AAST_WHITE <- "#FFFFFF"
-AAST_LIGHT_GRAY <- "#F5F5F5"
-
-# ============================================================================
-# Utility Functions
-# ============================================================================
 
 format_engagement <- function(score) {
   if (is.null(score) || is.na(score)) return("0.0%")
   paste0(round(score * 100, 1), "%")
 }
 
-get_engagement_level <- function(score) {
-  if (is.null(score) || is.na(score)) return("N/A")
-  if (score >= 0.75) return("High")
-  if (score >= 0.45) return("Moderate")
-  if (score >= 0.25) return("Low")
-  return("Critical")
-}
-
 emotion_colors <- list(
-  "Focused" = "#1B5E20",
-  "Engaged" = "#4CAF50",
-  "Confused" = "#FFC107",
-  "Frustrated" = "#FF9800",
-  "Anxious" = "#9C27B0",
-  "Disengaged" = "#F44336"
+  "Focused" = "#1B5E20", "Engaged" = "#4CAF50", "Confused" = "#FFC107",
+  "Frustrated" = "#FF9800", "Anxious" = "#9C27B0", "Disengaged" = "#F44336"
 )
 
 get_emotion_color <- function(emotion) {
@@ -147,12 +138,12 @@ get_emotion_color <- function(emotion) {
 }
 
 # ============================================================================
-# Session Information Logging
+# Logging
 # ============================================================================
 
 if (is.null(con)) {
-  cat("! WARNING: Shiny started WITHOUT active Database connection\n")
+  cat("! WARNING: Shiny started WITHOUT Local PostgreSQL connection\n")
 } else {
-  cat("✓ Shiny Global.R loaded successfully (SQLite)\n")
+  cat("✓ Shiny Global.R loaded successfully (Hybrid v3: Local Postgres)\n")
 }
 cat("✓ FastAPI Base:", FASTAPI_BASE, "\n")

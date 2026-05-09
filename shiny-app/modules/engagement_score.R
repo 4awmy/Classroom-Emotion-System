@@ -1,6 +1,26 @@
 # engagement_score.R - Compute engagement metrics per student and lecture
 # Based on CLAUDE.md Section 8.2-8.5
 
+calculate_student_duration <- function(attendance_df, lecture_id) {
+  if (nrow(attendance_df) == 0) {
+    return(data.frame(student_id = character(), duration_minutes = numeric()))
+  }
+  
+  lecture_attendance <- attendance_df |>
+    dplyr::filter(.data$lecture_id == !!lecture_id)
+  
+  if (nrow(lecture_attendance) == 0) {
+    return(data.frame(student_id = character(), duration_minutes = numeric()))
+  }
+  
+  lecture_attendance |>
+    dplyr::group_by(.data$student_id) |>
+    dplyr::summarise(
+      duration_minutes = as.numeric(difftime(max(.data$timestamp), min(.data$timestamp), units = "mins")),
+      .groups = "drop"
+    )
+}
+
 compute_engagement <- function(emotions_df) {
   if (nrow(emotions_df) == 0) {
     return(list(by_lecture = data.frame(), by_student = data.frame()))
@@ -21,6 +41,7 @@ compute_engagement <- function(emotions_df) {
       disengaged_rate = round(mean(.data$emotion == "Disengaged", na.rm = TRUE), 3),
       focused_rate = round(mean(.data$emotion == "Focused", na.rm = TRUE), 3),
       engaged_rate = round(mean(.data$emotion == "Engaged", na.rm = TRUE), 3),
+      duration_minutes = as.numeric(difftime(max(.data$timestamp), min(.data$timestamp), units = "mins")),
       n_observations = dplyr::n(),
       .groups = "drop"
     ) |>
@@ -43,11 +64,19 @@ compute_engagement <- function(emotions_df) {
   # By Student Metrics (aggregate across lectures)
   # ========================================================================
 
+  student_dominant <- emotions_df |>
+    dplyr::group_by(.data$student_id) |>
+    dplyr::summarise(
+      dominant_emotion = names(which.max(table(.data$emotion))),
+      .groups = "drop"
+    )
+
   by_student <- by_lecture |>
     dplyr::group_by(.data$student_id) |>
     dplyr::summarise(
       avg_engagement = round(mean(.data$engagement_score, na.rm = TRUE), 3),
       avg_cognitive_load = round(mean(.data$cognitive_load, na.rm = TRUE), 3),
+      total_duration = round(sum(.data$duration_minutes, na.rm = TRUE), 1),
       trend_slope = if (dplyr::n() > 1) {
         coef(lm(.data$engagement_score ~ seq_along(.data$engagement_score)))[2]
       } else {
@@ -56,6 +85,7 @@ compute_engagement <- function(emotions_df) {
       lectures_attended = dplyr::n(),
       .groups = "drop"
     ) |>
+    dplyr::left_join(student_dominant, by = "student_id") |>
     dplyr::mutate(
       trend_slope = round(.data$trend_slope, 4),
       engagement_level = dplyr::case_when(

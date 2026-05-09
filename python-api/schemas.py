@@ -22,6 +22,7 @@ class AdminUpdate(BaseModel):
 
 class AdminResponse(AdminBase):
     auth_user_id: Optional[str] = None
+    needs_password_reset: bool
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
@@ -50,6 +51,7 @@ class LecturerUpdate(BaseModel):
 
 class LecturerResponse(LecturerBase):
     auth_user_id: Optional[str] = None
+    needs_password_reset: bool
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
@@ -66,6 +68,7 @@ class StudentCreate(StudentBase):
     auth_user_id: Optional[str] = None
     password: Optional[str] = None # Added for local auth
     face_encoding: Optional[bytes] = None
+    photo_b64: Optional[str] = None # NEW: For generating encoding from UI upload
 
 class StudentUpdate(BaseModel):
     name: Optional[str] = None
@@ -78,8 +81,13 @@ class StudentUpdate(BaseModel):
 
 class StudentResponse(StudentBase):
     auth_user_id: Optional[str] = None
+    needs_password_reset: bool
     enrolled_at: datetime
     model_config = ConfigDict(from_attributes=True)
+
+class PasswordResetRequest(BaseModel):
+    old_password: str
+    new_password: str
 
 class StudentListResponse(StudentBase):
     has_encoding: bool = False

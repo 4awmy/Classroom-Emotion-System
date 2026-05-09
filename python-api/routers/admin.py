@@ -1,17 +1,54 @@
 import io
+import base64
 import pandas as pd
+import numpy as np
+import cv2
+import face_recognition
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy.orm import Session
 from typing import List
 
 from database import get_db
-from routers.auth import get_current_user, get_password_hash
+from routers.auth import get_current_user
 import models
 import schemas
 
 router = APIRouter(
     dependencies=[Depends(get_current_user)],
 )
+
+# --- Helpers ---
+
+def generate_face_encoding(photo_b64: str):
+    """Generates 128-d face encoding from base64 string."""
+    try:
+        # Decode base64
+        header, encoded = photo_b64.split(",", 1) if "," in photo_b64 else (None, photo_b64)
+        data = base64.b64decode(encoded)
+        
+        # Load image into OpenCV
+        nparr = np.frombuffer(data, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        if img is None:
+            return None
+            
+        # Convert to RGB (face_recognition requirement)
+        rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        
+        # Find faces and encodings
+        face_locations = face_recognition.face_locations(rgb_img)
+        if not face_locations:
+            return None
+            
+        encodings = face_recognition.face_encodings(rgb_img, face_locations)
+        if not encodings:
+            return None
+            
+        # Return first face encoding as bytes
+        return encodings[0].tobytes()
+    except Exception as e:
+        print(f"[ADMIN] Error generating encoding: {e}")
+        return None
 
 # --- Lecturer CRUD ---
 
@@ -25,23 +62,18 @@ def create_lecturer(lecturer: schemas.LecturerCreate, db: Session = Depends(get_
     if db_lecturer:
         raise HTTPException(status_code=400, detail="Lecturer already registered")
     
-    # Hash password if provided
+    # Hash password if provided (REMOVED: Using Supabase Auth)
     lecturer_data = lecturer.model_dump()
-    if "password" in lecturer_data and lecturer_data["password"]:
-        lecturer_data["password_hash"] = get_password_hash(lecturer_data.pop("password"))
+    # if "password" in lecturer_data and lecturer_data["password"]:
+    #     lecturer_data["password_hash"] = get_password_hash(lecturer_data.pop("password"))
+    if "password" in lecturer_data:
+        lecturer_data.pop("password")
     
     new_lecturer = models.Lecturer(**lecturer_data)
     db.add(new_lecturer)
     db.commit()
     db.refresh(new_lecturer)
     return new_lecturer
-
-@router.get("/lecturers/{lecturer_id}", response_model=schemas.LecturerResponse)
-def get_lecturer(lecturer_id: str, db: Session = Depends(get_db)):
-    lecturer = db.query(models.Lecturer).filter(models.Lecturer.lecturer_id == lecturer_id).first()
-    if not lecturer:
-        raise HTTPException(status_code=404, detail="Lecturer not found")
-    return lecturer
 
 @router.put("/lecturers/{lecturer_id}", response_model=schemas.LecturerResponse)
 def update_lecturer(lecturer_id: str, lecturer_update: schemas.LecturerUpdate, db: Session = Depends(get_db)):
@@ -50,8 +82,8 @@ def update_lecturer(lecturer_id: str, lecturer_update: schemas.LecturerUpdate, d
         raise HTTPException(status_code=404, detail="Lecturer not found")
     
     update_data = lecturer_update.model_dump(exclude_unset=True)
-    if "password" in update_data and update_data["password"]:
-        update_data["password_hash"] = get_password_hash(update_data.pop("password"))
+    if "password" in update_data:
+        update_data.pop("password")
         
     for key, value in update_data.items():
         setattr(db_lecturer, key, value)
@@ -81,8 +113,17 @@ def create_student(student: schemas.StudentCreate, db: Session = Depends(get_db)
     if db_student:
         raise HTTPException(status_code=400, detail="Student already registered")
     
-    # Hash password if provided
     student_data = student.model_dump()
+    
+    # NEW: Generate Face Encoding if photo provided
+    if "photo_b64" in student_data and student_data["photo_b64"]:
+        encoding = generate_face_encoding(student_data.pop("photo_b64"))
+        if encoding:
+            student_data["face_encoding"] = encoding
+        else:
+            raise HTTPException(status_code=400, detail="Could not detect face in provided photo")
+    
+    # Hash password if provided
     if "password" in student_data and student_data["password"]:
         student_data["password_hash"] = get_password_hash(student_data.pop("password"))
         
@@ -92,13 +133,6 @@ def create_student(student: schemas.StudentCreate, db: Session = Depends(get_db)
     db.refresh(new_student)
     return new_student
 
-@router.get("/students/{student_id}", response_model=schemas.StudentResponse)
-def get_student(student_id: str, db: Session = Depends(get_db)):
-    student = db.query(models.Student).filter(models.Student.student_id == student_id).first()
-    if not student:
-        raise HTTPException(status_code=404, detail="Student not found")
-    return student
-
 @router.put("/students/{student_id}", response_model=schemas.StudentResponse)
 def update_student(student_id: str, student_update: schemas.StudentUpdate, db: Session = Depends(get_db)):
     db_student = db.query(models.Student).filter(models.Student.student_id == student_id).first()
@@ -106,8 +140,8 @@ def update_student(student_id: str, student_update: schemas.StudentUpdate, db: S
         raise HTTPException(status_code=404, detail="Student not found")
     
     update_data = student_update.model_dump(exclude_unset=True)
-    if "password" in update_data and update_data["password"]:
-        update_data["password_hash"] = get_password_hash(update_data.pop("password"))
+    if "password" in update_data:
+        update_data.pop("password")
         
     for key, value in update_data.items():
         setattr(db_student, key, value)
@@ -151,7 +185,7 @@ async def bulk_upload_lecturers(file: UploadFile = File(...), db: Session = Depe
                     name=record.get('name'),
                     email=record.get('email'),
                     department=record.get('department'),
-                    password_hash=get_password_hash(password)
+                    auth_user_id=uuid.uuid4() # Placeholder: Should be created in Supabase
                 )
                 db.add(new_lecturer)
                 added += 1
@@ -183,7 +217,7 @@ async def bulk_upload_students(file: UploadFile = File(...), db: Session = Depen
                     student_id=student_id,
                     name=record.get('name'),
                     email=record.get('email'),
-                    password_hash=get_password_hash(password)
+                    auth_user_id=uuid.uuid4() # Placeholder
                 )
                 db.add(new_student)
                 added += 1

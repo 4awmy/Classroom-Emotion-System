@@ -1,4 +1,4 @@
-# Lecturer UI - Updated for Schema v2
+# Lecturer UI - Updated for Schema v3 (Hybrid)
 
 lecturer_ui <- function() {
   shinydashboard::dashboardPage(
@@ -22,18 +22,13 @@ lecturer_ui <- function() {
       width = 260,
       shinydashboard::sidebarMenu(
         id = "lecturer_menu",
-        # New v2 Tabs
         shinydashboard::menuItem("Personal Info", tabName = "lec_profile", icon = icon("user")),
         shinydashboard::menuItem("My Schedule", tabName = "lec_schedule", icon = icon("calendar-alt")),
         shinydashboard::menuItem("My Classes", tabName = "lec_classes", icon = icon("chalkboard")),
-        
-        # Legacy/Refactored Tabs
         shinydashboard::menuItem("Materials", tabName = "lec_materials", icon = icon("book")),
         shinydashboard::menuItem("Attendance", tabName = "lec_attendance", icon = icon("check-square")),
         shinydashboard::menuItem("Live Dashboard", tabName = "lec_live", icon = icon("tv"), badgeLabel = "LIVE", badgeColor = "green"),
         shinydashboard::menuItem("Reports", tabName = "lec_reports", icon = icon("file-alt")),
-        
-        # New v2 Exam Tab
         shinydashboard::menuItem("Exams", tabName = "lec_exams", icon = icon("shield-alt"))
       )
     ),
@@ -42,122 +37,122 @@ lecturer_ui <- function() {
         tags$link(rel = "stylesheet", type = "text/css", href = "custom.css")
       ),
       shinydashboard::tabItems(
-        # ====================================================================
-        # Tab A: Personal Info
-        # ====================================================================
-        shinydashboard::tabItem(
-          tabName = "lec_profile",
+        # Personal Info
+        shinydashboard::tabItem(tabName = "lec_profile",
           h2("Personal Profile"),
+          shinydashboard::box(title = "Lecturer Information", status = "primary", solidHeader = TRUE, width = 6, uiOutput("lec_profile_card"))
+        ),
+
+        # Schedule
+        shinydashboard::tabItem(tabName = "lec_schedule",
+          h2("Weekly Timetable"),
+          DT::dataTableOutput("lec_schedule_table")
+        ),
+
+        # Classes
+        shinydashboard::tabItem(tabName = "lec_classes",
+          h2("Class Management"),
+          uiOutput("lec_classes_grid")
+        ),
+
+        # Live Dashboard (REFACTORED - Command Center)
+        shinydashboard::tabItem(tabName = "lec_live",
+          h2("Live Class Monitoring"),
+          tabsetPanel(
+            tabPanel("Active Session", 
+              br(),
+              fluidRow(
+                column(12, 
+                  wellPanel(
+                    fluidRow(
+                      column(4, uiOutput("lec_live_course_selector")),
+                      column(4, uiOutput("lec_live_class_selector")),
+                      column(4, 
+                        div(style="margin-top: 25px;",
+                          actionButton("lec_live_start", "Start Session", class="btn-success", icon=icon("play")),
+                          # Hidden input to store the generated lecture_id
+                          conditionalPanel("false", textInput("active_lecture_id_hidden", ""))
+                        )
+                      )
+                    ),
+                    uiOutput("lec_live_schedule_info")
+                  )
+                )
+              ),
+              br(),
+              fluidRow(
+                column(8, 
+                  shinydashboard::box(title = "Live Vision Feed", width = NULL, status = "primary", solidHeader = TRUE,
+                    uiOutput("lec_live_stream_ui")
+                  )
+                ),
+                column(4, 
+                  shinydashboard::box(title = "Live Stats", width = NULL, status = "warning", solidHeader = TRUE,
+                    shinydashboard::infoBoxOutput("lec_live_attendance_count", width = NULL),
+                    plotly::plotlyOutput("lec_live_gauge", height="200px"),
+                    tags$hr(),
+                    h4("Confusion Ticker"),
+                    uiOutput("lec_live_confusion_ticker")
+                  )
+                )
+              )
+            ),
+            tabPanel("Session History",
+              br(),
+              wellPanel(
+                uiOutput("lec_past_selector_ui")
+              ),
+              plotly::plotlyOutput("lec_past_analytics_plot", height="450px")
+            )
+          )
+        ),
+        
+        # Exams
+        shinydashboard::tabItem(tabName = "lec_exams",
+          h2("Exam Management"),
+          DT::dataTableOutput("lec_exam_table")
+        ),
+        
+        # Placeholder tabs
+        shinydashboard::tabItem(tabName = "lec_materials", h2("Materials")),
+        shinydashboard::tabItem(tabName = "lec_attendance", h2("Attendance")),
+
+        # Reports (REFACTORED - Command Center)
+        shinydashboard::tabItem(tabName = "lec_reports",
+          h2("Class Analytics & Reports"),
+          wellPanel(
+            fluidRow(
+              column(4, uiOutput("lec_report_course_selector")),
+              column(4, uiOutput("lec_report_class_selector")),
+              column(4, uiOutput("lec_report_session_selector"))
+            )
+          ),
           fluidRow(
-            column(6,
-              shinydashboard::box(
-                title = "Lecturer Information", status = "primary", solidHeader = TRUE, width = NULL,
-                uiOutput("lec_profile_card")
+            column(6, 
+              shinydashboard::box(title = "Emotion Frequency", width = NULL, status = "primary", solidHeader = TRUE,
+                plotly::plotlyOutput("lec_report_emotion_pie", height = "300px")
+              )
+            ),
+            column(6, 
+              shinydashboard::box(title = "Engagement Timeline", width = NULL, status = "primary", solidHeader = TRUE,
+                plotly::plotlyOutput("lec_report_engagement_line", height = "300px")
+              )
+            )
+          ),
+          fluidRow(
+            column(6, 
+              shinydashboard::box(title = "Student Attendance", width = NULL, status = "primary", solidHeader = TRUE,
+                DT::dataTableOutput("lec_report_attendance_table")
+              )
+            ),
+            column(6, 
+              shinydashboard::box(title = "Individual Student Drill-down", width = NULL, status = "primary", solidHeader = TRUE,
+                uiOutput("lec_report_student_selector_ui"),
+                plotly::plotlyOutput("lec_report_student_timeline", height = "250px")
               )
             )
           )
         ),
-
-        # ====================================================================
-        # Tab B: Schedule
-        # ====================================================================
-        shinydashboard::tabItem(
-          tabName = "lec_schedule",
-          h2("Weekly Timetable"),
-          p("Your assigned teaching slots for the current semester."),
-          DT::dataTableOutput("lec_schedule_table")
-        ),
-
-        # ====================================================================
-        # Tab C: My Classes
-        # ====================================================================
-        shinydashboard::tabItem(
-          tabName = "lec_classes",
-          h2("Class Management"),
-          p("Overview of your sections and enrolled students."),
-          uiOutput("lec_classes_grid")
-        ),
-
-        # ====================================================================
-        # Tab D: Materials
-        # ====================================================================
-        shinydashboard::tabItem(
-          tabName = "lec_materials",
-          h2("LMS Content Management"),
-          wellPanel(
-            fluidRow(
-              column(4, textInput("lec_mat_lecture", "Lecture ID")),
-              column(4, textInput("lec_mat_title", "Title")),
-              column(4, br(), actionButton("lec_mat_upload", "Upload", class="btn-primary"))
-            )
-          ),
-          DT::dataTableOutput("lec_materials_table")
-        ),
-
-        # ====================================================================
-        # Tab E: Attendance
-        # ====================================================================
-        shinydashboard::tabItem(
-          tabName = "lec_attendance",
-          h2("Attendance Verification"),
-          fluidRow(
-            column(4, textInput("lec_att_lecture", "Lecture ID")),
-            column(4, br(), actionButton("lec_att_refresh", "Refresh", class="btn-info"))
-          ),
-          br(),
-          uiOutput("lec_attendance_grid")
-        ),
-
-        # ====================================================================
-        # Tab F: Live Dashboard
-        # ====================================================================
-        shinydashboard::tabItem(
-          tabName = "lec_live",
-          h2("Live Class Monitoring"),
-          fluidRow(
-            column(4, textInput("lec_live_lecture", "Lecture ID")),
-            column(4, br(), actionButton("lec_live_start", "Start Session", class="btn-success"))
-          ),
-          br(),
-          fluidRow(
-            column(8, shiny::uiOutput("lec_live_stream_ui")),
-            column(4, plotly::plotlyOutput("lec_live_gauge"))
-          )
-        ),
-
-        # ====================================================================
-        # Tab G: Reports
-        # ====================================================================
-        shinydashboard::tabItem(
-          tabName = "lec_reports",
-          h2("Performance Reports"),
-          selectInput("lec_rep_student", "Select Student", choices = c()),
-          plotly::plotlyOutput("lec_rep_trend")
-        ),
-
-        # ====================================================================
-        # Tab H: Exams (NEW)
-        # ====================================================================
-        shinydashboard::tabItem(
-          tabName = "lec_exams",
-          h2("Exam Management & Proctoring"),
-          tabsetPanel(
-            tabPanel("Setup", 
-              br(),
-              wellPanel(
-                textInput("lec_exam_id", "Exam ID"),
-                textInput("lec_exam_title", "Title"),
-                actionButton("lec_exam_create", "Create Exam", class="btn-primary")
-              ),
-              DT::dataTableOutput("lec_exam_table")
-            ),
-            tabPanel("Live Proctor", 
-              br(),
-              h4("Real-time Incident Feed"),
-              DT::dataTableOutput("lec_exam_incidents")
-            )
-          )
-        )
       )
     )
   )

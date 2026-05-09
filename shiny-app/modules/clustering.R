@@ -9,22 +9,22 @@ cluster_lecturers <- function(les_df, k = 3) {
     return(data.frame())
   }
 
-  # Features: LES score (normalized), attendance consistency (std dev)
+  # Features: average engagement and attendance rate
   # Handle zero variance for scale()
-  les_scaled <- if(sd(les_df$LES, na.rm=TRUE) == 0) rep(0, nrow(les_df)) else scale(les_df$LES)[, 1]
-  att_scaled <- if(sd(les_df$attendance_variance, na.rm=TRUE) == 0) rep(0, nrow(les_df)) else scale(les_df$attendance_variance)[, 1]
+  eng_scaled <- if(sd(les_df$avg_engagement, na.rm=TRUE) == 0) rep(0, nrow(les_df)) else scale(les_df$avg_engagement)[, 1]
+  att_scaled <- if(sd(les_df$attendance_rate, na.rm=TRUE) == 0) rep(0, nrow(les_df)) else scale(les_df$attendance_rate)[, 1]
 
   features <- data.frame(
-    LES_norm = les_scaled,
-    attend_norm = att_scaled
+    eng_norm = eng_scaled,
+    att_norm = att_scaled
   )
 
   # K-means clustering
   km <- stats::kmeans(features, centers = k, nstart = 10)
 
-  # Assign labels by centroid LES value (deterministic, not by cluster index)
-  centroid_les <- km$centers[, "LES_norm"]
-  rank_order   <- rank(centroid_les, ties.method = "first")  # 1=lowest, k=highest
+  # Assign labels by centroid engagement value
+  centroid_eng <- km$centers[, "eng_norm"]
+  rank_order   <- rank(centroid_eng, ties.method = "first")  # 1=lowest, k=highest
   label_map    <- character(k)
   label_map[rank_order == k]          <- "High Performers"
   label_map[rank_order == 1]          <- "Needs Support"
@@ -97,9 +97,9 @@ cluster_student_behavior <- function(emotions_df, k = 3) {
   rank_order <- rank(centers_eng, ties.method = "first")
 
   label_map <- character(k)
-  label_map[rank_order == k] <- "Highly Engaged"
-  label_map[rank_order == 1] <- "Needs Support"
-  label_map[rank_order != k & rank_order != 1] <- "Moderate Engagement"
+  label_map[rank_order == k] <- "The High-Performers"
+  label_map[rank_order == 1] <- "The Distracted Group"
+  label_map[rank_order != k & rank_order != 1] <- "The Average Group"
 
   result <- student_features |>
     dplyr::mutate(
@@ -117,16 +117,15 @@ get_lecturer_pca <- function(clustered_lecturers) {
   }
 
   # Standardize features safely
-  les_scaled <- if(sd(clustered_lecturers$LES, na.rm=TRUE) == 0) rep(0, nrow(clustered_lecturers)) else scale(clustered_lecturers$LES)[, 1]
-  att_scaled <- if(sd(clustered_lecturers$attendance_variance, na.rm=TRUE) == 0) rep(0, nrow(clustered_lecturers)) else scale(clustered_lecturers$attendance_variance)[, 1]
+  eng_scaled <- if(sd(clustered_lecturers$avg_engagement, na.rm=TRUE) == 0) rep(0, nrow(clustered_lecturers)) else scale(clustered_lecturers$avg_engagement)[, 1]
+  att_scaled <- if(sd(clustered_lecturers$attendance_rate, na.rm=TRUE) == 0) rep(0, nrow(clustered_lecturers)) else scale(clustered_lecturers$attendance_rate)[, 1]
 
   features <- data.frame(
-    LES = les_scaled,
-    attendance_variance = att_scaled
+    avg_engagement = eng_scaled,
+    attendance_rate = att_scaled
   )
 
   # PCA (2D projection for scatter plot)
-  # If variance is zero for all, prcomp might fail or return constant
   pca_result <- tryCatch({
     stats::prcomp(features, scale. = FALSE, rank. = 2)
   }, error = function(e) {

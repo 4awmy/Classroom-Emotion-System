@@ -1,28 +1,28 @@
-from sqlalchemy import String, Integer, Float, Boolean, Time, DateTime, ForeignKey, BigInteger, LargeBinary
+from sqlalchemy import String, Integer, Float, Boolean, Time, DateTime, ForeignKey, BigInteger, LargeBinary, Uuid
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.sql import func
 from database import Base
 import datetime
 from typing import List, Optional
+import uuid
 
 class Admin(Base):
     __tablename__ = "admins"
     admin_id: Mapped[str] = mapped_column(String, primary_key=True)
-    # Changed from Uuid to String for SQLite compatibility
-    auth_user_id: Mapped[Optional[str]] = mapped_column(String, unique=True)
+    auth_user_id: Mapped[uuid.UUID] = mapped_column(Uuid, unique=True, nullable=False) # Linked to Supabase
     name: Mapped[str] = mapped_column(String, nullable=False)
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
-    password_hash: Mapped[Optional[str]] = mapped_column(String) # NEW: For local auth
+    needs_password_reset: Mapped[bool] = mapped_column(Boolean, default=True) # NEW: For first-time reset
     phone: Mapped[Optional[str]] = mapped_column(String)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 class Lecturer(Base):
     __tablename__ = "lecturers"
     lecturer_id: Mapped[str] = mapped_column(String, primary_key=True)
-    auth_user_id: Mapped[Optional[str]] = mapped_column(String, unique=True)
+    auth_user_id: Mapped[uuid.UUID] = mapped_column(Uuid, unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
-    password_hash: Mapped[Optional[str]] = mapped_column(String) # NEW: For local auth
+    needs_password_reset: Mapped[bool] = mapped_column(Boolean, default=True) # NEW
     department: Mapped[Optional[str]] = mapped_column(String)
     title: Mapped[Optional[str]] = mapped_column(String)
     phone: Mapped[Optional[str]] = mapped_column(String)
@@ -37,13 +37,13 @@ class Lecturer(Base):
 class Student(Base):
     __tablename__ = "students"
     student_id: Mapped[str] = mapped_column(String, primary_key=True)
-    auth_user_id: Mapped[Optional[str]] = mapped_column(String, unique=True)
+    auth_user_id: Mapped[uuid.UUID] = mapped_column(Uuid, unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
     email: Mapped[Optional[str]] = mapped_column(String)
-    password_hash: Mapped[Optional[str]] = mapped_column(String) # NEW: For local auth
+    needs_password_reset: Mapped[bool] = mapped_column(Boolean, default=True) # NEW
     department: Mapped[Optional[str]] = mapped_column(String)
     year: Mapped[Optional[int]] = mapped_column(Integer)
-    face_encoding: Mapped[Optional[bytes]] = mapped_column(LargeBinary)
+    face_encoding: Mapped[Optional[bytes]] = mapped_column(LargeBinary) # Stored as BYTEA in Postgres
     photo_url: Mapped[Optional[str]] = mapped_column(String)
     enrolled_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -114,6 +114,11 @@ class Lecture(Base):
     start_time: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True))
     end_time: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True))
     scheduled_start: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True))
+    scheduled_end: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True)) # Added for early exit calculation
+    actual_start_time: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True))
+    actual_end_time: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True))
+    total_frames_captured: Mapped[int] = mapped_column(Integer, server_default="0")
+    expected_frames_count: Mapped[int] = mapped_column(Integer, server_default="0")
     slide_url: Mapped[Optional[str]] = mapped_column(String)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -194,7 +199,7 @@ class Notification(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     student_id: Mapped[Optional[str]] = mapped_column(ForeignKey("students.student_id"))
     lecturer_id: Mapped[str] = mapped_column(ForeignKey("lecturers.lecturer_id"))
-    lecture_id_fk: Mapped[Optional[str]] = mapped_column(ForeignKey("lectures.lecture_id")) # Renamed to avoid collision
+    lecture_id_fk: Mapped[Optional[str]] = mapped_column(ForeignKey("lectures.lecture_id"))
     reason: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     read: Mapped[Optional[bool]] = mapped_column(Boolean, server_default="false")

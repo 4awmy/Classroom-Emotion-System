@@ -6,18 +6,11 @@ from sqlalchemy.orm import sessionmaker, DeclarativeBase
 # Load environment variables
 load_dotenv()
 
-# Use local SQLite for stability (v2 schema)
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data/classroom_v2.db")
+# Hybrid Setup: Local PostgreSQL for Data
+# DATABASE_URL should point to localhost (Docker)
+DATABASE_URL = os.getenv("LOCAL_DATABASE_URL", "postgresql://postgres:password123@localhost:5432/classroom_emotions")
 
-# SQLite needs connect_args for FastAPI
-if DATABASE_URL.startswith("sqlite"):
-    engine = create_engine(
-        DATABASE_URL, 
-        connect_args={"check_same_thread": False}
-    )
-else:
-    engine = create_engine(DATABASE_URL)
-
+engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 class Base(DeclarativeBase):

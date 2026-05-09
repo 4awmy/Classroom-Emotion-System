@@ -1,41 +1,16 @@
 services:
-  backend:
-    build:
-      context: ./python-api
-      dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./python-api:/app
-      - classroom_db:/app/data
+  db:
+    image: postgres:15-alpine
+    container_name: aast_lms_db
+    restart: always
     environment:
-      - DATABASE_URL=${DATABASE_URL:-sqlite:///./data/classroom_emotions.db}
-    env_file:
-      - .env
-
-  vision:
-    build:
-      context: ./vision
-      dockerfile: Dockerfile
-    depends_on:
-      - backend
-    environment:
-      - API_URL=${API_URL:-http://backend:8000}
-      - VIDEO_SOURCE=${VIDEO_SOURCE:-0}
-    env_file:
-      - .env
-
-  frontend:
-    # Path A: R Shiny Dashboard
-    image: rocker/shiny:latest
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: classroom_emotions
     ports:
-      - "3838:3838"
+      - "5432:5432"
     volumes:
-      - ./frontend:/srv/shiny-server
-    depends_on:
-      - backend
-    env_file:
-      - .env
+      - pgdata:/var/lib/postgresql/data
 
 volumes:
-  classroom_db:
+  pgdata:

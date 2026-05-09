@@ -1,8 +1,8 @@
 import logging
+import threading
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import emotion, attendance, session, gemini, notes, exam, roster, upload, auth, notify, admin, courses
-from services.lecture_scheduler import start_scheduler
 from database import engine
 import models
 import uvicorn
@@ -11,19 +11,22 @@ import uvicorn
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize database tables (Fast on SQLite)
-logger.info("[INIT] Initializing SQLite database...")
-try:
-    models.Base.metadata.create_all(bind=engine)
-    logger.info("[INIT] Database initialized.")
-except Exception as e:
-    logger.error(f"[INIT] Database initialization failed: {e}")
+# Fast startup: defer heavy initializations
+def deferred_startup():
+    logger.info("[INIT] Performing background initializations...")
+    try:
+        # 1. Initialize database tables (Fast on local Postgres)
+        models.Base.metadata.create_all(bind=engine)
+        logger.info("[INIT] Database initialized.")
+        
+        # 2. Start background schedulers
+        from services.lecture_scheduler import start_scheduler
+        start_scheduler()
+        logger.info("[INIT] Scheduler started.")
+    except Exception as e:
+        logger.error(f"[INIT] Deferred startup failed: {e}")
 
-# Start background schedulers
-logger.info("[INIT] Starting background scheduler...")
-start_scheduler()
-
-app = FastAPI(title="AAST LMS API")
+app = FastAPI(title="AAST LMS API (Hybrid v3)")
 
 # Configure CORS
 app.add_middleware(
@@ -52,6 +55,11 @@ app.include_router(exam.router,        prefix="/exam",       tags=["Exam"])
 app.include_router(roster.router,      prefix="/roster",     tags=["Roster"])
 app.include_router(upload.router,      prefix="/upload",     tags=["Upload"])
 app.include_router(notify.router,      prefix="/notify",     tags=["Notify"])
+
+@app.on_event("startup")
+async def startup_event():
+    # Trigger the heavy lifting in a background thread to keep startup fast
+    threading.Thread(target=deferred_startup, daemon=True).start()
 
 if __name__ == "__main__":
     logger.info("[INIT] Launching server on port 8000...")

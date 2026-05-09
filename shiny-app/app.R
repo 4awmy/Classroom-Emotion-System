@@ -1,5 +1,4 @@
-# AAST LMS Shiny Application - Production Rescue Version
-# This version is designed to bypass all initialization hangs
+# AAST LMS Shiny Application - Hybrid v3 Production Version
 
 source("global.R", local = FALSE)
 source("ui/admin_ui.R", local = FALSE)
@@ -8,31 +7,26 @@ source("server/admin_server.R", local = FALSE)
 source("server/lecturer_server.R", local = FALSE)
 
 # ============================================================================
-# Login UI
+# Shared UI Elements
 # ============================================================================
 
 login_ui_static <- shiny::fluidPage(
   shinyjs::useShinyjs(),
   shiny::tags$head(
     shiny::tags$style(HTML("
-      body { background-color: #002147; color: white; font-family: sans-serif; }
+      body { background-color: #002147; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
       .login-box { 
-        background: white; color: #333; padding: 30px; 
-        width: 350px; margin: 100px auto; border-radius: 10px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        background: white; color: #333; padding: 40px; 
+        width: 400px; margin: 80px auto; border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
       }
-      .btn-primary { background-color: #002147; border: none; width: 100%; padding: 10px; }
-      h2 { text-align: center; color: #002147; margin-bottom: 20px; }
+      .btn-primary { background-color: #002147; border: none; width: 100%; padding: 12px; font-weight: 600; border-radius: 6px; }
+      .btn-link { color: #002147; background: none; border: none; padding: 0; font-size: 0.9em; text-decoration: underline; cursor: pointer; }
+      h2 { text-align: center; color: #002147; margin-bottom: 30px; font-weight: 700; }
+      .form-group { margin-bottom: 20px; }
     "))
   ),
-  shiny::div(class = "login-box",
-    shiny::h2("AAST LMS Login"),
-    shiny::textInput("user_id", "User ID", placeholder = "admin or omar"),
-    shiny::passwordInput("password", "Password", placeholder = "admin or 123"),
-    shiny::actionButton("login_btn", "Log In", class = "btn-primary", style="color:white;"),
-    shiny::hr(),
-    shiny::p(style="font-size:0.8em; color:#888; text-align:center;", "Test: admin/admin or omar/123")
-  )
+  shiny::uiOutput("auth_container")
 )
 
 # ============================================================================
@@ -53,8 +47,36 @@ server <- function(input, output, session) {
     token = NULL,
     user_id = NULL,
     name = NULL,
-    email = NULL
+    email = NULL,
+    view = "login" # login | forgot
   )
+
+  # Auth Container Router
+  output$auth_container <- shiny::renderUI({
+    if (session_state$view == "login") {
+      shiny::div(class = "login-box",
+        shiny::h2("AAST LMS Login"),
+        shiny::div(class="form-group", shiny::textInput("user_id", "User ID", placeholder = "admin / omar")),
+        shiny::div(class="form-group", shiny::passwordInput("password", "Password", placeholder = "admin / 123")),
+        shiny::actionButton("login_btn", "Log In", class = "btn-primary", style="color:white;"),
+        shiny::br(), shiny::br(),
+        shiny::div(style="text-align:center;",
+          shiny::actionLink("show_forgot", "Forgot Password?", class="btn-link")
+        )
+      )
+    } else {
+      shiny::div(class = "login-box",
+        shiny::h2("Reset Password"),
+        p("Enter your registered email to receive a recovery link via Supabase."),
+        shiny::div(class="form-group", shiny::textInput("forgot_email", "Email Address")),
+        shiny::actionButton("forgot_submit", "Send Reset Link", class = "btn-primary", style="color:white;"),
+        shiny::br(), shiny::br(),
+        shiny::div(style="text-align:center;",
+          shiny::actionLink("show_login", "Back to Login", class="btn-link")
+        )
+      )
+    }
+  })
 
   # Render the correct page
   output$root_ui <- shiny::renderUI({
@@ -67,15 +89,32 @@ server <- function(input, output, session) {
     }
   })
 
+  # --- Auth Observers ---
+
+  shiny::observeEvent(input$show_forgot, { session_state$view <- "forgot" })
+  shiny::observeEvent(input$show_login, { session_state$view <- "login" })
+
   # Login Logic
   shiny::observeEvent(input$login_btn, {
     uid <- trimws(input$user_id)
     pwd <- trimws(input$password)
     
+    if (uid == "" || pwd == "") {
+       shinyalert::shinyalert("Error", "Enter ID and Password", type="error")
+       return()
+    }
+
     # Attempt API login
     res <- api_call("/auth/login", method = "POST", body = list(user_id=uid, password=pwd))
     
     if (!is.null(res) && !is.null(res$access_token)) {
+      # CHECK FOR FORCED RESET (aast2026 logic)
+      if (isTRUE(res$needs_password_reset)) {
+          shinyalert::shinyalert("Security", "Using default password. Please reset your password now.", type="info")
+          session_state$view <- "forgot"
+          return()
+      }
+
       # Get user profile
       me <- api_call("/auth/me", auth_token = res$access_token)
       if (!is.null(me)) {
@@ -85,22 +124,19 @@ server <- function(input, output, session) {
         session_state$name <- me$name
         session_state$email <- me$email
         session_state$logged_in <- TRUE
-        return()
       }
     }
+  })
 
-    # FALLBACKS (If API is down or login fails)
-    if (uid == "admin" && pwd == "admin") {
-      session_state$role <- "admin"
-      session_state$user_id <- "admin"
-      session_state$name <- "System Admin"
-      session_state$logged_in <- TRUE
-    } else if (uid == "omar" && pwd == "123") {
-      session_state$role <- "lecturer"
-      session_state$user_id <- "omar"
-      session_state$name <- "Omar"
-      session_state$email <- "omar@test.com"
-      session_state$logged_in <- TRUE
+  # Forgot Password Logic
+  shiny::observeEvent(input$forgot_submit, {
+    email <- trimws(input$forgot_email)
+    if (nchar(email) == 0) return()
+    
+    res <- api_call("/auth/forgot-password", method = "POST", body = list(email=email))
+    if (!is.null(res)) {
+      shinyalert::shinyalert("Check Email", res$message, type = "success")
+      session_state$view <- "login"
     }
   })
 
@@ -114,6 +150,7 @@ server <- function(input, output, session) {
     session_state$email <- NULL
     shiny::updateTextInput(session, "user_id", value = "")
     shiny::updateTextInput(session, "password", value = "")
+    session_state$view <- "login"
   })
 
   # Module Servers

@@ -10,6 +10,7 @@ python-dotenv
 python-jose[cryptography]
 python-multipart
 email-validator
+supabase
 
 # Data processing
 pandas
