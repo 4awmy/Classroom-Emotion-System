@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import emotion, attendance, session, gemini, notes, exam, roster, upload, auth, notify, admin, courses
-from services import export_service
 from database import engine
 import models
 import uvicorn

@@ -8,52 +8,28 @@ admin_server <- function(input, output, session) {
   source("modules/attendance.R", local = TRUE)
 
   # ========================================================================
-  # Reactive Data Loading (with reactivePoll - checks file mtime every 60s)
+  # Reactive Data Loading (from Supabase PostgreSQL)
   # ========================================================================
 
-  emotions_data <- shiny::reactivePoll(
-    intervalMillis = 60000,
-    session = session,
-    checkFunc = function() {
-      get_file_mtime("../python-api/data/exports/emotions.csv")
-    },
-    valueFunc = function() {
-      load_csv("../python-api/data/exports/emotions.csv")
-    }
-  )
+  emotions_data <- shiny::reactive({
+    shiny::invalidateLater(60000, session)
+    dbGetQuery(con, "SELECT * FROM emotions")
+  })
 
-  attendance_data <- shiny::reactivePoll(
-    intervalMillis = 60000,
-    session = session,
-    checkFunc = function() {
-      get_file_mtime("../python-api/data/exports/attendance.csv")
-    },
-    valueFunc = function() {
-      load_csv("../python-api/data/exports/attendance.csv")
-    }
-  )
+  attendance_data <- shiny::reactive({
+    shiny::invalidateLater(60000, session)
+    dbGetQuery(con, "SELECT * FROM attendance")
+  })
 
-  materials_data <- shiny::reactivePoll(
-    intervalMillis = 60000,
-    session = session,
-    checkFunc = function() {
-      get_file_mtime("../python-api/data/exports/materials.csv")
-    },
-    valueFunc = function() {
-      load_csv("../python-api/data/exports/materials.csv")
-    }
-  )
+  materials_data <- shiny::reactive({
+    shiny::invalidateLater(60000, session)
+    dbGetQuery(con, "SELECT * FROM materials")
+  })
 
-  incidents_data <- shiny::reactivePoll(
-    intervalMillis = 30000,
-    session = session,
-    checkFunc = function() {
-      get_file_mtime("../python-api/data/exports/incidents.csv")
-    },
-    valueFunc = function() {
-      load_csv("../python-api/data/exports/incidents.csv")
-    }
-  )
+  incidents_data <- shiny::reactive({
+    shiny::invalidateLater(30000, session)
+    dbGetQuery(con, "SELECT * FROM incidents")
+  })
 
   # ========================================================================
   # Panel 1: Attendance Overview

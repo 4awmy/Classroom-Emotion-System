@@ -6,38 +6,20 @@ lecturer_server <- function(input, output, session) {
   source("modules/attendance.R", local = TRUE)
 
   # Reactive data - accelerated for Live Dashboard
-  emotions_data <- shiny::reactivePoll(
-    intervalMillis = 2000,
-    session = session,
-    checkFunc = function() {
-      get_file_mtime("../python-api/data/exports/emotions.csv")
-    },
-    valueFunc = function() {
-      load_csv("../python-api/data/exports/emotions.csv")
-    }
-  )
+  emotions_data <- shiny::reactive({
+    shiny::invalidateLater(2000, session)
+    dbGetQuery(con, "SELECT * FROM emotions")
+  })
 
-  attendance_data <- shiny::reactivePoll(
-    intervalMillis = 2000,
-    session = session,
-    checkFunc = function() {
-      get_file_mtime("../python-api/data/exports/attendance.csv")
-    },
-    valueFunc = function() {
-      load_csv("../python-api/data/exports/attendance.csv")
-    }
-  )
+  attendance_data <- shiny::reactive({
+    shiny::invalidateLater(2000, session)
+    dbGetQuery(con, "SELECT * FROM attendance")
+  })
 
-  incidents_data <- shiny::reactivePoll(
-    intervalMillis = 2000,
-    session = session,
-    checkFunc = function() {
-      get_file_mtime("../python-api/data/exports/incidents.csv")
-    },
-    valueFunc = function() {
-      load_csv("../python-api/data/exports/incidents.csv")
-    }
-  )
+  incidents_data <- shiny::reactive({
+    shiny::invalidateLater(2000, session)
+    dbGetQuery(con, "SELECT * FROM incidents")
+  })
 
   # ========================================================================
   # Submodule A: Roster Setup

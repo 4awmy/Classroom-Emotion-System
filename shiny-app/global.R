@@ -16,36 +16,30 @@ library(ggplot2)
 library(dplyr)
 library(lubridate)
 library(httr2)
-library(curl)             # curl::form_file() for multipart roster/material uploads
-library(base64enc)        # base64decode() for QR image rendering
+library(curl)
+library(base64enc)
 library(openxlsx)
 library(rmarkdown)
 library(bslib)
-if (requireNamespace("aws.s3", quietly = TRUE)) library(aws.s3)
 library(config)
+library(DBI)
+library(RPostgres)
 
 # ============================================================================
 # Configuration
 # ============================================================================
 
-# Load configuration from config.yml
-# Use Sys.setenv(R_CONFIG_ACTIVE = "production") to switch to production
 cfg <- config::get(file = "config.yml")
-
-# FastAPI Base URL
 FASTAPI_BASE <- cfg$fastapi_base
 
-# S3 Configuration (Digital Ocean Spaces)
-# Use config values as defaults, but allow environment variable overrides for secrets
-SPACES_BUCKET <- Sys.getenv("SPACES_BUCKET", cfg$spaces_bucket)
-SPACES_REGION <- Sys.getenv("SPACES_REGION", cfg$spaces_region)
-SPACES_ENDPOINT <- Sys.getenv("SPACES_ENDPOINT", cfg$spaces_endpoint)
-
-# Set AWS credentials for aws.s3 package
-Sys.setenv(
-  "AWS_ACCESS_KEY_ID" = Sys.getenv("SPACES_KEY"),
-  "AWS_SECRET_ACCESS_KEY" = Sys.getenv("SPACES_SECRET"),
-  "AWS_DEFAULT_REGION" = SPACES_REGION
+# Supabase Connection
+con <- dbConnect(
+  RPostgres::Postgres(),
+  dbname = "postgres",
+  host = Sys.getenv("SUPABASE_DB_HOST"),
+  port = 5432,
+  user = "postgres",
+  password = Sys.getenv("SUPABASE_DB_PASSWORD")
 )
 
 # ============================================================================
@@ -58,7 +52,7 @@ api_call <- function(endpoint, method = "GET", body = NULL, content_type = "appl
   req <- request(url) |>
     req_method(method) |>
     req_headers("Content-Type" = content_type) |>
-    req_error(is_error = \(resp) FALSE)  # Don't throw - we'll handle manually
+    req_error(is_error = \(resp) FALSE)
 
   if (!is.null(body)) {
     req <- req |> req_body_json(body)
@@ -69,7 +63,6 @@ api_call <- function(endpoint, method = "GET", body = NULL, content_type = "appl
     
     if (resp_status(resp) >= 400) {
       err_body <- resp_body_json(resp)
-      # Extract detail if it exists (FastAPI style)
       detail <- if (!is.null(err_body$detail)) {
         if (is.list(err_body$detail)) paste(err_body$detail, collapse = "; ") else err_body$detail
       } else {
@@ -95,7 +88,6 @@ api_call <- function(endpoint, method = "GET", body = NULL, content_type = "appl
 # Theme Configuration (AAST Branding)
 # ============================================================================
 
-# AAST Colors
 AAST_NAVY <- "#002147"
 AAST_GOLD <- "#C9A84C"
 AAST_WHITE <- "#FFFFFF"
@@ -105,12 +97,10 @@ AAST_LIGHT_GRAY <- "#F5F5F5"
 # Utility Functions
 # ============================================================================
 
-# Format engagement score as percentage
 format_engagement <- function(score) {
   paste0(round(score * 100, 1), "%")
 }
 
-# Get engagement level label
 get_engagement_level <- function(score) {
   if (score >= 0.75) return("High")
   if (score >= 0.45) return("Moderate")
@@ -118,79 +108,19 @@ get_engagement_level <- function(score) {
   return("Critical")
 }
 
-# Get emotion color mapping
 emotion_colors <- list(
-  "Focused" = "#1B5E20",      # Dark green
-  "Engaged" = "#4CAF50",      # Green
-  "Confused" = "#FFC107",     # Amber
-  "Frustrated" = "#FF9800",   # Orange
-  "Anxious" = "#9C27B0",      # Purple
-  "Disengaged" = "#F44336"    # Red
+  "Focused" = "#1B5E20",
+  "Engaged" = "#4CAF50",
+  "Confused" = "#FFC107",
+  "Frustrated" = "#FF9800",
+  "Anxious" = "#9C27B0",
+  "Disengaged" = "#F44336"
 )
 
-# Get color for emotion
 get_emotion_color <- function(emotion) {
   color <- emotion_colors[[emotion]]
   if (is.null(color)) return("#CCCCCC")
   return(color)
-}
-
-# ============================================================================
-# Data Loading Utilities
-# ============================================================================
-
-# Get file modification time (local or S3)
-get_file_mtime <- function(filepath) {
-  if (SPACES_BUCKET != "" && requireNamespace("aws.s3", quietly = TRUE)) {
-    filename <- basename(filepath)
-    tryCatch({
-      meta <- aws.s3::head_object(
-        object = paste0("exports/", filename),
-        bucket = SPACES_BUCKET,
-        base_url = SPACES_ENDPOINT
-      )
-      return(as.numeric(attr(meta, "last-modified")))
-    }, error = function(e) {
-      return(0)
-    })
-  } else {
-    if (file.exists(filepath)) {
-      return(as.numeric(file.info(filepath)$mtime))
-    } else {
-      return(0)
-    }
-  }
-}
-
-# Load CSV with error handling (local or S3)
-load_csv <- function(filepath) {
-  if (SPACES_BUCKET != "" && requireNamespace("aws.s3", quietly = TRUE)) {
-    filename <- basename(filepath)
-    tryCatch({
-      aws.s3::s3read_using(
-        FUN = read.csv,
-        object = paste0("exports/", filename),
-        bucket = SPACES_BUCKET,
-        base_url = SPACES_ENDPOINT,
-        stringsAsFactors = FALSE,
-        encoding = "UTF-8"
-      )
-    }, error = function(e) {
-      if (!file.exists(filepath)) {
-        return(data.frame())
-      }
-      read.csv(filepath, stringsAsFactors = FALSE)
-    })
-  } else {
-    if (!file.exists(filepath)) {
-      return(data.frame())
-    }
-    tryCatch({
-      read.csv(filepath, stringsAsFactors = FALSE)
-    }, error = function(e) {
-      return(data.frame())
-    })
-  }
 }
 
 # ============================================================================
