@@ -21,6 +21,24 @@ Welcome to the updated AAST Learning Management System, now powered by **Supabas
 
 ---
 
+## 🔄 Team Data Sync (Shared Recipe)
+Since we are using **Local SQLite**, each developer has their own database. To keep the data consistent:
+
+*   **To Share your data (Data Team):**
+    ```bash
+    cd python-api
+    python sync_data.py export
+    # Then git commit 'python-api/data/master_data.sql'
+    ```
+*   **To Get the team's latest data:**
+    ```bash
+    git pull
+    cd python-api
+    python sync_data.py import
+    ```
+
+---
+
 ## 🛡️ User Guides
 
 ### 1. Administrator Guide
