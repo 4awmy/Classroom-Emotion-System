@@ -241,7 +241,7 @@ def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event, 
 
                         att_entry = AttendanceLog(
                             student_id=student_id, lecture_id=lecture_id,
-                            timestamp=now, check_in_time=now, total_duration=0,
+                            timestamp=now, total_duration=0,
                             status="Present", method="AI", snapshot_path=snapshot_path
                         )
                         db.add(att_entry)
