@@ -1,0 +1,35 @@
+INFO:     127.0.0.1:55610 - "POST /auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55610 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49679 - "POST /auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49679 - "GET /auth/me HTTP/1.1" 200 OK
+[VISION] Starting pipeline for 10227_1_20260510_0015 (Source: 0)
+INFO:     127.0.0.1:49679 - "POST /session/start HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49671 - "GET /session/video_feed/10227_1_20260510_0015 HTTP/1.1" 200 OK
+[VISION] Pipeline loop started for 10227_1_20260510_0015. Known faces: 46
+[VISION] FATAL CRASH: 'ConnectionManager' object has no attribute 'broadcast_sync'
+[VISION] Pipeline for 10227_1_20260510_0015 terminated clean.
+[VISION] Starting pipeline for 10227_1_20260510_0015 (Source: 0)
+INFO:     127.0.0.1:60656 - "POST /session/start HTTP/1.1" 200 OK
+[VISION] Starting pipeline for 10227_1_20260510_0015 (Source: 0)
+INFO:     127.0.0.1:60656 - "POST /session/start HTTP/1.1" 200 OK
+[VISION] Pipeline loop started for 10227_1_20260510_0015. Known faces: 46
+[VISION] Pipeline for 10227_1_20260510_0015 terminated clean.
+[VISION] Pipeline loop started for 10227_1_20260510_0015. Known faces: 46
+[VISION] FATAL CRASH: 'ConnectionManager' object has no attribute 'broadcast_sync'
+[VISION] Pipeline for 10227_1_20260510_0015 terminated clean.
+[VISION] Starting pipeline for 10227_1_20260510_0017 (Source: 0)
+INFO:     127.0.0.1:56689 - "POST /session/start HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55180 - "GET /session/video_feed/10227_1_20260510_0017 HTTP/1.1" 200 OK
+[VISION] Pipeline loop started for 10227_1_20260510_0017. Known faces: 46
+[VISION] FATAL CRASH: 'ConnectionManager' object has no attribute 'broadcast_sync'
+[VISION] Pipeline for 10227_1_20260510_0017 terminated clean.
+INFO:     127.0.0.1:55286 - "POST /auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55286 - "GET /auth/me HTTP/1.1" 200 OK
+[VISION] Starting pipeline for 10227_1_20260510_0018 (Source: 0)
+INFO:     127.0.0.1:59752 - "POST /session/start HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54194 - "GET /session/video_feed/10227_1_20260510_0018 HTTP/1.1" 200 OK
+[VISION] Pipeline loop started for 10227_1_20260510_0018. Known faces: 46
+[VISION] FATAL CRASH: 'ConnectionManager' object has no attribute 'broadcast_sync'
+[VISION] Pipeline for 10227_1_20260510_0018 terminated clean.
+INFO:     127.0.0.1:49701 - "POST /auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49701 - "GET /auth/me HTTP/1.1" 200 OK
