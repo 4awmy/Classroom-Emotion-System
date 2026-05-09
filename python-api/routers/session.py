@@ -41,8 +41,8 @@ async def video_feed(lecture_id: str):
 
 
 class SessionStartRequest(BaseModel):
-    lecture_id: str
     lecturer_id: str
+    lecture_id: Optional[str] = None
     title: Optional[str] = None
     class_id: Optional[str] = None
     slide_url: Optional[str] = None
@@ -61,6 +61,14 @@ class SessionBroadcastRequest(BaseModel):
 @router.post("/start")
 async def start_session(request: SessionStartRequest, db: Session = Depends(get_db)):
     try:
+        import uuid
+        if not request.lecture_id:
+            short_id = uuid.uuid4().hex[:8]
+            if request.class_id:
+                request.lecture_id = f"LEC_{request.class_id}_{short_id}"
+            else:
+                request.lecture_id = f"LEC_{short_id}"
+                
         lecture = db.query(models.Lecture).filter(models.Lecture.lecture_id == request.lecture_id).first()
         scheduled = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
 
