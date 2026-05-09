@@ -41,10 +41,10 @@ async def video_feed(lecture_id: str):
 
 
 class SessionStartRequest(BaseModel):
+    lecture_id: str
     lecturer_id: str
-    lecture_id: Optional[str] = None
     title: Optional[str] = None
-    class_id: Optional[str] = None
+    subject: Optional[str] = None
     slide_url: Optional[str] = None
     camera_url: Optional[str] = None
     context: Optional[str] = "lecture"
@@ -61,37 +61,27 @@ class SessionBroadcastRequest(BaseModel):
 @router.post("/start")
 async def start_session(request: SessionStartRequest, db: Session = Depends(get_db)):
     try:
-        import uuid
-        if not request.lecture_id:
-            short_id = uuid.uuid4().hex[:8]
-            if request.class_id:
-                request.lecture_id = f"LEC_{request.class_id}_{short_id}"
-            else:
-                request.lecture_id = f"LEC_{short_id}"
-                
         lecture = db.query(models.Lecture).filter(models.Lecture.lecture_id == request.lecture_id).first()
         scheduled = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
 
         if not lecture:
-            lecture_kwargs = dict(
+            lecture = models.Lecture(
                 lecture_id=request.lecture_id,
                 lecturer_id=request.lecturer_id,
                 title=request.title or f"Lecture {request.lecture_id}",
+                subject=request.subject or "General",
                 slide_url=request.slide_url,
                 start_time=datetime.utcnow(),
-                scheduled_start=scheduled
+                scheduled_start_time=scheduled
             )
-            if request.class_id is not None:
-                lecture_kwargs["class_id"] = request.class_id
-            lecture = models.Lecture(**lecture_kwargs)
             db.add(lecture)
         else:
             lecture.start_time = datetime.utcnow()
             lecture.end_time = None
             if request.slide_url:
                 lecture.slide_url = request.slide_url
-            if not lecture.scheduled_start:
-                lecture.scheduled_start = scheduled
+            if not lecture.scheduled_start_time:
+                lecture.scheduled_start_time = scheduled
         
         db.commit()
         db.refresh(lecture)
