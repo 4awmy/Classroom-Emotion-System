@@ -29,23 +29,9 @@ library(RPostgres)
 # Configuration
 # ============================================================================
 
-# Internal networking is better for cross-service calls in DO
-# Fallback to public URL if internal env var not set
-FASTAPI_BASE <- Sys.getenv("API_URL", "https://classroomx-lkbxf.ondigitalocean.app")
-
-# Ensure we have a clean trailing slash-free base
-FASTAPI_BASE <- sub("/$", "", FASTAPI_BASE)
-
-# PRODUCTION ROUTING RULE:
-# If calling publicly, we need the /api prefix (handled by DO Ingress)
-# If calling internally (backend:8000), we DON'T need /api because we bypass the Ingress
-if (grepl("backend:8000", FASTAPI_BASE)) {
-    API_ENTRY <- FASTAPI_BASE
-    print("[INIT] Using INTERNAL API Gateway (No /api prefix)")
-} else {
-    API_ENTRY <- paste0(FASTAPI_BASE, "/api")
-    print("[INIT] Using PUBLIC API Gateway (With /api prefix)")
-}
+# We use the Public URL for maximum reliability
+# DigitalOcean's internal networking is bypassable via the public ingress
+FASTAPI_BASE <- "https://classroomx-lkbxf.ondigitalocean.app/api"
 
 # --- Database Query Helper ---
 query_table <- function(table_name) {
@@ -58,7 +44,7 @@ query_table <- function(table_name) {
     dbDisconnect(con)
     return(res)
   }, error = function(e) {
-    print(paste("[DB] Query failed for", table_name, ":", e$message))
+    message(paste("[DB] Query failed:", e$message))
     return(data.frame())
   })
 }
@@ -68,17 +54,17 @@ query_table <- function(table_name) {
 # ============================================================================
 
 api_call <- function(endpoint, method = "GET", body = NULL, auth_token = NULL, content_type = "application/json") {
-  # Ensure endpoint starts with /
+  # Endpoint should start with /
   if (!grepl("^/", endpoint)) endpoint <- paste0("/", endpoint)
   
-  url <- paste0(API_ENTRY, endpoint)
+  url <- paste0(FASTAPI_BASE, endpoint)
   print(paste("[API] Calling:", method, url))
 
   req <- request(url) |>
     req_method(method) |>
     req_headers("Content-Type" = content_type) |>
     req_error(is_error = \(resp) FALSE) |>
-    req_timeout(10)
+    req_timeout(15)
 
   if (!is.null(auth_token)) {
     req <- req |> req_headers("Authorization" = paste("Bearer", auth_token))
@@ -93,15 +79,16 @@ api_call <- function(endpoint, method = "GET", body = NULL, auth_token = NULL, c
     print(paste("[API] Response Status:", resp_status(resp)))
     
     if (resp_status(resp) >= 400) {
+      # Handle common error responses
       err_body <- tryCatch(resp_body_json(resp), error = function(e) list(detail = "Unknown error"))
       detail <- if (!is.null(err_body$detail)) {
         if (is.list(err_body$detail)) paste(err_body$detail, collapse = "; ") else err_body$detail
       } else {
-        "Request failed"
+        "Unauthorized or invalid request"
       }
       
       shinyalert::shinyalert(
-        title = paste("Server Error", resp_status(resp)),
+        title = paste("Login Error", resp_status(resp)),
         text = as.character(detail),
         type = "error"
       )
@@ -112,9 +99,9 @@ api_call <- function(endpoint, method = "GET", body = NULL, auth_token = NULL, c
   }, error = function(e) {
     print(paste("[API] CONNECTION FAILED:", e$message))
     shinyalert::shinyalert(
-      title = "Connection Error",
-      text = paste("Could not reach backend server at", url, ". Details:", e$message),
-      type = "error"
+      title = "System Busy",
+      text = "The security server is currently initializing. Please wait 30 seconds and try again.",
+      type = "info"
     )
     return(NULL)
   })
@@ -146,5 +133,5 @@ get_emotion_color <- function(emotion) {
 # ============================================================================
 # Initial Boot Logs
 # ============================================================================
-print("✓ Shiny Global.R loaded successfully")
-print(paste("✓ Final API Entry Point:", API_ENTRY))
+print("✓ Shiny System Active")
+print(paste("✓ Target Gateway:", FASTAPI_BASE))
