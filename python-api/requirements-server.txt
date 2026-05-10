@@ -33,8 +33,6 @@ apscheduler
 google-generativeai
 pdfplumber
 
-# Vision — face recognition (insightface/ONNX, no C compilation needed) + emotion
-insightface
-onnxruntime
-opencv-python-headless
-hsemotion-onnx
+# Vision libs intentionally omitted — all require native compilation on Linux.
+# The /vision/* endpoints return HTTP 503 gracefully when these are absent.
+# Install locally only for development (see vision/requirements.txt).
