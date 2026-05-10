@@ -29,15 +29,44 @@ library(RPostgres)
 # Configuration
 # ============================================================================
 
-cfg <- config::get(file = "config.yml")
-FASTAPI_BASE <- cfg$fastapi_base
+# Prioritize Environment Variables (DigitalOcean)
+FASTAPI_BASE <- Sys.getenv("API_URL", "")
+
+if (FASTAPI_BASE == "") {
+  # Fallback to config file for local development
+  tryCatch({
+    cfg <- config::get(file = "config.yml")
+    FASTAPI_BASE <- cfg$fastapi_base
+  }, error = function(e) {
+    FASTAPI_BASE <- "http://localhost:8000"
+  })
+}
+
+# Ensure API_URL points to /api if not already specified (for multi-service routing)
+if (!grepl("/api$", FASTAPI_BASE) && !grepl("/api/$", FASTAPI_BASE)) {
+    # If it's a root URL, append /api
+    FASTAPI_BASE <- paste0(sub("/$", "", FASTAPI_BASE), "/api")
+}
 
 # ============================================================================
 # Database Connection Manager
 # ============================================================================
 
 get_db_con <- function() {
-  # Connecting to LOCAL PostgreSQL (Docker)
+  # 1. Try DATABASE_URL (DigitalOcean standard)
+  db_url <- Sys.getenv("DATABASE_URL", "")
+  
+  if (db_url != "") {
+    tryCatch({
+      # RPostgres can connect directly via URL
+      con <- dbConnect(RPostgres::Postgres(), url = db_url)
+      return(con)
+    }, error = function(e) {
+      message("ERROR: DATABASE_URL connection failed: ", e$message)
+    })
+  }
+
+  # 2. Try individual components (fallback/local)
   host <- Sys.getenv("LOCAL_DB_HOST", "localhost")
   port <- as.integer(Sys.getenv("LOCAL_DB_PORT", "5432"))
   user <- Sys.getenv("LOCAL_DB_USER", "postgres")
@@ -45,24 +74,35 @@ get_db_con <- function() {
   db   <- Sys.getenv("LOCAL_DB_NAME", "classroom_emotions")
   
   tryCatch({
-    con <- dbConnect(
-      RPostgres::Postgres(),
-      dbname   = db,
-      host     = host,
-      port     = port,
-      user     = user,
-      password = pw
-    )
-    return(con)
+  con <- dbConnect(
+    RPostgres::Postgres(),
+    dbname   = db,
+    host     = host,
+    port     = port,
+    user     = user,
+    password = pw
+  )
+  return(con)
   }, error = function(e) {
-    message("ERROR: Local PostgreSQL connection failed: ", e$message)
-    return(NULL)
+  message("ERROR: Local PostgreSQL connection failed: ", e$message)
+  return(NULL)
   })
-}
+  }
 
-# Initial global connection
-con <- get_db_con()
+  # Initial global connection
+  con <- get_db_con()
 
+  # --- Database Query Helper ---
+  query_table <- function(table_name) {
+  if (is.null(con)) return(data.frame())
+  tryCatch({
+  res <- dbReadTable(con, table_name)
+  return(res)
+  }, error = function(e) {
+  message("ERROR: Query failed for ", table_name, ": ", e$message)
+  return(data.frame())
+  })
+  }
 # ============================================================================
 # API Client Helper Function (FastAPI)
 # ============================================================================

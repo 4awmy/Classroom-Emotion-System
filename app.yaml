@@ -1,5 +1,5 @@
-name: classroom-emotion-system
-region: nyc
+name: classroomx
+region: fra
 services:
   - name: backend
     github:
@@ -11,27 +11,23 @@ services:
     http_port: 8000
     instance_count: 1
     instance_size_slug: basic-xxs
+    routes:
+      - path: /api
+      - path: /docs
+      - path: /health
+      - path: /session
+      - path: /emotion
+      - path: /attendance
+      - path: /roster
+      - path: /auth
+      - path: /internal
     envs:
       - key: DATABASE_URL
         scope: RUN_TIME
-        value: ${db.DATABASE_URL}
-      - key: GEMINI_API_KEY
+        value: ${dev-db-617746.DATABASE_URL}
+      - key: ENVIRONMENT
         scope: RUN_TIME
-        type: SECRET
-      - key: SPACES_KEY
-        scope: RUN_TIME
-        type: SECRET
-      - key: SPACES_SECRET
-        scope: RUN_TIME
-        type: SECRET
-      - key: SPACES_REGION
-        scope: RUN_TIME
-        value: nyc3
-      - key: SPACES_BUCKET
-        scope: RUN_TIME
-      - key: SPACES_ENDPOINT
-        scope: RUN_TIME
-        value: https://nyc3.digitaloceanspaces.com
+        value: production
 
   - name: frontend
     github:
@@ -43,48 +39,17 @@ services:
     http_port: 3838
     instance_count: 1
     instance_size_slug: basic-xxs
-    envs:
-      - key: API_URL
-        scope: RUN_TIME
-        value: ${backend.PUBLIC_URL}
-      - key: SPACES_KEY
-        scope: RUN_TIME
-        type: SECRET
-      - key: SPACES_SECRET
-        scope: RUN_TIME
-        type: SECRET
-      - key: SPACES_REGION
-        scope: RUN_TIME
-        value: nyc3
-      - key: SPACES_BUCKET
-        scope: RUN_TIME
-      - key: SPACES_ENDPOINT
-        scope: RUN_TIME
-        value: https://nyc3.digitaloceanspaces.com
-
-  - name: vision
-    github:
-      repo: 4awmy/Classroom-Emotion-System
-      branch: deploy-ready
-      deploy_on_push: true
-    dockerfile_path: vision/Dockerfile
-    source_dir: vision
-    instance_count: 1
-    instance_size_slug: basic-m
+    routes:
+      - path: /
     envs:
       - key: API_URL
         scope: RUN_TIME
         value: ${backend.PUBLIC_URL}
       - key: DATABASE_URL
         scope: RUN_TIME
-        value: ${db.DATABASE_URL}
-      - key: CLASSROOM_CAMERA_URL
-        scope: RUN_TIME
-        type: SECRET
+        value: ${dev-db-617746.DATABASE_URL}
 
 databases:
-  - name: db
+  - name: dev-db-617746
     engine: PG
-    version: "15"
-    size: db-s-dev-database
-    num_nodes: 1
+    version: "17"
