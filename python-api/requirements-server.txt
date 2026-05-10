@@ -33,8 +33,8 @@ apscheduler
 google-generativeai
 pdfplumber
 
-# Vision — face recognition + emotion detection (runs on DO backend)
-# Dockerfile must have: cmake build-essential libopenblas-dev python3-dev
-face-recognition
-hsemotion-onnx
+# Vision — face recognition (insightface/ONNX, no C compilation needed) + emotion
+insightface
+onnxruntime
 opencv-python-headless
+hsemotion-onnx

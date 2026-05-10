@@ -1,8 +1,7 @@
 """
 Vision router — cloud-side frame processing.
-Accepts a JPEG uploaded from the Shiny browser webcam, runs face recognition
-against enrolled student encodings, detects emotion with HSEmotion, and writes
-AttendanceLog + EmotionLog rows for every matched student.
+Uses insightface (ONNX-based, no dlib/C compilation) for face recognition.
+Uses HSEmotion for emotion detection.
 """
 
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
@@ -11,19 +10,30 @@ from sqlalchemy.exc import IntegrityError
 from database import get_db
 from models import Student, AttendanceLog, EmotionLog
 import numpy as np
-import io
 
 try:
     import cv2
-    import face_recognition
-    from hsemotion_onnx.facial_emotions import HSEmotionRecognizer
-    _VISION_OK = True
+    _CV2_OK = True
 except ImportError:
-    _VISION_OK = False
+    _CV2_OK = False
+
+try:
+    from insightface.app import FaceAnalysis
+    _INSIGHT_OK = True
+except ImportError:
+    _INSIGHT_OK = False
+
+try:
+    from hsemotion_onnx.facial_emotions import HSEmotionRecognizer
+    _HSEMOTION_OK = True
+except ImportError:
+    _HSEMOTION_OK = False
+
+_VISION_OK = _CV2_OK and _INSIGHT_OK
 
 router = APIRouter()
 
-# Lazy-loaded emotion model (downloaded on first call)
+_face_app = None
 _fer = None
 
 CONFIDENCE_MAP = {
@@ -31,12 +41,29 @@ CONFIDENCE_MAP = {
     "Anxious": 0.35, "Frustrated": 0.25, "Disengaged": 0.00,
 }
 
+# Insightface embeddings are 512-dim float32; stored as such in face_encoding BLOB
+ENCODING_DIM = 512
+ENCODING_DTYPE = np.float32
+SIMILARITY_THRESHOLD = 0.4  # cosine similarity minimum for a match
+
+
+def _get_face_app():
+    global _face_app
+    if _face_app is None and _INSIGHT_OK:
+        _face_app = FaceAnalysis(providers=["CPUExecutionProvider"])
+        _face_app.prepare(ctx_id=0, det_size=(640, 640))
+    return _face_app
+
 
 def _get_fer():
     global _fer
-    if _fer is None and _VISION_OK:
+    if _fer is None and _HSEMOTION_OK:
         _fer = HSEmotionRecognizer(model_name="enet_b0_8_best_afew")
     return _fer
+
+
+def _cosine_sim(a: np.ndarray, b: np.ndarray) -> float:
+    return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-8))
 
 
 def _map_emotion(label: str, score: float) -> str:
@@ -58,13 +85,13 @@ async def process_frame(
     """
     Accept a JPEG frame from the browser webcam.
     Returns list of identified students with their detected emotion.
-    Attendance and emotion are written to the DB automatically.
-    The lecture must already exist (created via POST /session/start).
+    Writes AttendanceLog + EmotionLog rows for each matched face.
+    The lecture must exist (created via POST /session/start).
     """
     if not _VISION_OK:
         raise HTTPException(
             status_code=503,
-            detail="Vision libraries (face-recognition, hsemotion-onnx) are not installed on this backend.",
+            detail="Vision libraries (insightface, opencv) not available on this backend.",
         )
 
     img_bytes = await image.read()
@@ -73,30 +100,43 @@ async def process_frame(
     if frame is None:
         raise HTTPException(status_code=400, detail="Could not decode image. Send a valid JPEG.")
 
-    # Load all enrolled encodings from DB
+    # Load enrolled insightface encodings (512-dim float32)
     students = db.query(Student).filter(Student.face_encoding.isnot(None)).all()
-    if not students:
-        return {"detected": [], "faces_found": 0, "message": "No students with face encodings enrolled yet."}
+    known = []
+    for s in students:
+        enc = np.frombuffer(s.face_encoding, dtype=ENCODING_DTYPE)
+        if enc.shape[0] == ENCODING_DIM:
+            known.append((s, enc))
 
-    known_vecs = [np.frombuffer(s.face_encoding, dtype=np.float64) for s in students]
+    if not known:
+        return {
+            "detected": [], "faces_found": 0,
+            "message": "No insightface encodings enrolled yet. Upload roster via /roster/upload.",
+        }
 
-    # Detect faces in the uploaded frame
+    # Detect faces
+    face_app = _get_face_app()
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    face_locations = face_recognition.face_locations(rgb, model="hog")
-    face_encodings = face_recognition.face_encodings(rgb, face_locations)
+    faces = face_app.get(rgb)
 
     fer = _get_fer()
     detected = []
 
-    for (top, right, bottom, left), face_enc in zip(face_locations, face_encodings):
-        distances = face_recognition.face_distance(known_vecs, face_enc)
-        best_idx = int(np.argmin(distances))
-        if distances[best_idx] > 0.5:
-            continue  # no match
+    for face in faces:
+        embedding = face.embedding.astype(ENCODING_DTYPE)
 
-        student = students[best_idx]
+        sims = [_cosine_sim(embedding, vec) for _, vec in known]
+        best_idx = int(np.argmax(sims))
+        best_sim = sims[best_idx]
 
-        # --- Attendance (idempotent: skip if already logged for this lecture) ---
+        if best_sim < SIMILARITY_THRESHOLD:
+            continue
+
+        student = known[best_idx][0]
+        bbox = face.bbox.astype(int)
+        x1, y1, x2, y2 = bbox[0], bbox[1], bbox[2], bbox[3]
+
+        # Attendance — idempotent per lecture
         already_present = db.query(AttendanceLog).filter(
             AttendanceLog.student_id == student.student_id,
             AttendanceLog.lecture_id == lecture_id,
@@ -110,11 +150,11 @@ async def process_frame(
                 method="AI",
             ))
 
-        # --- Emotion ---
+        # Emotion
         emotion = "Focused"
         confidence = CONFIDENCE_MAP["Focused"]
         if fer is not None:
-            face_roi = frame[top:bottom, left:right]
+            face_roi = frame[y1:y2, x1:x2]
             if face_roi.size > 0:
                 try:
                     label, scores = fer.predict_emotions(face_roi, logits=False)
@@ -136,7 +176,7 @@ async def process_frame(
             "name": student.name,
             "emotion": emotion,
             "confidence": confidence,
-            "distance": round(float(distances[best_idx]), 3),
+            "similarity": round(best_sim, 3),
         })
 
     try:
@@ -145,25 +185,29 @@ async def process_frame(
         db.rollback()
         raise HTTPException(
             status_code=409,
-            detail=f"DB constraint error — ensure the lecture '{lecture_id}' exists (start the session first). Detail: {e.orig}",
+            detail=f"DB constraint: ensure lecture '{lecture_id}' exists (POST /session/start first). Detail: {e.orig}",
         )
 
     return {
         "detected": detected,
-        "faces_found": len(face_locations),
+        "faces_found": len(faces),
         "matched": len(detected),
     }
 
 
 @router.get("/status")
 def vision_status():
-    """Report whether vision libraries are available on this backend."""
     return {
         "vision_available": _VISION_OK,
         "packages": {
-            "opencv": _VISION_OK,
-            "face_recognition": _VISION_OK,
-            "hsemotion_onnx": _VISION_OK,
+            "opencv": _CV2_OK,
+            "insightface": _INSIGHT_OK,
+            "hsemotion_onnx": _HSEMOTION_OK,
         },
-        "model_loaded": _fer is not None,
+        "models_loaded": {
+            "face_app": _face_app is not None,
+            "emotion_recognizer": _fer is not None,
+        },
+        "encoding_dim": ENCODING_DIM,
+        "encoding_dtype": str(ENCODING_DTYPE),
     }

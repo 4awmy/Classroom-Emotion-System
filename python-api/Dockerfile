@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# System deps: OpenCV runtime + dlib build tools + psycopg2
+# Runtime system deps for OpenCV + psycopg2
 RUN apt-get update && apt-get install -y \
     libgl1 \
     libglib2.0-0 \
@@ -10,16 +10,10 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libxrender-dev \
     libpq-dev \
-    build-essential \
-    cmake \
-    libopenblas-dev \
-    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements-server.txt ./
-# Install cmake pip package first so dlib can find it, then install all deps
-RUN pip install --no-cache-dir cmake && \
-    pip install --no-cache-dir -r requirements-server.txt
+RUN pip install --no-cache-dir -r requirements-server.txt
 
 # Copy the backend source
 COPY . .
