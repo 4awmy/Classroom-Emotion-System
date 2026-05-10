@@ -30,28 +30,6 @@ async def lifespan(app: FastAPI):
     # --- Startup ---
     logger.info("[INIT] Production Startup...")
     
-    # Try to ensure tables exist via Direct SQL
-    try:
-        with engine.connect() as conn:
-            tables_sql = [
-                "CREATE TABLE IF NOT EXISTS admins (admin_id VARCHAR PRIMARY KEY, auth_user_id UUID UNIQUE, name VARCHAR, email VARCHAR UNIQUE, needs_password_reset BOOLEAN DEFAULT false, phone VARCHAR, created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), password_hash VARCHAR);",
-                "CREATE TABLE IF NOT EXISTS lecturers (lecturer_id VARCHAR PRIMARY KEY, auth_user_id UUID UNIQUE, name VARCHAR, email VARCHAR UNIQUE, needs_password_reset BOOLEAN DEFAULT false, phone VARCHAR, photo_url VARCHAR, created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), password_hash VARCHAR);",
-                "CREATE TABLE IF NOT EXISTS students (student_id VARCHAR PRIMARY KEY, auth_user_id UUID UNIQUE, name VARCHAR, email VARCHAR, needs_password_reset BOOLEAN DEFAULT false, department VARCHAR, year INTEGER, face_encoding BYTEA, photo_url VARCHAR, enrolled_at TIMESTAMP WITH TIME ZONE DEFAULT now(), password_hash VARCHAR);"
-            ]
-            for sql in tables_sql:
-                try:
-                    conn.execute(text(sql))
-                    conn.commit()
-                except: pass
-            
-            # Create default admin
-            demo_uuid = "2737e12f-5771-4cd9-b4af-4cc4c3349fa0"
-            conn.execute(text(f"INSERT INTO admins (admin_id, auth_user_id, name, email, needs_password_reset) VALUES ('admin', '{demo_uuid}', 'System Admin', 'admin@aast.edu', false) ON CONFLICT DO NOTHING;"))
-            conn.commit()
-            logger.info("[INIT] Database initialization complete.")
-    except Exception as e:
-        logger.error(f"[INIT] Database pre-init failed: {e}")
-
     # Start scheduler (Optional AI deps)
     try:
         from services.lecture_scheduler import start_scheduler

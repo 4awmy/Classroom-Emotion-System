@@ -99,9 +99,6 @@ def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event, 
         
         print(f"[VISION] Pipeline loop started for {lecture_id}. Known faces: {len(known_ids)}")
 
-        # PERSISTENT STUDENT MAPPING FOR DEMO (If unknown face seen, map to first student)
-        demo_sid = known_ids[0] if known_ids else "unknown"
-
         while not stop_event.is_set():
             ret, frame = cap.read()
             if not ret:
@@ -154,9 +151,13 @@ def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event, 
                                     if True in matches:
                                         sid = known_ids[matches.index(True)]
                                     else:
-                                        sid = demo_sid # Map to demo user if face seen but not matched
+                                        sid = "unknown"
                             else:
-                                sid = demo_sid # Keep using last detected or demo
+                                # For frames where we don't run re-recognition, we assume 
+                                # the face in this bounding box is the same as before?
+                                # Actually, without tracking, we should just say unknown or keep last.
+                                # But let's stay safe:
+                                pass 
                         
                         if sid != "unknown":
                             if sid not in detected_this_session:
