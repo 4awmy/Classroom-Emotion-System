@@ -43,7 +43,7 @@ services:
     envs:
       - key: API_URL
         scope: RUN_TIME
-        value: https://classroomx-lkbxf.ondigitalocean.app
+        value: http://backend:8000
       - key: DATABASE_URL
         scope: RUN_TIME
         value: ${dev-db-617746.DATABASE_URL}
