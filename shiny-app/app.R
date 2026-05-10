@@ -56,7 +56,7 @@ server <- function(input, output, session) {
     if (session_state$view == "login") {
       shiny::div(class = "login-box",
         shiny::h2("AAST LMS Login"),
-        shiny::div(class="form-group", shiny::textInput("user_id", "User ID", placeholder = "admin / omar")),
+        shiny::div(class="form-group", shiny::textInput("user_id", "User ID", placeholder = "Enter ID (e.g. 2310...)")),
         shiny::div(class="form-group", shiny::passwordInput("password", "Password", placeholder = "admin / 123")),
         shiny::actionButton("login_btn", "Log In", class = "btn-primary", style="color:white;"),
         shiny::br(), shiny::br(),

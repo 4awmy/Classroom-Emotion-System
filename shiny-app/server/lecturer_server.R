@@ -1,9 +1,32 @@
 # lecturer_server.R - Server logic for 5 lecturer submodules
 
-lecturer_server <- function(input, output, session) {
+lecturer_server <- function(input, output, session, session_state) {
   source("modules/engagement_score.R", local = TRUE)
   source("modules/clustering.R", local = TRUE)
   source("modules/attendance.R", local = TRUE)
+
+  # Reactive data: Fetch real classes for this lecturer from DB
+  lecturer_courses_data <- shiny::reactive({
+    uid <- session_state$user_id
+    if (is.null(uid)) return(data.frame())
+    
+    query <- sprintf("SELECT co.title as course, co.course_id as code, cl.class_id as class, 'N/A' as day, 'N/A' as slots 
+                      FROM classes cl 
+                      JOIN courses co ON cl.course_id = co.course_id 
+                      WHERE cl.lecturer_id = '%s'", uid)
+    
+    db_url <- Sys.getenv("DATABASE_URL", "")
+    if (db_url == "") return(data.frame())
+    
+    tryCatch({
+      con <- dbConnect(RPostgres::Postgres(), url = db_url)
+      res <- dbGetQuery(con, query)
+      dbDisconnect(con)
+      return(res)
+    }, error = function(e) {
+      return(data.frame())
+    })
+  })
 
   # Reactive data - accelerated for Live Dashboard
   emotions_data <- shiny::reactive({
@@ -158,6 +181,7 @@ lecturer_server <- function(input, output, session) {
   output$lecturer_course_table <- shiny::renderUI({
     selected <- selected_attendance_course()
     lecturer_attendance_course_table(
+      courses_df = lecturer_courses_data(),
       selected_code = selected$code,
       selected_class = selected$class
     )
@@ -167,12 +191,14 @@ lecturer_server <- function(input, output, session) {
     nav <- input$lecturer_course_nav
     row_index <- suppressWarnings(as.integer(nav$row))
     destination <- nav$dest
+    
+    courses_df <- lecturer_courses_data()
 
-    if (is.na(row_index) || row_index < 1 || row_index > nrow(lecturer_course_rows)) {
+    if (is.na(row_index) || row_index < 1 || row_index > nrow(courses_df)) {
       return()
     }
 
-    selected_attendance_course(as.list(lecturer_course_rows[row_index, ]))
+    selected_attendance_course(as.list(courses_df[row_index, ]))
 
     if (identical(destination, "students")) {
       refresh_attendance()

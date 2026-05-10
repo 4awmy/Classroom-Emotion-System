@@ -1,17 +1,17 @@
 # ARCHITECTURE.md — Logical Architecture & Data Flow Specification
 > **Audience:** Engineering team only. This document defines the precise wiring between every subsystem.
-> **Status:** Production-Ready (PostgreSQL + Supabase + Digital Ocean)
+> **Status:** Production-Ready (FastAPI + PostgreSQL + Digital Ocean)
 
 ---
 
-## 0. System Overview: Hybrid Cloud-Local Architecture
+## 0. System Overview: Consolidated Cloud Architecture
 
-The Classroom Emotion System is a hybrid cloud platform designed for real-time engagement monitoring and automated proctoring.
+The Classroom Emotion System is a consolidated cloud platform designed for real-time engagement monitoring and automated proctoring.
 
 ### 0.1 Centralized Cloud (DigitalOcean)
-- **Backend (FastAPI):** Orchestrates business logic, WebSocket signaling, and AI interventions (Gemini 1.5 Flash).
-- **Database (Managed PostgreSQL):** Hosted on Digital Ocean. The source of truth for academic records, attendance, and emotion logs.
-- **Identity (Supabase Auth):** Handles user authentication and Row Level Security (RLS). Users are linked via `auth_user_id` (UUID).
+- **Backend (FastAPI):** Orchestrates business logic, authentication, WebSocket signaling, and AI interventions.
+- **Database (Managed PostgreSQL):** Hosted on Digital Ocean. The single source of truth for academic records, user credentials, attendance, and emotion logs.
+- **Identity:** Managed directly via the FastAPI auth router using `password_hash` and `auth_user_id` (UUID) in the PostgreSQL user tables.
 - **Storage (DO Spaces):** S3-compatible storage for student photos, attendance snapshots, and exam evidence.
 
 ### 0.2 Local Vision Nodes (Classroom)
@@ -42,13 +42,13 @@ The Classroom Emotion System is a hybrid cloud platform designed for real-time e
 │  │   FastAPI API Service    │◀────────▶│   Managed PostgreSQL (DO)        │  │
 │  │   (uvicorn / main.py)    │          │   (classroom_emotions DB)        │  │
 │  └─────────────┬────────────┘          └──────────────────────────────────┘  │
-│                │                                   ▲                         │
-│                │                                   │ Linked by UUID          │
-│                ▼                                   ▼                         │
-│  ┌──────────────────────────┐          ┌──────────────────────────────────┐  │
-│  │   DO Spaces (Storage)    │          │   Supabase Auth (Identity)       │  │
-│  │   (Snapshots/Evidence)   │          │   (JWT & Role Management)        │  │
-│  └──────────────────────────┘          └──────────────────────────────────┘  │
+│                │                                                             │
+│                │                                                             │
+│                ▼                                                             │
+│  ┌──────────────────────────┐                                                │
+│  │   DO Spaces (Storage)    │                                                │
+│  │   (Snapshots/Evidence)   │                                                │
+│  └──────────────────────────┘                                                │
 └──────────┬───────────────────────────────┬───────────────────────────────── ┘
            │ HTTP / Direct SQL             │ WebSocket / HTTP
            ▼                               ▼
@@ -66,14 +66,15 @@ The Classroom Emotion System is a hybrid cloud platform designed for real-time e
 ## 2. Identity & Data Standards
 
 ### 2.1 User Identity Flow
-- **Linking:** Every record in `admins`, `lecturers`, and `students` contains an `auth_user_id` (UUID). This UUID corresponds exactly to the `id` in Supabase's `auth.users`.
+- **Authentication:** Managed directly by the FastAPI backend using standard JWT tokens and BCrypt (`pbkdf2_sha256`) password hashing.
+- **UUIDs:** Every record in `admins`, `lecturers`, and `students` contains an `auth_user_id` (UUID). This UUID is used as the sub-claim in the JWT for secure session management.
 - **Naming:** All user names are stored in **English** (transliterated from Arabic where necessary) for system compatibility and clean UI.
 - **Emails:**
     - **Students:** Format `[FirstInitial][StudentID]@aast.com` (e.g., `m231006367@aast.com`).
     - **Staff:** Standard AAST/University emails.
 
 ### 2.2 Database Persistence
-- **Engine:** PostgreSQL 15.
+- **Engine:** PostgreSQL 15+.
 - **Timezone:** All timestamps are stored as `TIMESTAMPTZ` (UTC) to ensure accuracy across geographic regions.
 - **Binary Data:** `face_encoding` is stored as `BYTEA` (Postgres binary) for high-performance retrieval.
 
@@ -85,7 +86,8 @@ The Classroom Emotion System is a hybrid cloud platform designed for real-time e
 | Column | Type | Description |
 | :--- | :--- | :--- |
 | `student_id` | TEXT (PK) | Primary academic ID (e.g. 231006367) |
-| `auth_user_id` | UUID (Unique) | Linked to Supabase `auth.users` |
+| `auth_user_id` | UUID (Unique) | Internal Unique identifier |
+| `password_hash`| TEXT | Securely hashed password |
 | `name` | TEXT | English Full Name |
 | `email` | TEXT | `[initial][id]@aast.com` |
 | `face_encoding`| BYTEA | 128-dim face vector |
@@ -114,7 +116,7 @@ The Classroom Emotion System is a hybrid cloud platform designed for real-time e
 
 ### 4.2 Student App (React Native)
 - **Signal Flow:** Sends `focus_strike` events via WebSockets when the app is backgrounded.
-- **Identity:** Authenticates against Supabase; receives real-time "Fresh Brainer" alerts (Gemini AI questions) via WebSocket broadcasts.
+- **Identity:** Authenticates against the FastAPI backend; receives real-time "Fresh Brainer" alerts (Gemini AI questions) via WebSocket broadcasts.
 
 ---
 
@@ -135,7 +137,7 @@ The Classroom Emotion System is a hybrid cloud platform designed for real-time e
 
 ### 6.1 Production Environment
 - **Digital Ocean App Platform:** Hosts the FastAPI backend and Shiny frontend.
-- **Environment Variables:** `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_KEY`, `SPACES_BUCKET`.
+- **Environment Variables:** `DATABASE_URL`, `JWT_SECRET`, `SPACES_BUCKET`.
 
 ### 6.2 Seeding Standards
 - **Script:** `python-api/scripts/prod_import_and_seed.py`.

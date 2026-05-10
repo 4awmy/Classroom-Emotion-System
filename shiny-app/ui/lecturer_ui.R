@@ -1,18 +1,5 @@
 # Lecturer UI - 5 Submodules (shinydashboard sidebar layout)
 
-lecturer_course_rows <- data.frame(
-  course = c(
-    "Advanced Statistics", "Advanced Statistics", "Advanced Statistics",
-    "Advanced Statistics", "Advanced Statistics", "Big data Analytics",
-    "Big Data Analytics", "System Analysis & Design", "Systems Analysis & Design"
-  ),
-  code = c("EBA3201", "EBA3201", "EBA3201", "EBA3201", "BA301", "CIS4103", "IS467", "IS391", "CIS3001"),
-  class = c("G", "I", "J", "H", "C", "D", "D", "B", "C"),
-  day = c("Saturday", "Saturday", "Tuesday", "Thursday", "Thursday", "Sunday", "Sunday", "Saturday", "Saturday"),
-  slots = c("9 => 10", "11 => 12", "9 => 10", "9 => 10", "9 => 10", "9 => 10", "9 => 10", "7 => 8", "7 => 8"),
-  stringsAsFactors = FALSE
-)
-
 lecturer_course_button_id <- function(prefix, code, class) {
   paste(prefix, code, class, sep = "_")
 }
@@ -30,7 +17,11 @@ lecturer_course_click_button <- function(row_index, destination, icon_name) {
   )
 }
 
-lecturer_attendance_course_table <- function(selected_code = "CIS4103", selected_class = "D") {
+lecturer_attendance_course_table <- function(courses_df, selected_code = "", selected_class = "") {
+  if (is.null(courses_df) || nrow(courses_df) == 0) {
+    return(tags$div("No classes assigned to you in the database.", style="padding: 20px; color: #888;"))
+  }
+
   tags$table(
     class = "reference-attendance-table",
     tags$thead(
@@ -45,8 +36,8 @@ lecturer_attendance_course_table <- function(selected_code = "CIS4103", selected
       )
     ),
     tags$tbody(
-      lapply(seq_len(nrow(lecturer_course_rows)), function(i) {
-        row <- lecturer_course_rows[i, ]
+      lapply(seq_len(nrow(courses_df)), function(i) {
+        row <- courses_df[i, ]
         tags$tr(
           class = if (identical(row$code, selected_code) && identical(row$class, selected_class)) "selected-reference-row" else NULL,
           tags$td(row$course),

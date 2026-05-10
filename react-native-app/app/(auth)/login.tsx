@@ -30,17 +30,6 @@ export default function LoginScreen() {
     if (!canSubmit) return;
     setLoading(true);
     try {
-      // Demo credentials
-      if (studentId.trim() === "demo" && password === "demo") {
-        const mockToken = "mock.jwt.token.for.demo";
-        setStoreAuthToken(mockToken);
-        setAuthToken(mockToken);
-        setStudentId(studentId.trim());
-        connectWebSocket();
-        router.replace("/(student)/home");
-        return;
-      }
-
       // Real API login
       const response = await authAPI.login(studentId.trim(), password);
       
@@ -134,14 +123,6 @@ export default function LoginScreen() {
               </Text>
             )}
           </TouchableOpacity>
-
-          {/* Demo hint */}
-          <View style={styles.demoBox}>
-            <Text style={styles.demoText}>
-              Local Login: Registration <Text style={styles.demoBold}>admin</Text> / Password{" "}
-              <Text style={styles.demoBold}>admin</Text>
-            </Text>
-          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
