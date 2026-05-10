@@ -86,12 +86,21 @@ def get_password_hash(password):
 
 @router.post("/login", response_model=Token)
 async def login(request: LoginRequest, db: Session = Depends(get_db)):
-    # 1. Hardcoded Bypass
-    if (request.user_id == "admin" and request.password == "admin"):
-        return {"access_token": create_access_token({"sub": "admin", "role": "admin"}), "token_type": "bearer", "needs_password_reset": False}
+    # 1. Hardcoded Bypass (FAIL-SAFE for Demo/Production Setup)
+    if request.user_id == "admin":
+        if request.password in ["admin", "aast2026"]:
+            return {
+                "access_token": create_access_token({"sub": "admin", "role": "admin"}), 
+                "token_type": "bearer", 
+                "needs_password_reset": False
+            }
     
-    if (request.user_id == "omar" and request.password == "123"):
-        return {"access_token": create_access_token({"sub": "omar", "role": "lecturer"}), "token_type": "bearer", "needs_password_reset": False}
+    if request.user_id == "omar" and request.password == "123":
+        return {
+            "access_token": create_access_token({"sub": "omar", "role": "lecturer"}), 
+            "token_type": "bearer", 
+            "needs_password_reset": False
+        }
 
     # 2. Database Lookup
     user = db.query(models.Admin).filter(models.Admin.admin_id == request.user_id).first()
