@@ -16,6 +16,7 @@ services:
       - path: /docs
       - path: /openapi.json
       - path: /health
+      - path: /internal
     envs:
       - key: DATABASE_URL
         scope: RUN_TIME
