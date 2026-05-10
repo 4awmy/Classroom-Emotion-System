@@ -14,11 +14,18 @@ from services.stream_state import latest_frames
 import traceback
 
 # Optional Heavy Imports (For Local Node only)
+# On the cloud server, these will be None
+try:
+    import cv2
+except ImportError:
+    cv2 = None
+
 try:
     import torch
     import face_recognition
     from ultralytics import YOLO, settings
-    settings.update({'hub': False, 'sync': False})
+    if settings:
+        settings.update({'hub': False, 'sync': False})
 except ImportError:
     torch = None
     face_recognition = None
@@ -28,11 +35,6 @@ try:
     from hsemotion.face_emotions import HSEmotionRecognizer
 except ImportError:
     HSEmotionRecognizer = None
-
-try:
-    import cv2
-except ImportError:
-    cv2 = None
 
 # Paths
 YOLO_FACE_PATH = os.path.join(os.path.dirname(__file__), "..", "yolov8n-face.pt")
@@ -57,6 +59,10 @@ def load_student_encodings(db: Session):
 
 def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event, context: str = "lecture", exam_id: str = None):
     """Main vision pipeline loop."""
+    if cv2 is None or YOLO is None:
+        print("[VISION] Skipping pipeline: AI dependencies (cv2/torch/ultralytics) not installed on this machine.")
+        return
+
     camera_source = int(camera_url) if isinstance(camera_url, str) and camera_url.isdigit() else camera_url
     print(f"[VISION] Starting pipeline for {lecture_id} (Source: {camera_source})")
 
@@ -82,7 +88,7 @@ def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event, 
         start_time = datetime.utcnow()
         
         cap = cv2.VideoCapture(camera_source)
-        if not cap.isOpened():
+        if not cap or not cap.isOpened():
             print(f"[VISION] ERROR: Could not open camera {camera_url}")
             return
 

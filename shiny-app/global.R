@@ -74,44 +74,42 @@ get_db_con <- function() {
   db   <- Sys.getenv("LOCAL_DB_NAME", "classroom_emotions")
   
   tryCatch({
-  con <- dbConnect(
-    RPostgres::Postgres(),
-    dbname   = db,
-    host     = host,
-    port     = port,
-    user     = user,
-    password = pw
-  )
-  return(con)
+    con <- dbConnect(
+      RPostgres::Postgres(),
+      dbname   = db,
+      host     = host,
+      port     = port,
+      user     = user,
+      password = pw
+    )
+    return(con)
   }, error = function(e) {
-  message("ERROR: Local PostgreSQL connection failed: ", e$message)
-  return(NULL)
+    message("ERROR: Local PostgreSQL connection failed: ", e$message)
+    return(NULL)
   })
-  }
+}
 
-  # Initial global connection
-  con <- get_db_con()
+# Initial global connection
+con <- get_db_con()
 
-  # --- Database Query Helper ---
-  query_table <- function(table_name) {
+# --- Database Query Helper ---
+query_table <- function(table_name) {
   if (is.null(con)) return(data.frame())
   tryCatch({
-  res <- dbReadTable(con, table_name)
-  return(res)
+    res <- dbReadTable(con, table_name)
+    return(res)
   }, error = function(e) {
-  message("ERROR: Query failed for ", table_name, ": ", e$message)
-  return(data.frame())
+    message("ERROR: Query failed for ", table_name, ": ", e$message)
+    return(data.frame())
   })
-  }
+}
+
 # ============================================================================
 # API Client Helper Function (FastAPI)
 # ============================================================================
 
 api_call <- function(endpoint, method = "GET", body = NULL, auth_token = NULL, content_type = "application/json") {
   url <- paste0(FASTAPI_BASE, endpoint)
-  
-  # DEBUG: Log the call
-  cat("[API] Calling:", method, url, "\n")
 
   req <- request(url) |>
     req_method(method) |>
@@ -150,7 +148,7 @@ api_call <- function(endpoint, method = "GET", body = NULL, auth_token = NULL, c
     
     resp_body_json(resp)
   }, error = function(e) {
-    # Silence or log network errors
+    # Network error or timeout
     return(NULL)
   })
 }

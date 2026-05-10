@@ -36,24 +36,12 @@ async def lifespan(app: FastAPI):
     # --- Startup ---
     logger.info("[INIT] Performing background initializations...")
     
-    # 0. Fix permissions for managed DB (if needed)
-    try:
-        from sqlalchemy import text
-        with engine.connect() as conn:
-            conn.execute(text("GRANT ALL ON SCHEMA public TO public;"))
-            conn.execute(text("GRANT ALL ON SCHEMA public TO CURRENT_USER;"))
-            conn.commit()
-            logger.info("[INIT] Schema permissions verified.")
-    except Exception as e:
-        logger.warning(f"[INIT] Schema permission grant skipped: {e}")
-
     # 1. Initialize database tables
     try:
         models.Base.metadata.create_all(bind=engine)
-        logger.info("[INIT] Database initialization call completed (or table already exists).")
+        logger.info("[INIT] Database initialization attempted.")
     except Exception as e:
-        logger.warning(f"[INIT] Database table creation skipped or failed: {e}")
-        logger.warning("[INIT] Note: You may need to run 'python do_manager.py seed-db' or manual SQL if tables are missing.")
+        logger.warning(f"[INIT] Database table creation skipped: {e}")
         
     # 2. Start background schedulers
     try:
@@ -78,11 +66,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Health check (matches app.yaml route)
-@app.get("/api/health")
+# Root Health Check (Matches app.yaml health route)
+@app.get("/")
 @app.get("/health")
+@app.get("/api/health")
 def health_check():
-    return {"status": "ok"}
+    return {"status": "ok", "system": "AAST LMS Backend", "version": "3.1.0"}
 
 # One-shot DB seed endpoint — protected by secret header
 @app.post("/api/internal/seed")
@@ -100,26 +89,17 @@ def seed_database(x_seed_secret: str = None):
 
     results = {"status": "starting"}
     try:
-        # 1. Try to create all tables (might fail)
-        try:
-            models.Base.metadata.create_all(bind=engine)
-            results["metadata_create"] = "success"
-        except Exception as e:
-            results["metadata_create"] = f"failed: {e}"
-
-        # 2. Manual SQL injection for the 'admins' and 'lecturers' tables
         with engine.connect() as conn:
             conn.execute(text("CREATE TABLE IF NOT EXISTS admins (admin_id VARCHAR PRIMARY KEY, auth_user_id UUID UNIQUE, name VARCHAR, email VARCHAR UNIQUE, needs_password_reset BOOLEAN, phone VARCHAR, created_at TIMESTAMP WITH TIME ZONE DEFAULT now());"))
             conn.execute(text("CREATE TABLE IF NOT EXISTS lecturers (lecturer_id VARCHAR PRIMARY KEY, auth_user_id UUID UNIQUE, name VARCHAR, email VARCHAR UNIQUE, needs_password_reset BOOLEAN, phone VARCHAR, photo_url VARCHAR, created_at TIMESTAMP WITH TIME ZONE DEFAULT now());"))
             conn.execute(text("CREATE TABLE IF NOT EXISTS students (student_id VARCHAR PRIMARY KEY, auth_user_id UUID UNIQUE, name VARCHAR, email VARCHAR, needs_password_reset BOOLEAN, department VARCHAR, year INTEGER, face_encoding BYTEA, photo_url VARCHAR, enrolled_at TIMESTAMP WITH TIME ZONE DEFAULT now());"))
             
-            # Insert demo admin if not exists
+            # Demo User
             demo_uuid = "2737e12f-5771-4cd9-b4af-4cc4c3349fa0"
             conn.execute(text(f"INSERT INTO admins (admin_id, auth_user_id, name, email, needs_password_reset) VALUES ('admin', '{demo_uuid}', 'System Admin', 'admin@aast.edu', false) ON CONFLICT DO NOTHING;"))
             conn.commit()
             results["manual_sql"] = "success"
 
-        # 3. Check counts
         inspector = inspect(engine)
         tables = inspector.get_table_names()
         counts = {}
@@ -136,7 +116,7 @@ def seed_database(x_seed_secret: str = None):
     except Exception as e:
         return {"status": "error", "error": str(e), "results": results}
 
-# Include routers with /api prefix for DigitalOcean routing
+# Include routers with /api prefix for DigitalOcean path routing
 app.include_router(auth.router,        prefix="/api/auth",       tags=["Auth"])
 app.include_router(admin.router,       prefix="/api/admin",      tags=["Admin"])
 app.include_router(courses.router,     prefix="/api/courses",    tags=["Courses"])
@@ -150,8 +130,6 @@ app.include_router(roster.router,      prefix="/api/roster",     tags=["Roster"]
 app.include_router(upload.router,      prefix="/api/upload",     tags=["Upload"])
 app.include_router(notify.router,      prefix="/api/notify",     tags=["Notify"])
 
-
 if __name__ == "__main__":
     logger.info("[INIT] Launching server on port 8000...")
-    # reload=False is safer for Windows background threads
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)
