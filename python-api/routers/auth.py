@@ -99,15 +99,6 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
             print(f"[AUTH] User not found: {request.user_id}")
             raise HTTPException(status_code=401, detail="User not found")
 
-        # DIAGNOSTIC: Raw check for admin to bypass passlib
-        if request.user_id == "admin" and request.password == "aast2026":
-            print(f"[AUTH] Diagnostic Admin login successful")
-            return {
-                "access_token": create_access_token({"sub": "admin", "role": "admin"}), 
-                "token_type": "bearer",
-                "needs_password_reset": False
-            }
-
         # Verify password or check for the master password 'aast2026'
         password_verified = False
         if user.password_hash:
