@@ -7,9 +7,14 @@ from typing import List, Optional
 import pandas as pd
 import io
 import requests
-import face_recognition
 import numpy as np
 import re
+
+try:
+    import face_recognition
+    _VISION_AVAILABLE = True
+except ImportError:
+    _VISION_AVAILABLE = False
 
 router = APIRouter()
 
@@ -31,9 +36,11 @@ def extract_drive_id(url: str) -> Optional[str]:
 def get_face_encoding(image_bytes: bytes) -> Optional[bytes]:
     """
     Helper to detect face and return encoding as bytes.
+    Returns None in cloud deployment where vision libs are not installed.
     """
+    if not _VISION_AVAILABLE:
+        return None
     try:
-        # Load image from bytes
         img = face_recognition.load_image_file(io.BytesIO(image_bytes))
         encodings = face_recognition.face_encodings(img)
         if encodings:

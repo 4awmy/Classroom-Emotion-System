@@ -2,9 +2,15 @@ import io
 import base64
 import pandas as pd
 import numpy as np
-import cv2
-import face_recognition
 import uuid
+
+# Vision libs only available when running locally with full requirements.txt
+try:
+    import cv2
+    import face_recognition
+    _VISION_AVAILABLE = True
+except ImportError:
+    _VISION_AVAILABLE = False
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy.orm import Session
 from typing import List
@@ -22,25 +28,27 @@ router = APIRouter(
 
 def generate_face_encoding(photo_b64: str):
     """Generates 128-d face encoding from base64 string."""
+    if not _VISION_AVAILABLE:
+        return None  # Vision libs not installed in cloud deployment
     try:
         # Decode base64
         header, encoded = photo_b64.split(",", 1) if "," in photo_b64 else (None, photo_b64)
         data = base64.b64decode(encoded)
-        
+
         # Load image into OpenCV
         nparr = np.frombuffer(data, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         if img is None:
             return None
-            
+
         # Convert to RGB (face_recognition requirement)
         rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        
+
         # Find faces and encodings
         face_locations = face_recognition.face_locations(rgb_img)
         if not face_locations:
             return None
-            
+
         encodings = face_recognition.face_encodings(rgb_img, face_locations)
         if not encodings:
             return None

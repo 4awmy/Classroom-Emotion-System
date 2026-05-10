@@ -14,9 +14,9 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+# Install server-only dependencies (no vision/ML — those run locally)
+COPY requirements-server.txt ./
+RUN pip install --no-cache-dir -r requirements-server.txt
 
 # Copy the backend source
 COPY . .

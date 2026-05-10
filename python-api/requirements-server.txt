@@ -1,0 +1,31 @@
+# Server-only requirements for cloud deployment (DO App Platform)
+# Vision libraries (ultralytics, face-recognition, dlib, mediapipe, opencv)
+# run LOCALLY via vision/main.py — NOT needed on the cloud backend.
+
+# Core API
+fastapi
+uvicorn[standard]
+sqlalchemy
+alembic
+psycopg2-binary
+python-dotenv
+
+# Auth
+python-jose[cryptography]
+python-multipart
+email-validator
+supabase
+
+# Data processing
+pandas
+numpy
+openpyxl
+requests
+qrcode[pil]
+
+# Scheduling
+apscheduler
+
+# AI (Gemini for question generation + PDF parsing)
+google-generativeai
+pdfplumber
