@@ -2,12 +2,46 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from database import get_db
 from models import EmotionLog
-from schemas import EmotionLogResponse
+from schemas import EmotionLogResponse, EmotionLogCreate
 from typing import List, Optional
 from datetime import datetime, timedelta
 from sqlalchemy import func
+from .websocket import manager
 
 router = APIRouter()
+
+@router.post("/log", response_model=EmotionLogResponse)
+def log_emotion(
+    log_in: EmotionLogCreate,
+    db: Session = Depends(get_db)
+):
+    """
+    Endpoint for remote Vision Nodes to log student emotions.
+    Broadcasts the update via WebSocket.
+    """
+    new_log = EmotionLog(
+        student_id=log_in.student_id,
+        lecture_id=log_in.lecture_id,
+        emotion=log_in.emotion,
+        confidence=log_in.confidence,
+        engagement_score=log_in.engagement_score,
+        timestamp=log_in.timestamp or datetime.utcnow()
+    )
+    db.add(new_log)
+    db.commit()
+    db.refresh(new_log)
+    
+    # Broadcast to listeners (Shiny portal)
+    manager.broadcast_sync({
+        "type": "emotion_update",
+        "lecture_id": log_in.lecture_id,
+        "student_id": log_in.student_id,
+        "emotion": log_in.emotion,
+        "engagement_score": log_in.engagement_score,
+        "timestamp": new_log.timestamp.isoformat()
+    })
+    
+    return new_log
 
 @router.get("/live", response_model=List[EmotionLogResponse])
 def get_live_emotions(

@@ -4,6 +4,24 @@
 
 ---
 
+## 0. System Overview: Hybrid Cloud-Local Architecture
+
+To ensure high performance and low cost, the system is split between **Centralized Cloud** and **Distributed Local Nodes**.
+
+### 0.1 Centralized Cloud (DigitalOcean)
+The "Brain" and "Storage" of the system.
+- **Backend (FastAPI):** Hosts all business logic, authentication, and the primary WebSocket server.
+- **Database (PostgreSQL):** The source of truth for all attendance, emotions, and student data.
+- **Dashboard (Shiny):** The web-facing portal for lecturers and admins.
+
+### 0.2 Local Vision Nodes (Classroom)
+The "Eyes" of the system.
+- **Hardware:** A classroom PC or laptop connected to a webcam or phone (via IP Webcam).
+- **Software:** `vision/main.py` (Standalone Vision Client).
+- **Role:** Processes raw video locally to detect faces/emotions. It only sends **metadata** (JSON) to the cloud, preserving privacy and bandwidth.
+
+---
+
 ## Table of Contents
 
 1. [System Boundary Map](#1-system-boundary-map)

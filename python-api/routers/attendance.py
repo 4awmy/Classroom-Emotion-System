@@ -9,8 +9,50 @@ import io
 import base64
 import os
 from datetime import datetime
+from .websocket import manager
+from schemas import AttendanceLogResponse, AttendanceLogCreate
 
 router = APIRouter()
+
+@router.post("/log", response_model=AttendanceLogResponse)
+def log_attendance(
+    log_in: AttendanceLogCreate,
+    db: Session = Depends(get_db)
+):
+    """
+    Endpoint for remote Vision Nodes to log student attendance.
+    Broadcasts the update via WebSocket.
+    """
+    # Check if already present for this lecture
+    existing = db.query(AttendanceLog).filter(
+        AttendanceLog.student_id == log_in.student_id,
+        AttendanceLog.lecture_id == log_in.lecture_id
+    ).first()
+    
+    if existing:
+        return existing
+        
+    new_log = AttendanceLog(
+        student_id=log_in.student_id,
+        lecture_id=log_in.lecture_id,
+        status=log_in.status,
+        method=log_in.method,
+        timestamp=log_in.timestamp or datetime.utcnow()
+    )
+    db.add(new_log)
+    db.commit()
+    db.refresh(new_log)
+    
+    # Broadcast to listeners
+    manager.broadcast_sync({
+        "type": "attendance_update",
+        "lecture_id": log_in.lecture_id,
+        "student_id": log_in.student_id,
+        "status": log_in.status,
+        "timestamp": new_log.timestamp.isoformat()
+    })
+    
+    return new_log
 
 @router.post("/start")
 def start_attendance(lecture_id: str):
