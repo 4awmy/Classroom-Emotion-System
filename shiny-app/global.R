@@ -44,62 +44,23 @@ if (FASTAPI_BASE == "") {
 
 # Ensure API_URL points to /api if not already specified (for multi-service routing)
 if (!grepl("/api$", FASTAPI_BASE) && !grepl("/api/$", FASTAPI_BASE)) {
-    # If it's a root URL, append /api
+    # Strip trailing slash then add /api
     FASTAPI_BASE <- paste0(sub("/$", "", FASTAPI_BASE), "/api")
 }
 
-# ============================================================================
-# Database Connection Manager
-# ============================================================================
-
-get_db_con <- function() {
-  # 1. Try DATABASE_URL (DigitalOcean standard)
-  db_url <- Sys.getenv("DATABASE_URL", "")
-  
-  if (db_url != "") {
-    tryCatch({
-      # RPostgres can connect directly via URL
-      con <- dbConnect(RPostgres::Postgres(), url = db_url)
-      return(con)
-    }, error = function(e) {
-      message("ERROR: DATABASE_URL connection failed: ", e$message)
-    })
-  }
-
-  # 2. Try individual components (fallback/local)
-  host <- Sys.getenv("LOCAL_DB_HOST", "localhost")
-  port <- as.integer(Sys.getenv("LOCAL_DB_PORT", "5432"))
-  user <- Sys.getenv("LOCAL_DB_USER", "postgres")
-  pw   <- Sys.getenv("LOCAL_DB_PASSWORD", "password123")
-  db   <- Sys.getenv("LOCAL_DB_NAME", "classroom_emotions")
-  
-  tryCatch({
-    con <- dbConnect(
-      RPostgres::Postgres(),
-      dbname   = db,
-      host     = host,
-      port     = port,
-      user     = user,
-      password = pw
-    )
-    return(con)
-  }, error = function(e) {
-    message("ERROR: Local PostgreSQL connection failed: ", e$message)
-    return(NULL)
-  })
-}
-
-# Initial global connection
-con <- get_db_con()
-
 # --- Database Query Helper ---
+# (Simplified for production robustness)
 query_table <- function(table_name) {
-  if (is.null(con)) return(data.frame())
+  db_url <- Sys.getenv("DATABASE_URL", "")
+  if (db_url == "") return(data.frame())
+  
   tryCatch({
+    con <- dbConnect(RPostgres::Postgres(), url = db_url)
     res <- dbReadTable(con, table_name)
+    dbDisconnect(con)
     return(res)
   }, error = function(e) {
-    message("ERROR: Query failed for ", table_name, ": ", e$message)
+    print(paste("[DB] Query failed for", table_name, ":", e$message))
     return(data.frame())
   })
 }
@@ -110,6 +71,7 @@ query_table <- function(table_name) {
 
 api_call <- function(endpoint, method = "GET", body = NULL, auth_token = NULL, content_type = "application/json") {
   url <- paste0(FASTAPI_BASE, endpoint)
+  print(paste("[API] Calling:", method, url))
 
   req <- request(url) |>
     req_method(method) |>
@@ -126,6 +88,7 @@ api_call <- function(endpoint, method = "GET", body = NULL, auth_token = NULL, c
 
   tryCatch({
     resp <- req_perform(req)
+    print(paste("[API] Response Status:", resp_status(resp)))
     
     if (resp_status(resp) >= 400) {
       # Handle common error responses
@@ -148,8 +111,12 @@ api_call <- function(endpoint, method = "GET", body = NULL, auth_token = NULL, c
     
     resp_body_json(resp)
   }, error = function(e) {
-    # Network error or timeout
-    message(paste("[API] Network/Connection error:", e$message))
+    print(paste("[API] FATAL ERROR:", e$message))
+    shinyalert::shinyalert(
+      title = "Connection Error",
+      text = paste("Could not reach backend:", e$message),
+      type = "error"
+    )
     return(NULL)
   })
 }
@@ -178,12 +145,8 @@ get_emotion_color <- function(emotion) {
 }
 
 # ============================================================================
-# Logging
+# Initial Boot Logs
 # ============================================================================
-
-if (is.null(con)) {
-  cat("! WARNING: Shiny started WITHOUT Local PostgreSQL connection\n")
-} else {
-  cat("✓ Shiny Global.R loaded successfully (Hybrid v3: Local Postgres)\n")
-}
-cat("✓ FastAPI Base:", FASTAPI_BASE, "\n")
+print("✓ Shiny Global.R loaded successfully")
+print(paste("✓ API URL Target:", FASTAPI_BASE))
+print(paste("✓ DB URL Present:", nchar(Sys.getenv("DATABASE_URL", "")) > 0))
