@@ -11,7 +11,7 @@ import models
 import uvicorn
 
 # Routers
-from routers import emotion, attendance, session, gemini, notes, exam, roster, upload, auth, notify, admin, courses
+from routers import emotion, attendance, session, gemini, notes, exam, roster, upload, auth, notify, admin, courses, vision
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -71,8 +71,7 @@ def health_check(db: Session = Depends(get_db)):
         "message": "pong"
     }
 
-# Include routers
-# We include them TWICE: with and without /api to handle internal/external routing perfectly
+# Include routers twice: with and without /api prefix to handle DO ingress stripping
 for prefix in ["", "/api"]:
     app.include_router(auth.router,        prefix=f"{prefix}/auth",       tags=["Auth"])
     app.include_router(admin.router,       prefix=f"{prefix}/admin",      tags=["Admin"])
@@ -86,6 +85,7 @@ for prefix in ["", "/api"]:
     app.include_router(roster.router,      prefix=f"{prefix}/roster",     tags=["Roster"])
     app.include_router(upload.router,      prefix=f"{prefix}/upload",     tags=["Upload"])
     app.include_router(notify.router,      prefix=f"{prefix}/notify",     tags=["Notify"])
+    app.include_router(vision.router,      prefix=f"{prefix}/vision",     tags=["Vision"])
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)

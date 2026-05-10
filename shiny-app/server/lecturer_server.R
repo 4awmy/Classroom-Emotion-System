@@ -271,12 +271,58 @@ lecturer_server <- function(input, output, session, session_state) {
     emotions  <- emotions_data()
     lecture_id <- get_attendance_lecture_id()
 
+    camera_section <- shiny::div(
+      class = "camera-attendance-section",
+      style = "background:#f8f9fa; border:1px solid #dee2e6; border-radius:8px; padding:16px; margin-bottom:20px;",
+      shiny::h4(shiny::icon("camera"), " AI Camera Attendance",
+                style = "margin-top:0; color:#002147;"),
+      shiny::p("Point your webcam at the class then click Capture — all recognised students are marked Present automatically.",
+               style = "color:#555; margin-bottom:12px;"),
+      shiny::div(
+        style = "display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;",
+        shiny::tags$video(
+          id = "attendanceCam", autoplay = NA, playsinline = NA,
+          style = "width:320px; height:240px; background:#000; border-radius:6px; object-fit:cover;"
+        ),
+        shiny::div(
+          style = "display:flex; flex-direction:column; gap:8px; min-width:160px;",
+          shiny::tags$button(type = "button", class = "btn btn-info btn-block",
+            onclick = "startAttendanceCam()", shiny::icon("video"), " Start Camera"),
+          shiny::tags$button(type = "button", class = "btn btn-primary btn-block",
+            onclick = "captureAttendanceFrame()", shiny::icon("camera"), " Capture & Process"),
+          shiny::uiOutput("cam_attendance_result")
+        )
+      ),
+      shiny::tags$canvas(id = "attendanceCanvas", style = "display:none;"),
+      shiny::tags$script(shiny::HTML("
+        var _camStream = null;
+        function startAttendanceCam() {
+          if (_camStream) return;
+          navigator.mediaDevices.getUserMedia({video: true})
+            .then(function(s){ _camStream = s; document.getElementById('attendanceCam').srcObject = s; })
+            .catch(function(e){ alert('Camera: ' + e.message); });
+        }
+        function captureAttendanceFrame() {
+          var v = document.getElementById('attendanceCam');
+          if (!v.srcObject) { alert('Start camera first.'); return; }
+          var c = document.getElementById('attendanceCanvas');
+          c.width = v.videoWidth || 640; c.height = v.videoHeight || 480;
+          c.getContext('2d').drawImage(v, 0, 0);
+          Shiny.setInputValue('cam_frame', c.toDataURL('image/jpeg', 0.85), {priority:'event'});
+        }
+      "))
+    )
+
     if (length(students) == 0) {
-      return(shiny::div(class = "alert alert-info",
-                        "No students found. Upload a roster first."))
+      return(shiny::tagList(
+        camera_section,
+        shiny::div(class = "alert alert-info", "No students found. Upload a roster first.")
+      ))
     }
 
-    shiny::div(class = "attendance-grid",
+    shiny::tagList(
+      camera_section,
+      shiny::div(class = "attendance-grid",
       lapply(students, function(s) {
         status_class <- if (s$status == "Present") "present" else "absent"
 
@@ -338,7 +384,8 @@ lecturer_server <- function(input, output, session, session_state) {
           )
         )
       })
-    )
+    )   # closes shiny::div(class = "attendance-grid",
+  )     # closes shiny::tagList(
   })
 
   shiny::observe({
@@ -376,9 +423,135 @@ lecturer_server <- function(input, output, session, session_state) {
     }
   })
 
+  # ── Camera frame: send to DO backend for face recognition ─────────────────
+  output$cam_attendance_result <- shiny::renderUI({ shiny::div() })
+
+  shiny::observeEvent(input$cam_frame, {
+    frame_data  <- input$cam_frame
+    lecture_id  <- get_attendance_lecture_id()
+
+    if (nchar(lecture_id) == 0) {
+      shinyalert::shinyalert("No Lecture", "Select a course and week first.", type = "warning")
+      return()
+    }
+
+    # Decode base64 image and write to temp JPEG
+    b64      <- sub("^data:image/[^;]+;base64,", "", frame_data)
+    img_raw  <- base64enc::base64decode(b64)
+    tmp_jpg  <- tempfile(fileext = ".jpg")
+    writeBin(img_raw, tmp_jpg)
+    on.exit(unlink(tmp_jpg), add = TRUE)
+
+    # POST to cloud vision endpoint
+    result <- tryCatch({
+      httr2::request(paste0(FASTAPI_BASE, "/vision/process-frame")) |>
+        httr2::req_body_multipart(
+          image      = curl::form_file(tmp_jpg, type = "image/jpeg"),
+          lecture_id = lecture_id
+        ) |>
+        httr2::req_timeout(30) |>
+        httr2::req_error(is_error = \(r) FALSE) |>
+        httr2::req_perform() |>
+        httr2::resp_body_json()
+    }, error = function(e) {
+      shinyalert::shinyalert("Error", as.character(e$message), type = "error")
+      NULL
+    })
+
+    if (is.null(result)) return()
+
+    if (!is.null(result$detail)) {
+      shinyalert::shinyalert("Backend Error", as.character(result$detail), type = "error")
+      return()
+    }
+
+    detected <- result$detected
+    n        <- length(detected)
+
+    if (n == 0) {
+      output$cam_attendance_result <- shiny::renderUI({
+        shiny::div(class = "alert alert-info", style = "margin-top:8px;",
+                   "No enrolled students recognised.")
+      })
+      return()
+    }
+
+    # Flip the manual toggles for recognised students
+    for (s in detected) {
+      shinyWidgets::updateMaterialSwitch(session, paste0("att_", s$student_id), value = TRUE)
+    }
+
+    names_str <- paste(sapply(detected, `[[`, "name"), collapse = ", ")
+    output$cam_attendance_result <- shiny::renderUI({
+      shiny::div(
+        class = "alert alert-success", style = "margin-top:8px;",
+        shiny::strong(sprintf("%d student(s) detected:", n)), shiny::br(),
+        names_str
+      )
+    })
+  })
+
   # QR code
   shiny::observeEvent(input$lecturer_qr_generate, {
     generate_attendance_qr()
+  })
+
+  # ── Camera frame → cloud vision ────────────────────────────────────────────
+  output$cam_attendance_result <- shiny::renderUI({ shiny::div() })
+
+  shiny::observeEvent(input$cam_frame, {
+    lecture_id <- get_attendance_lecture_id()
+    if (nchar(lecture_id) == 0) {
+      shinyalert::shinyalert("No Lecture", "Select a course first.", type = "warning")
+      return()
+    }
+
+    b64     <- sub("^data:image/[^;]+;base64,", "", input$cam_frame)
+    tmp_jpg <- tempfile(fileext = ".jpg")
+    writeBin(base64enc::base64decode(b64), tmp_jpg)
+    on.exit(unlink(tmp_jpg), add = TRUE)
+
+    result <- tryCatch({
+      httr2::request(paste0(FASTAPI_BASE, "/vision/process-frame")) |>
+        httr2::req_body_multipart(
+          image      = curl::form_file(tmp_jpg, type = "image/jpeg"),
+          lecture_id = lecture_id
+        ) |>
+        httr2::req_timeout(30) |>
+        httr2::req_error(is_error = \(r) FALSE) |>
+        httr2::req_perform() |>
+        httr2::resp_body_json()
+    }, error = function(e) {
+      shinyalert::shinyalert("Error", as.character(e$message), type = "error")
+      NULL
+    })
+
+    if (is.null(result)) return()
+    if (!is.null(result$detail)) {
+      shinyalert::shinyalert("Backend Error", as.character(result$detail), type = "error")
+      return()
+    }
+
+    detected <- result$detected
+    n        <- length(detected)
+
+    if (n == 0) {
+      output$cam_attendance_result <- shiny::renderUI(
+        shiny::div(class = "alert alert-info", style = "margin-top:8px;",
+                   "No enrolled students recognised.")
+      )
+      return()
+    }
+
+    for (s in detected) {
+      shinyWidgets::updateMaterialSwitch(session, paste0("att_", s$student_id), value = TRUE)
+    }
+
+    names_str <- paste(sapply(detected, `[[`, "name"), collapse = ", ")
+    output$cam_attendance_result <- shiny::renderUI(
+      shiny::div(class = "alert alert-success", style = "margin-top:8px;",
+                 shiny::strong(sprintf("%d detected:", n)), shiny::br(), names_str)
+    )
   })
 
   output$lecturer_qr_image <- shiny::renderImage({

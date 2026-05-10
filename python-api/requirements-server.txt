@@ -32,3 +32,9 @@ apscheduler
 # AI (Gemini for question generation + PDF parsing)
 google-generativeai
 pdfplumber
+
+# Vision — face recognition + emotion detection (runs on DO backend)
+# Dockerfile must have: cmake build-essential libopenblas-dev python3-dev
+face-recognition
+hsemotion-onnx
+opencv-python-headless
