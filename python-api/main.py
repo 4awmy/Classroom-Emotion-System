@@ -47,8 +47,6 @@ async def lifespan(app: FastAPI):
                 conn.execute(text(sql))
             
             # Create default admin (Pass: aast2026)
-            # The password hash for 'aast2026' using pbkdf2:sha256
-            # For simplicity in demo, the auth router checks for "aast2026" plain if hash is null or mismatch
             demo_uuid = "2737e12f-5771-4cd9-b4af-4cc4c3349fa0"
             conn.execute(text(f"INSERT INTO admins (admin_id, auth_user_id, name, email, needs_password_reset) VALUES ('admin', '{demo_uuid}', 'System Admin', 'admin@aast.edu', false) ON CONFLICT DO NOTHING;"))
             conn.commit()
@@ -88,7 +86,29 @@ def health_check():
 @app.post("/api/internal/seed")
 @app.post("/internal/seed")
 def seed_database(x_seed_secret: str = None):
-...
+    import os
+    secret = os.getenv("JWT_SECRET", "aast-lms-secret-2026")
+    if x_seed_secret != secret:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    
+    results = {"status": "starting"}
+    try:
+        inspector = inspect(engine)
+        tables = inspector.get_table_names()
+        counts = {}
+        db = SessionLocal()
+        for t in tables:
+            try:
+                counts[t] = db.execute(text(f"SELECT COUNT(*) FROM {t}")).scalar()
+            except: pass
+        db.close()
+        results["status"] = "ok"
+        results["tables"] = tables
+        results["counts"] = counts
+        return results
+    except Exception as e:
+        return {"status": "error", "error": str(e), "results": results}
+
 # Include routers with /api prefix for production routing
 app.include_router(auth.router,        prefix="/api/auth",       tags=["Auth"])
 app.include_router(admin.router,       prefix="/api/admin",      tags=["Admin"])
@@ -101,7 +121,7 @@ app.include_router(notes.router,       prefix="/api/notes",      tags=["Notes"])
 app.include_router(exam.router,        prefix="/api/exam",       tags=["Exam"])
 app.include_router(roster.router,      prefix="/api/roster",     tags=["Roster"])
 app.include_router(upload.router,      prefix="/api/upload",     tags=["Upload"])
-app.include_router(notify.router,      prefix="/api/notify",     tags=["Notify"])
+app.include_router(notify.router,      prefix="/notify",         tags=["Notify"])
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)
