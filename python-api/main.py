@@ -67,7 +67,7 @@ def health_check(db: Session = Depends(get_db)):
     return {
         "status": "ok" if db_ok else "error",
         "database": "connected" if db_ok else "disconnected",
-        "version": "3.4.2", 
+        "version": "3.4.3", 
         "message": "pong"
     }
 
