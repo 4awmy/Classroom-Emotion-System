@@ -64,7 +64,7 @@ def test_pipeline_with_mock():
     
     if emotions:
         last_log = emotions[-1]
-        print(f"Last Emotion: {last_log.emotion} (Raw: {last_log.raw_emotion}, Score: {last_log.raw_confidence})")
+        print(f"Last Emotion: {last_log.emotion} (Confidence: {last_log.confidence})")
     
     db.close()
 

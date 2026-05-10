@@ -13,9 +13,9 @@ import threading
 try:
     from ultralytics import YOLO
     import face_recognition
-    from hse_emotion import HSEmotionRecognize
+    from hsemotion.face_emotions import HSEmotionRecognizer as HSEmotionRecognize
 except ImportError:
-    print("[ERROR] Missing dependencies. Run: pip install ultralytics face_recognition hse-emotion opencv-python requests")
+    print("[ERROR] Missing dependencies. Run: pip install ultralytics face_recognition hsemotion-onnx opencv-python requests")
 
 # Load environment variables
 load_dotenv()
