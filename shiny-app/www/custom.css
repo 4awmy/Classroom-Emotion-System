@@ -198,3 +198,1489 @@ body, .sidebar-menu, h1, h2, h3, h4, p, label {
         min-height: 200px;
     }
 }
+
+/* =========================================================
+   Moodle / Moove-inspired theme layer
+   Keeps existing Shiny UI structure and only changes styling.
+   ========================================================= */
+
+body,
+.wrapper,
+.content-wrapper,
+.right-side {
+    background: #f8f9fa !important;
+    color: #1d2125;
+    font-family: Roboto, Arial, Helvetica, sans-serif;
+}
+
+.skin-blue .main-header {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
+}
+
+.skin-blue .main-header .logo,
+.skin-blue .main-header .logo:hover {
+    background: #ffffff !important;
+    color: #1d2125 !important;
+    border-right: 1px solid #dee2e6;
+    font-family: Roboto, Arial, Helvetica, sans-serif;
+    font-weight: 700;
+}
+
+.skin-blue .main-header .navbar {
+    background: #ffffff !important;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.skin-blue .main-header .navbar .sidebar-toggle,
+.skin-blue .main-header .navbar .nav > li > a,
+.skin-blue .main-header .navbar .nav > li > a:visited {
+    color: #1d2125 !important;
+}
+
+.skin-blue .main-header .navbar .sidebar-toggle:hover,
+.skin-blue .main-header .navbar .nav > li > a:hover {
+    background: #f1f3f5 !important;
+    color: #0f47ad !important;
+}
+
+.skin-blue .main-sidebar,
+.skin-blue .left-side {
+    background: #ffffff !important;
+    border-right: 1px solid #dee2e6;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+}
+
+.skin-blue .sidebar-menu {
+    padding-top: 12px;
+}
+
+.skin-blue .sidebar-menu > li > a {
+    color: #343a40 !important;
+    border-left: 4px solid transparent;
+    font-family: Roboto, Arial, Helvetica, sans-serif;
+    padding: 12px 16px 12px 18px;
+}
+
+.skin-blue .sidebar-menu > li > a .fa,
+.skin-blue .sidebar-menu > li > a .glyphicon,
+.skin-blue .sidebar-menu > li > a .ion {
+    color: #6a737b !important;
+    width: 20px;
+}
+
+.skin-blue .sidebar-menu > li:hover > a,
+.skin-blue .sidebar-menu > li.active > a,
+.skin-blue .sidebar-menu > li.menu-open > a {
+    background: #edf4ff !important;
+    color: #0f47ad !important;
+    border-left-color: #0f47ad !important;
+}
+
+.skin-blue .sidebar-menu > li:hover > a .fa,
+.skin-blue .sidebar-menu > li.active > a .fa,
+.skin-blue .sidebar-menu > li.menu-open > a .fa {
+    color: #0f47ad !important;
+}
+
+.content {
+    padding: 24px;
+}
+
+.content-header > h1,
+.tab-pane > h2,
+.content h2 {
+    color: #1d2125;
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 16px;
+}
+
+.content p {
+    color: #5c636a;
+}
+
+.box,
+.well,
+.wellPanel,
+.dataTables_wrapper,
+.nav-tabs-custom,
+.tabBox,
+.tabbable {
+    border-radius: 8px !important;
+}
+
+.box {
+    border-top: 0 !important;
+    border: 1px solid #dee2e6 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+}
+
+.box-header.with-border,
+.box-header {
+    border-bottom: 1px solid #dee2e6 !important;
+    background: #ffffff;
+    border-radius: 8px 8px 0 0;
+}
+
+.box.box-solid.box-primary > .box-header,
+.box.box-solid.box-info > .box-header,
+.box.box-solid.box-success > .box-header,
+.box.box-solid.box-warning > .box-header,
+.box.box-solid.box-danger > .box-header {
+    background: #ffffff !important;
+    color: #1d2125 !important;
+    border-bottom: 1px solid #dee2e6 !important;
+}
+
+.box.box-solid.box-primary,
+.box.box-solid.box-info,
+.box.box-solid.box-success,
+.box.box-solid.box-warning,
+.box.box-solid.box-danger {
+    border: 1px solid #dee2e6 !important;
+}
+
+.nav-tabs-custom,
+.tabbable > .nav-tabs {
+    background: #ffffff;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.nav-tabs-custom > .nav-tabs > li.active,
+.nav-tabs > li.active {
+    border-top-color: #0f47ad !important;
+}
+
+.nav-tabs-custom > .nav-tabs > li.active > a,
+.nav-tabs > li.active > a {
+    color: #0f47ad !important;
+    font-weight: 600;
+}
+
+.btn-primary,
+.btn-info {
+    background: #0f47ad !important;
+    border-color: #0f47ad !important;
+}
+
+.btn-primary:hover,
+.btn-info:hover {
+    background: #0b347f !important;
+    border-color: #0b347f !important;
+}
+
+.btn-warning {
+    background: #f0ad4e !important;
+    border-color: #eea236 !important;
+    color: #1d2125 !important;
+}
+
+.form-control,
+.selectize-input,
+.input-sm,
+input[type='text'],
+input[type='password'],
+select {
+    border-radius: 4px !important;
+    border-color: #ced4da !important;
+    box-shadow: none !important;
+}
+
+.form-control:focus,
+.selectize-input.focus {
+    border-color: #0f47ad !important;
+    box-shadow: 0 0 0 0.2rem rgba(15, 71, 173, 0.16) !important;
+}
+
+table.dataTable {
+    border-collapse: collapse !important;
+}
+
+table.dataTable thead th {
+    background: #f8f9fa;
+    color: #1d2125;
+    border-bottom: 1px solid #dee2e6 !important;
+}
+
+.dataTables_wrapper {
+    background: #ffffff;
+    border: 1px solid #dee2e6;
+    padding: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.small-box {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.main-footer {
+    background: #ffffff;
+    border-top: 1px solid #dee2e6;
+    color: #6a737b;
+}
+
+/* =========================================================
+   AAST Moodle Moove exact-style pass
+   Mirrors the live Moodle theme without changing Shiny layout.
+   ========================================================= */
+
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap");
+
+:root {
+    --moodle-primary: #0f47ad;
+    --moodle-primary-hover: #092a67;
+    --moodle-text: #1d2125;
+    --moodle-muted: #6a737b;
+    --moodle-border: #dee2e6;
+    --moodle-bg: #f8f9fa;
+    --moodle-card-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
+}
+
+html,
+body,
+.wrapper {
+    min-height: 100%;
+    background: var(--moodle-bg) !important;
+    font-family: Roboto, Arial, Helvetica, sans-serif !important;
+    font-size: 15px;
+    color: var(--moodle-text);
+}
+
+a {
+    color: var(--moodle-primary);
+}
+
+a:hover,
+a:focus {
+    color: var(--moodle-primary-hover);
+}
+
+.skin-blue .main-header {
+    position: fixed;
+    width: 100%;
+    min-height: 60px;
+    background: #fff;
+    border-bottom: 1px solid var(--moodle-border);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .10);
+}
+
+.skin-blue .main-header .logo,
+.skin-blue .main-header .logo:hover {
+    height: 60px;
+    line-height: 60px;
+    background: #fff url("aast-lms-logo.png") center center / 170px auto no-repeat !important;
+    border-right: 1px solid var(--moodle-border);
+    color: transparent !important;
+    overflow: hidden;
+}
+
+.skin-blue .main-header .logo * {
+    opacity: 0;
+}
+
+.skin-blue .main-header .navbar {
+    min-height: 60px;
+    background: #fff !important;
+}
+
+.skin-blue .main-header .navbar .sidebar-toggle {
+    height: 60px;
+    padding: 20px 16px;
+    color: var(--moodle-text) !important;
+}
+
+.skin-blue .main-header .navbar .sidebar-toggle:hover {
+    background: #f1f3f5 !important;
+    color: var(--moodle-primary) !important;
+}
+
+.skin-blue .main-header .navbar .nav > li > a {
+    height: 60px;
+    line-height: 30px;
+    color: var(--moodle-text) !important;
+    font-weight: 400;
+}
+
+.skin-blue .main-header .navbar .nav > li > a:hover,
+.skin-blue .main-header .navbar .nav > li > a:focus {
+    background: #f1f3f5 !important;
+    color: var(--moodle-primary) !important;
+    text-decoration: none;
+}
+
+.main-sidebar {
+    position: fixed;
+    padding-top: 60px !important;
+    background: #fff !important;
+    border-right: 1px solid var(--moodle-border);
+    box-shadow: 2px 0 8px rgba(0, 0, 0, .05);
+}
+
+.skin-blue .sidebar-menu {
+    padding: 12px 0;
+}
+
+.skin-blue .sidebar-menu > li {
+    margin: 0;
+}
+
+.skin-blue .sidebar-menu > li > a {
+    min-height: 44px;
+    color: #343a40 !important;
+    background: transparent !important;
+    border-left: 4px solid transparent !important;
+    padding: 12px 16px 12px 18px;
+    font-weight: 400;
+}
+
+.skin-blue .sidebar-menu > li > a:hover,
+.skin-blue .sidebar-menu > li.active > a {
+    color: var(--moodle-primary) !important;
+    background: #edf4ff !important;
+    border-left-color: var(--moodle-primary) !important;
+}
+
+.skin-blue .sidebar-menu > li > a i,
+.skin-blue .sidebar-menu > li > a .fa {
+    color: #6a737b !important;
+    margin-right: 8px;
+}
+
+.skin-blue .sidebar-menu > li.active > a i,
+.skin-blue .sidebar-menu > li.active > a .fa,
+.skin-blue .sidebar-menu > li > a:hover i,
+.skin-blue .sidebar-menu > li > a:hover .fa {
+    color: var(--moodle-primary) !important;
+}
+
+.content-wrapper,
+.right-side {
+    padding-top: 60px;
+    background: var(--moodle-bg) !important;
+}
+
+.content {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 24px 28px !important;
+}
+
+.content h1,
+.content h2,
+.content h3,
+.tab-pane > h2 {
+    color: var(--moodle-text);
+    font-family: Roboto, Arial, Helvetica, sans-serif !important;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.tab-pane > h2,
+.content h2 {
+    font-size: 1.875rem;
+    margin: 0 0 1rem;
+}
+
+.content p,
+.help-block,
+.helpText {
+    color: var(--moodle-muted);
+}
+
+.box,
+.well,
+.nav-tabs-custom,
+.tabbable,
+.dataTables_wrapper {
+    background: #fff !important;
+    border: 1px solid var(--moodle-border) !important;
+    border-radius: .5rem !important;
+    box-shadow: var(--moodle-card-shadow) !important;
+}
+
+.box {
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+}
+
+.box-header,
+.box-header.with-border {
+    background: #fff !important;
+    color: var(--moodle-text) !important;
+    border-bottom: 1px solid var(--moodle-border) !important;
+    padding: 12px 16px;
+}
+
+.box-title {
+    color: var(--moodle-text) !important;
+    font-size: 1.05rem !important;
+    font-weight: 700;
+}
+
+.box-body {
+    padding: 16px;
+}
+
+.box.box-solid > .box-header,
+.box.box-solid.box-primary > .box-header,
+.box.box-solid.box-info > .box-header,
+.box.box-solid.box-success > .box-header,
+.box.box-solid.box-warning > .box-header,
+.box.box-solid.box-danger > .box-header {
+    background: #fff !important;
+    color: var(--moodle-text) !important;
+}
+
+.box.box-primary,
+.box.box-info,
+.box.box-success,
+.box.box-warning,
+.box.box-danger {
+    border-top: 1px solid var(--moodle-border) !important;
+}
+
+.nav-tabs {
+    border-bottom: 1px solid var(--moodle-border);
+}
+
+.nav-tabs > li > a {
+    border-radius: .5rem .5rem 0 0;
+    color: var(--moodle-text);
+    font-weight: 400;
+}
+
+.nav-tabs > li.active > a,
+.nav-tabs > li.active > a:hover,
+.nav-tabs > li.active > a:focus {
+    color: var(--moodle-primary) !important;
+    border-color: var(--moodle-border) var(--moodle-border) #fff !important;
+    border-top: 3px solid var(--moodle-primary) !important;
+    font-weight: 500;
+}
+
+.btn,
+.action-button,
+.download-button {
+    border-radius: .5rem !important;
+    font-weight: 500;
+}
+
+.btn-primary,
+.btn-info,
+.action-button.btn-primary,
+.download-button.btn-primary {
+    background: var(--moodle-primary) !important;
+    border-color: var(--moodle-primary) !important;
+    color: #fff !important;
+}
+
+.btn-primary:hover,
+.btn-info:hover,
+.action-button.btn-primary:hover,
+.download-button.btn-primary:hover {
+    background: var(--moodle-primary-hover) !important;
+    border-color: var(--moodle-primary-hover) !important;
+}
+
+.btn-default,
+.btn-secondary {
+    background: #e9ecef !important;
+    border-color: #ced4da !important;
+    color: var(--moodle-text) !important;
+}
+
+.form-control,
+.selectize-input,
+.selectize-control.single .selectize-input,
+input[type="text"],
+input[type="password"],
+input[type="number"],
+input[type="email"],
+select,
+textarea {
+    min-height: 38px;
+    color: var(--moodle-text);
+    background: #fff;
+    border: 1px solid #ced4da !important;
+    border-radius: .5rem !important;
+    box-shadow: none !important;
+}
+
+.form-control:focus,
+.selectize-input.focus,
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--moodle-primary) !important;
+    box-shadow: 0 0 0 .2rem rgba(15, 71, 173, .16) !important;
+}
+
+label {
+    color: var(--moodle-text);
+    font-weight: 500;
+}
+
+.dataTables_wrapper {
+    padding: 1rem;
+}
+
+table.dataTable {
+    width: 100% !important;
+    color: var(--moodle-text);
+}
+
+table.dataTable thead th,
+table.dataTable thead td {
+    background: #f8f9fa !important;
+    color: var(--moodle-text);
+    border-bottom: 1px solid var(--moodle-border) !important;
+    font-weight: 700;
+}
+
+table.dataTable tbody tr:hover {
+    background: #f1f3f5 !important;
+}
+
+.pagination > .active > a,
+.pagination > .active > span,
+.pagination > .active > a:hover,
+.pagination > .active > span:hover {
+    background: var(--moodle-primary) !important;
+    border-color: var(--moodle-primary) !important;
+}
+
+.small-box {
+    border-radius: .5rem !important;
+    box-shadow: var(--moodle-card-shadow) !important;
+}
+
+.alert {
+    border-radius: .5rem;
+}
+
+@media (max-width: 767px) {
+    .content-wrapper,
+    .right-side {
+        padding-top: 60px;
+    }
+
+    .content {
+        padding: 16px !important;
+    }
+
+    .main-sidebar {
+        padding-top: 60px !important;
+    }
+}
+
+/* =========================================================
+   Lecturer reference layout pass
+   Matches the compact Moodle attendance reference.
+   ========================================================= */
+
+.skin-blue .main-header .navbar {
+    background: #06284d !important;
+    border-bottom: 0 !important;
+    min-height: 48px !important;
+    box-shadow: none !important;
+}
+
+.skin-blue .main-header .navbar .sidebar-toggle {
+    height: 48px !important;
+    padding: 14px 16px !important;
+    color: #0073e6 !important;
+}
+
+.skin-blue .main-header .navbar .sidebar-toggle:hover {
+    background: #092f5c !important;
+    color: #2b8cff !important;
+}
+
+.skin-blue .main-header .navbar .nav > li > a {
+    height: 48px !important;
+    line-height: 18px !important;
+    padding: 15px 16px !important;
+    color: #f6c343 !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+}
+
+.skin-blue .main-header .logo,
+.skin-blue .main-header .logo:hover {
+    height: 48px !important;
+    line-height: 48px !important;
+    background: #ffffff !important;
+    border-right: 1px solid #d8dbe0 !important;
+    color: #24282d !important;
+    font-size: 20px !important;
+    text-align: left !important;
+    padding-left: 50px !important;
+}
+
+.skin-blue .main-header .logo * {
+    opacity: 1 !important;
+}
+
+.skin-blue .main-header .logo small {
+    font-weight: 400 !important;
+    color: #24282d !important;
+}
+
+.main-sidebar {
+    padding-top: 48px !important;
+    background: #ffffff !important;
+    border-right: 1px solid #d8dbe0 !important;
+    box-shadow: 4px 0 16px rgba(0, 0, 0, .10) !important;
+}
+
+.content-wrapper,
+.right-side {
+    padding-top: 48px !important;
+    background: #eef1ee !important;
+}
+
+.content {
+    max-width: none !important;
+    padding: 72px 18px 28px 22px !important;
+}
+
+.skin-blue .sidebar-menu {
+    padding: 50px 0 0 !important;
+}
+
+.skin-blue .sidebar-menu > li.header {
+    padding: 0 0 56px !important;
+    color: #24282d !important;
+    background: #ffffff !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    text-transform: none !important;
+}
+
+.skin-blue .sidebar-menu > li > a {
+    min-height: 38px !important;
+    padding: 8px 14px !important;
+    border-left: 0 !important;
+    background: #ffffff !important;
+    color: #064fb3 !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+}
+
+.skin-blue .sidebar-menu .treeview-menu {
+    background: #ffffff !important;
+    padding: 0 0 18px 0 !important;
+}
+
+.skin-blue .sidebar-menu .treeview-menu > li > a {
+    padding: 7px 14px 7px 20px !important;
+    color: #064fb3 !important;
+    font-size: 13px !important;
+}
+
+.skin-blue .sidebar-menu > li:hover > a,
+.skin-blue .sidebar-menu > li.active > a,
+.skin-blue .sidebar-menu > li.menu-open > a,
+.skin-blue .sidebar-menu .treeview-menu > li.active > a,
+.skin-blue .sidebar-menu .treeview-menu > li > a:hover {
+    background: #ffffff !important;
+    color: #00336d !important;
+    border-left: 0 !important;
+}
+
+.skin-blue .sidebar-menu > li > a i,
+.skin-blue .sidebar-menu > li > a .fa,
+.skin-blue .sidebar-menu .treeview-menu > li > a i,
+.skin-blue .sidebar-menu .treeview-menu > li > a .fa {
+    color: #0a55bf !important;
+    width: 16px !important;
+    margin-right: 3px !important;
+}
+
+.reference-page-card,
+.tab-pane > .well,
+.tab-pane > .box,
+.tab-pane > .tabbable {
+    background: #fbfbf8 !important;
+    border: 1px solid #cfd4d8 !important;
+    border-radius: 2px !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .12) !important;
+}
+
+.reference-page-card {
+    min-height: 420px;
+    padding: 18px 16px 66px !important;
+}
+
+.semester-eyebrow {
+    color: #9b7600;
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 6px;
+}
+
+.reference-page-card h2,
+.tab-pane > h2,
+.content h2 {
+    color: #111820 !important;
+    font-size: 25px !important;
+    line-height: 1.15 !important;
+    margin: 0 0 16px !important;
+    font-weight: 700 !important;
+}
+
+.reference-page-card p,
+.content p,
+.help-block,
+.helpText {
+    color: #34495e !important;
+    font-size: 12px !important;
+}
+
+.reference-form-box {
+    margin-top: 34px;
+    padding: 16px;
+    border: 1px solid #cbd0d4;
+    border-radius: 2px;
+    background: #fbfbf8;
+}
+
+.reference-form-box label {
+    color: #000000 !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+}
+
+.form-control,
+.selectize-input,
+input[type="text"],
+input[type="password"],
+select,
+textarea {
+    min-height: 34px !important;
+    border-radius: 2px !important;
+    border-color: #bec5ca !important;
+    font-size: 12px !important;
+}
+
+.btn,
+.action-button,
+.download-button,
+.reference-pill-btn {
+    border-radius: 16px !important;
+    min-height: 34px !important;
+    padding: 6px 14px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+}
+
+.btn-primary,
+.btn-info,
+.action-button.btn-primary {
+    background: #050b24 !important;
+    border-color: #050b24 !important;
+    color: #ffffff !important;
+}
+
+.btn-success {
+    background: #050b24 !important;
+    border-color: #050b24 !important;
+}
+
+.dataTables_wrapper {
+    background: #fbfbf8 !important;
+    border: 1px solid #cfd4d8 !important;
+    border-radius: 2px !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .12) !important;
+    padding: 12px !important;
+}
+
+table.dataTable thead th,
+table.dataTable thead td,
+.table > thead > tr > th {
+    background: #080d27 !important;
+    color: #ffffff !important;
+    border-bottom: 0 !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    padding: 10px 12px !important;
+}
+
+table.dataTable tbody td,
+.table > tbody > tr > td {
+    border-top: 1px solid #d7dadd !important;
+    color: #25313b !important;
+    font-size: 12px !important;
+    padding: 9px 12px !important;
+}
+
+table.dataTable tbody tr:nth-child(even),
+.table-striped > tbody > tr:nth-of-type(even) {
+    background: #f1f1ee !important;
+}
+
+table.dataTable tbody tr:hover,
+.table-hover > tbody > tr:hover {
+    background: #c9cbc8 !important;
+}
+
+.attendance-grid {
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)) !important;
+    gap: 16px !important;
+}
+
+.student-card {
+    border-radius: 2px !important;
+    border-top: 1px solid #cbd0d4 !important;
+    box-shadow: none !important;
+    padding: 10px !important;
+}
+
+.reference-attendance-page {
+    min-height: 360px !important;
+    padding: 16px 16px 28px !important;
+}
+
+.attendance-title-row {
+    display: grid;
+    grid-template-columns: 1fr 460px;
+    align-items: start;
+    gap: 24px;
+    margin-bottom: 20px;
+}
+
+.attendance-title-row h2 {
+    margin: 0 !important;
+}
+
+.department-filter {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    align-items: center;
+    gap: 24px;
+}
+
+.department-filter label {
+    margin: 0 !important;
+    color: #20262d !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    text-align: left;
+}
+
+.department-filter .form-group {
+    margin: 0 !important;
+}
+
+.department-filter .selectize-input {
+    min-height: 28px !important;
+    padding: 4px 10px !important;
+    border-radius: 2px !important;
+    background: #f4f5f3 !important;
+}
+
+.reference-attendance-table-wrap {
+    overflow-x: auto;
+}
+
+.reference-attendance-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    background: #f7f8f5;
+}
+
+.reference-attendance-table th {
+    background: #080d27;
+    color: #ffffff;
+    padding: 11px 10px;
+    font-size: 12px;
+    line-height: 1.1;
+    font-weight: 700;
+    border: 0;
+    text-align: left;
+}
+
+.reference-attendance-table th:nth-child(1) {
+    width: 28%;
+}
+
+.reference-attendance-table th:nth-child(6),
+.reference-attendance-table th:nth-child(7) {
+    width: 16%;
+    text-align: center;
+}
+
+.reference-attendance-table td {
+    padding: 8px 10px;
+    color: #27313a;
+    font-size: 12px;
+    line-height: 1.25;
+    border-bottom: 1px solid #cfd2d2;
+    background: #f7f8f5;
+    vertical-align: middle;
+}
+
+.reference-attendance-table td:nth-child(6),
+.reference-attendance-table td:nth-child(7) {
+    text-align: center;
+}
+
+.reference-attendance-table tr.selected-reference-row td {
+    background: #c7c9c6 !important;
+}
+
+.reference-round-action {
+    width: 37px;
+    height: 26px;
+    min-height: 26px !important;
+    border: 0;
+    border-radius: 999px;
+    background: #071027;
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .18);
+}
+
+.reference-round-action .fa,
+.reference-round-action svg {
+    color: #ffffff;
+    font-size: 12px;
+}
+
+.course-attendance-detail {
+    margin-top: 22px;
+    padding: 16px;
+    background: #fbfbf8;
+    border: 1px solid #cfd4d8;
+    border-radius: 2px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .10);
+}
+
+.course-attendance-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.selected-course-title {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    color: #121820;
+}
+
+.selected-course-kicker {
+    color: #9b7600;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.selected-course-title strong {
+    font-size: 18px;
+    line-height: 1.2;
+}
+
+.selected-course-title span:last-child {
+    color: #4b5560;
+    font-size: 12px;
+}
+
+.course-attendance-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.course-attendance-detail .attendance-grid {
+    padding-top: 0;
+}
+
+.course-attendance-detail #lecturer_qr_image {
+    margin-top: 14px;
+}
+
+.mobile-attendance-panel {
+    min-height: 260px;
+    display: grid;
+    grid-template-columns: minmax(280px, 420px) 1fr;
+    align-items: start;
+    gap: 28px;
+}
+
+.mobile-attendance-roster,
+.mobile-attendance-qr {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: #121820;
+}
+
+.mobile-attendance-roster strong,
+.mobile-attendance-qr strong {
+    font-size: 20px;
+}
+
+.mobile-attendance-qr span {
+    color: #4b5560;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.mobile-attendance-roster ul {
+    max-height: 460px;
+    overflow: auto;
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+    border: 1px solid #d5d8d2;
+    background: #f7f8f5;
+}
+
+.mobile-attendance-roster li {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 12px;
+    padding: 9px 12px;
+    border-bottom: 1px solid #d5d8d2;
+    color: #25313b;
+    font-size: 12px;
+}
+
+.mobile-attendance-roster li:last-child {
+    border-bottom: 0;
+}
+
+.mobile-student-id {
+    font-weight: 700;
+}
+
+.mobile-student-name {
+    color: #334155;
+}
+
+.mobile-empty-roster {
+    display: block !important;
+    color: #6b7280 !important;
+}
+
+.mobile-attendance-panel #lecturer_qr_image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 320px;
+    margin-top: 14px;
+    border: 1px solid #d5d8d2;
+    background: #ffffff;
+}
+
+/* Sidebar block styling from the AAST Moodle attendance reference. */
+.skin-blue .main-sidebar {
+    background: #f2f3ee !important;
+    border-right: 1px solid #d2d5d0 !important;
+    box-shadow: 4px 0 16px rgba(0, 0, 0, .14) !important;
+}
+
+.skin-blue .sidebar-menu {
+    padding: 0 0 24px !important;
+}
+
+.skin-blue .sidebar-menu > li.header {
+    height: 56px !important;
+    padding: 14px 0 0 0 !important;
+    color: #222831 !important;
+    background: transparent !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+}
+
+.skin-blue .sidebar-menu > li.header + li:not(.treeview) {
+    margin-bottom: 46px !important;
+}
+
+.skin-blue .sidebar-menu > li.treeview {
+    margin: 0 0 42px 0 !important;
+}
+
+.skin-blue .sidebar-menu > li.treeview > a {
+    height: 40px !important;
+    color: #1d2125 !important;
+    background: transparent !important;
+    padding: 10px 8px 8px 0 !important;
+    font-size: 13px !important;
+}
+
+.skin-blue .sidebar-menu > li.treeview > a .pull-right-container {
+    right: 8px !important;
+}
+
+.skin-blue .sidebar-menu > li.treeview > a i,
+.skin-blue .sidebar-menu > li.treeview > a .fa {
+    color: #1d2125 !important;
+}
+
+.skin-blue .sidebar-menu .treeview-menu {
+    margin: 0 10px 0 0 !important;
+    padding: 4px 0 !important;
+    background: #070c25 !important;
+    border-radius: 2px !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .18) !important;
+}
+
+.skin-blue .sidebar-menu .treeview-menu > li > a {
+    min-height: 30px !important;
+    padding: 8px 10px 8px 0 !important;
+    color: #ffffff !important;
+    font-size: 12px !important;
+    line-height: 1.15 !important;
+}
+
+.skin-blue .sidebar-menu .treeview-menu > li > a:hover,
+.skin-blue .sidebar-menu .treeview-menu > li.active > a {
+    background: #101735 !important;
+    color: #ffffff !important;
+}
+
+.skin-blue .sidebar-menu .treeview-menu > li > a i,
+.skin-blue .sidebar-menu .treeview-menu > li > a .fa {
+    color: #ffffff !important;
+    width: 14px !important;
+    margin-right: 0 !important;
+}
+
+.skin-blue .sidebar-menu > li:not(.treeview):not(.header) > a {
+    padding: 8px 10px 8px 0 !important;
+    color: #074eb3 !important;
+    background: transparent !important;
+    font-size: 14px !important;
+}
+
+.skin-blue .sidebar-menu > li:not(.treeview):not(.header) > a:hover,
+.skin-blue .sidebar-menu > li:not(.treeview):not(.header).active > a {
+    background: transparent !important;
+    color: #003a87 !important;
+}
+
+@media (max-width: 900px) {
+    .attendance-title-row {
+        grid-template-columns: 1fr;
+    }
+
+    .department-filter {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+
+    .course-attendance-detail-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .course-attendance-actions {
+        justify-content: flex-start;
+    }
+
+    .mobile-attendance-panel {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Final sidebar pass: force the photographed Moodle side panel shape. */
+body.skin-blue .wrapper .main-sidebar,
+body.skin-blue .wrapper .left-side {
+    width: 260px !important;
+    background: #f1f2ed !important;
+    border-right: 1px solid #d0d2cd !important;
+    box-shadow: 4px 0 15px rgba(0, 0, 0, .16) !important;
+}
+
+body.skin-blue .wrapper .main-sidebar .sidebar {
+    padding: 0 !important;
+}
+
+body.skin-blue .wrapper .main-sidebar .sidebar-menu {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #f1f2ed !important;
+}
+
+body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.header {
+    height: 64px !important;
+    padding: 16px 0 0 0 !important;
+    margin: 0 !important;
+    color: #1d2125 !important;
+    background: #f1f2ed !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    text-transform: none !important;
+}
+
+body.skin-blue .wrapper .main-sidebar .sidebar-menu > li > a {
+    border-left: 0 !important;
+    background: transparent !important;
+    color: #064fb3 !important;
+    padding: 8px 10px 8px 0 !important;
+    font-size: 14px !important;
+    line-height: 20px !important;
+}
+
+body.skin-blue .wrapper .main-sidebar .sidebar-menu > li > a:hover,
+body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.active > a {
+    background: transparent !important;
+    color: #003a87 !important;
+}
+
+body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview {
+    margin: 0 0 54px 0 !important;
+}
+
+body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > a {
+    height: 38px !important;
+    padding: 8px 10px 8px 0 !important;
+    color: #1d2125 !important;
+    background: #f1f2ed !important;
+    font-size: 13px !important;
+}
+
+body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > a:hover,
+body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview.active > a,
+body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview.menu-open > a {
+    background: #f1f2ed !important;
+    color: #1d2125 !important;
+}
+
+body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > a .pull-right-container {
+    right: 8px !important;
+}
+
+body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > a i,
+body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > a .fa {
+    color: #1d2125 !important;
+    width: 16px !important;
+    margin-right: 0 !important;
+}
+
+body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > .treeview-menu {
+    display: block !important;
+    margin: 0 10px 0 0 !important;
+    padding: 5px 0 !important;
+    background: #070c24 !important;
+    border-radius: 2px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .22) !important;
+}
+
+body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > .treeview-menu > li > a {
+    min-height: 29px !important;
+    padding: 8px 8px 7px 0 !important;
+    color: #ffffff !important;
+    background: #070c24 !important;
+    font-size: 12px !important;
+    line-height: 1.1 !important;
+}
+
+body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > .treeview-menu > li > a:hover,
+body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > .treeview-menu > li.active > a {
+    background: #111735 !important;
+    color: #ffffff !important;
+}
+
+body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > .treeview-menu > li > a i,
+body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > .treeview-menu > li > a .fa {
+    color: #ffffff !important;
+    width: 14px !important;
+    margin-right: 0 !important;
+}
+
+body.skin-blue .wrapper .main-sidebar .sidebar-menu > li:not(.header):not(.treeview) {
+    margin-bottom: 48px !important;
+}
+
+/* Hard sidebar override: keep this last so the side panel visibly matches the reference. */
+.main-sidebar,
+.left-side,
+.skin-blue .main-sidebar,
+.skin-blue .left-side {
+    background: #eff0eb !important;
+    border-right: 1px solid #cfd2cc !important;
+    box-shadow: 5px 0 18px rgba(0, 0, 0, .16) !important;
+}
+
+.main-sidebar .sidebar,
+.main-sidebar .sidebar-menu,
+.skin-blue .sidebar-menu {
+    background: #eff0eb !important;
+}
+
+.main-sidebar .sidebar-menu {
+    padding-top: 0 !important;
+}
+
+.main-sidebar .sidebar-menu > li.header {
+    display: block !important;
+    height: 62px !important;
+    padding: 15px 0 0 0 !important;
+    background: #eff0eb !important;
+    color: #1d2125 !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    text-transform: none !important;
+}
+
+.main-sidebar .sidebar-menu > li > a {
+    background: transparent !important;
+    border-left: 0 !important;
+    color: #074eb3 !important;
+    padding: 8px 10px 8px 0 !important;
+    font-size: 14px !important;
+}
+
+.main-sidebar .sidebar-menu > li > a:hover,
+.main-sidebar .sidebar-menu > li.active > a,
+.main-sidebar .sidebar-menu > li.menu-open > a {
+    background: transparent !important;
+    color: #003a87 !important;
+}
+
+.main-sidebar .sidebar-menu > li.treeview {
+    margin: 0 0 50px 0 !important;
+}
+
+.main-sidebar .sidebar-menu > li.treeview > a {
+    color: #1d2125 !important;
+    background: #eff0eb !important;
+    padding: 8px 8px 8px 0 !important;
+    font-size: 13px !important;
+}
+
+.main-sidebar .sidebar-menu > li.treeview > a .fa,
+.main-sidebar .sidebar-menu > li.treeview > a i {
+    color: #1d2125 !important;
+}
+
+.main-sidebar .sidebar-menu .treeview-menu {
+    display: block !important;
+    margin: 0 10px 0 0 !important;
+    padding: 4px 0 !important;
+    background: #060b23 !important;
+    border-radius: 2px !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, .22) !important;
+}
+
+.main-sidebar .sidebar-menu .treeview-menu > li > a {
+    min-height: 30px !important;
+    padding: 8px 8px 7px 0 !important;
+    color: #ffffff !important;
+    background: #060b23 !important;
+    font-size: 12px !important;
+    line-height: 1.1 !important;
+}
+
+.main-sidebar .sidebar-menu .treeview-menu > li > a:hover,
+.main-sidebar .sidebar-menu .treeview-menu > li.active > a {
+    color: #ffffff !important;
+    background: #111836 !important;
+}
+
+.main-sidebar .sidebar-menu .treeview-menu > li > a .fa,
+.main-sidebar .sidebar-menu .treeview-menu > li > a i {
+    color: #ffffff !important;
+    width: 14px !important;
+    margin-right: 0 !important;
+}
+
+/* Sidebar polish layer. */
+.skin-blue .main-header .logo,
+.skin-blue .main-header .logo:hover {
+    background: #f9faf7 !important;
+    border-right: 1px solid #cfd2cc !important;
+    box-shadow: 4px 0 10px rgba(0, 0, 0, .08) !important;
+}
+
+.skin-blue .main-header .logo strong {
+    color: #18212b !important;
+    font-size: 20px !important;
+    letter-spacing: 0 !important;
+}
+
+.skin-blue .main-header .logo small {
+    color: #2b3036 !important;
+}
+
+.main-sidebar::before {
+    content: "";
+    display: block;
+    height: 42px;
+}
+
+.main-sidebar .sidebar-menu > li.header {
+    padding-left: 0 !important;
+    border-bottom: 0 !important;
+}
+
+.main-sidebar .sidebar-menu > li > a {
+    border-radius: 0 3px 3px 0 !important;
+    transition: color .15s ease, background .15s ease;
+}
+
+.main-sidebar .sidebar-menu > li:not(.treeview):not(.header) > a {
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+}
+
+.main-sidebar .sidebar-menu > li:not(.treeview):not(.header) > a .fa,
+.main-sidebar .sidebar-menu > li:not(.treeview):not(.header) > a i {
+    color: #0a55bf !important;
+}
+
+.main-sidebar .sidebar-menu > li.treeview > a {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+}
+
+.main-sidebar .sidebar-menu > li.treeview > a > span {
+    flex: 1;
+}
+
+.main-sidebar .sidebar-menu .treeview-menu {
+    overflow: hidden !important;
+}
+
+.main-sidebar .sidebar-menu .treeview-menu > li > a {
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    white-space: normal !important;
+}
+
+.main-sidebar .sidebar-menu .treeview-menu > li.active > a {
+    box-shadow: inset 3px 0 0 #ffffff !important;
+}
+
+.main-sidebar .sidebar-menu .treeview-menu > li > a:hover {
+    padding-left: 4px !important;
+}
+
+.main-sidebar .sidebar-menu > li.treeview:nth-of-type(4) > .treeview-menu {
+    margin-top: 6px !important;
+}
+
+.reference-round-action {
+    cursor: pointer !important;
+    transition: transform .12s ease, background .12s ease, box-shadow .12s ease;
+}
+
+.reference-round-action:hover {
+    background: #111a3a !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .20) !important;
+    transform: translateY(-1px);
+}
