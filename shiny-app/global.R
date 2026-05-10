@@ -30,26 +30,17 @@ library(RPostgres)
 # ============================================================================
 
 # Prioritize Environment Variables (DigitalOcean)
-FASTAPI_BASE <- Sys.getenv("API_URL", "")
+FASTAPI_BASE <- Sys.getenv("API_URL", "https://classroomx-lkbxf.ondigitalocean.app")
 
-if (FASTAPI_BASE == "") {
-  # Fallback to config file for local development
-  tryCatch({
-    cfg <- config::get(file = "config.yml")
-    FASTAPI_BASE <- cfg$fastapi_base
-  }, error = function(e) {
-    FASTAPI_BASE <- "http://localhost:8000"
-  })
-}
+# Ensure we have a clean trailing slash-free base
+FASTAPI_BASE <- sub("/$", "", FASTAPI_BASE)
 
-# Ensure API_URL points to /api if not already specified (for multi-service routing)
-if (!grepl("/api$", FASTAPI_BASE) && !grepl("/api/$", FASTAPI_BASE)) {
-    # Strip trailing slash then add /api
-    FASTAPI_BASE <- paste0(sub("/$", "", FASTAPI_BASE), "/api")
-}
+# PRODUCTION ROUTING RULE:
+# All API calls must go through the /api ingress route
+# DigitalOcean will strip /api and send the rest to the backend
+API_ENTRY <- paste0(FASTAPI_BASE, "/api")
 
 # --- Database Query Helper ---
-# (Simplified for production robustness)
 query_table <- function(table_name) {
   db_url <- Sys.getenv("DATABASE_URL", "")
   if (db_url == "") return(data.frame())
@@ -60,7 +51,7 @@ query_table <- function(table_name) {
     dbDisconnect(con)
     return(res)
   }, error = function(e) {
-    print(paste("[DB] Query failed for", table_name, ":", e$message))
+    message(paste("[DB] Query failed for", table_name, ":", e$message))
     return(data.frame())
   })
 }
@@ -70,8 +61,9 @@ query_table <- function(table_name) {
 # ============================================================================
 
 api_call <- function(endpoint, method = "GET", body = NULL, auth_token = NULL, content_type = "application/json") {
-  url <- paste0(FASTAPI_BASE, endpoint)
-  print(paste("[API] Calling:", method, url))
+  # Endpoint should start with /
+  url <- paste0(API_ENTRY, endpoint)
+  message(paste("[API] Attempting:", method, url))
 
   req <- request(url) |>
     req_method(method) |>
@@ -88,33 +80,30 @@ api_call <- function(endpoint, method = "GET", body = NULL, auth_token = NULL, c
 
   tryCatch({
     resp <- req_perform(req)
-    print(paste("[API] Response Status:", resp_status(resp)))
+    message(paste("[API] Response Status:", resp_status(resp)))
     
     if (resp_status(resp) >= 400) {
-      # Handle common error responses
-      try({
-        err_body <- resp_body_json(resp)
-        detail <- if (!is.null(err_body$detail)) {
-          if (is.list(err_body$detail)) paste(err_body$detail, collapse = "; ") else err_body$detail
-        } else {
-          err_body$message %||% "Internal Server Error"
-        }
-        
-        shinyalert::shinyalert(
-          title = paste("Login Failed"),
-          text = as.character(detail),
-          type = "error"
-        )
-      }, silent = TRUE)
+      err_body <- tryCatch(resp_body_json(resp), error = function(e) list(detail = "Unknown error"))
+      detail <- if (!is.null(err_body$detail)) {
+        if (is.list(err_body$detail)) paste(err_body$detail, collapse = "; ") else err_body$detail
+      } else {
+        "Request failed"
+      }
+      
+      shinyalert::shinyalert(
+        title = paste("Server Error", resp_status(resp)),
+        text = as.character(detail),
+        type = "error"
+      )
       return(NULL)
     }
     
     resp_body_json(resp)
   }, error = function(e) {
-    print(paste("[API] FATAL ERROR:", e$message))
+    message(paste("[API] FATAL ERROR:", e$message))
     shinyalert::shinyalert(
       title = "Connection Error",
-      text = paste("Could not reach backend:", e$message),
+      text = "The system is having trouble reaching the security server. Please try again in a few moments.",
       type = "error"
     )
     return(NULL)
@@ -122,31 +111,7 @@ api_call <- function(endpoint, method = "GET", body = NULL, auth_token = NULL, c
 }
 
 # ============================================================================
-# Theme & Utilities
-# ============================================================================
-
-AAST_NAVY <- "#002147"
-AAST_GOLD <- "#C9A84C"
-
-format_engagement <- function(score) {
-  if (is.null(score) || is.na(score)) return("0.0%")
-  paste0(round(score * 100, 1), "%")
-}
-
-emotion_colors <- list(
-  "Focused" = "#1B5E20", "Engaged" = "#4CAF50", "Confused" = "#FFC107",
-  "Frustrated" = "#FF9800", "Anxious" = "#9C27B0", "Disengaged" = "#F44336"
-)
-
-get_emotion_color <- function(emotion) {
-  color <- emotion_colors[[emotion]]
-  if (is.null(color)) return("#CCCCCC")
-  return(color)
-}
-
-# ============================================================================
 # Initial Boot Logs
 # ============================================================================
-print("✓ Shiny Global.R loaded successfully")
-print(paste("✓ API URL Target:", FASTAPI_BASE))
-print(paste("✓ DB URL Present:", nchar(Sys.getenv("DATABASE_URL", "")) > 0))
+message("✓ Shiny Global.R loaded successfully")
+message(paste("✓ API Gateway Target:", API_ENTRY))
