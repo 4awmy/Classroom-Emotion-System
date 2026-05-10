@@ -67,6 +67,31 @@ app.add_middleware(
 def health_check():
     return {"status": "ok"}
 
+# One-shot DB seed endpoint — protected by secret header
+@app.post("/internal/seed")
+def seed_database(x_seed_secret: str = None):
+    import os
+    from fastapi import Header, HTTPException
+    secret = os.getenv("JWT_SECRET", "")
+    if x_seed_secret != secret:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    from database import SessionLocal
+    import models
+    models.Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    try:
+        from sqlalchemy import text, inspect
+        inspector = inspect(engine)
+        tables = inspector.get_table_names()
+        counts = {}
+        for t in tables:
+            try:
+                counts[t] = db.execute(text(f"SELECT COUNT(*) FROM {t}")).scalar()
+            except: pass
+        return {"status": "ok", "tables": tables, "counts": counts}
+    finally:
+        db.close()
+
 # Include routers
 app.include_router(auth.router,        prefix="/auth",       tags=["Auth"])
 app.include_router(admin.router,       prefix="/admin",      tags=["Admin"])
