@@ -513,3 +513,1337 @@ WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in sh
 WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
 WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
 WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:36:59 EEST)" (scheduled at 2026-05-10 00:35:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:36:59 EEST)" (scheduled at 2026-05-10 00:35:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:36:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:36:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:37:59 EEST)" (scheduled at 2026-05-10 00:36:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:37:59 EEST)" (scheduled at 2026-05-10 00:36:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:37:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:37:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:38:59 EEST)" (scheduled at 2026-05-10 00:37:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:38:59 EEST)" (scheduled at 2026-05-10 00:37:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:38:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:38:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:39:59 EEST)" (scheduled at 2026-05-10 00:38:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:39:59 EEST)" (scheduled at 2026-05-10 00:38:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:39:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:39:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:40:59 EEST)" (scheduled at 2026-05-10 00:39:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:40:59 EEST)" (scheduled at 2026-05-10 00:39:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:40:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:40:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:41:59 EEST)" (scheduled at 2026-05-10 00:40:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:41:59 EEST)" (scheduled at 2026-05-10 00:40:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:41:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:41:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:42:59 EEST)" (scheduled at 2026-05-10 00:41:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:42:59 EEST)" (scheduled at 2026-05-10 00:41:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:42:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:42:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:43:59 EEST)" (scheduled at 2026-05-10 00:42:59.555045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:43:59 EEST)" (scheduled at 2026-05-10 00:42:59.552045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:43:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:43:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:44:59 EEST)" (scheduled at 2026-05-10 00:43:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:44:59 EEST)" (scheduled at 2026-05-10 00:43:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:44:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:44:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:45:59 EEST)" (scheduled at 2026-05-10 00:44:59.552045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:45:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:45:59 EEST)" (scheduled at 2026-05-10 00:44:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:45:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:46:59 EEST)" (scheduled at 2026-05-10 00:45:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:46:59 EEST)" (scheduled at 2026-05-10 00:45:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:46:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:46:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:47:59 EEST)" (scheduled at 2026-05-10 00:46:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:47:59 EEST)" (scheduled at 2026-05-10 00:46:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:47:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:47:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:48:59 EEST)" (scheduled at 2026-05-10 00:47:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:48:59 EEST)" (scheduled at 2026-05-10 00:47:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:48:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:48:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:49:59 EEST)" (scheduled at 2026-05-10 00:48:59.555045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:49:59 EEST)" (scheduled at 2026-05-10 00:48:59.552045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:49:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:49:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:50:59 EEST)" (scheduled at 2026-05-10 00:49:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:50:59 EEST)" (scheduled at 2026-05-10 00:49:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:50:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:50:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:51:59 EEST)" (scheduled at 2026-05-10 00:50:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:51:59 EEST)" (scheduled at 2026-05-10 00:50:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:51:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:51:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:52:59 EEST)" (scheduled at 2026-05-10 00:51:59.555045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:52:59 EEST)" (scheduled at 2026-05-10 00:51:59.552045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:52:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:52:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:53:59 EEST)" (scheduled at 2026-05-10 00:52:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:53:59 EEST)" (scheduled at 2026-05-10 00:52:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:53:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:53:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:54:59 EEST)" (scheduled at 2026-05-10 00:53:59.552045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:54:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:54:59 EEST)" (scheduled at 2026-05-10 00:53:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:54:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:55:59 EEST)" (scheduled at 2026-05-10 00:54:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:55:59 EEST)" (scheduled at 2026-05-10 00:54:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:55:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:55:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:56:59 EEST)" (scheduled at 2026-05-10 00:55:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:56:59 EEST)" (scheduled at 2026-05-10 00:55:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:56:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:56:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:57:59 EEST)" (scheduled at 2026-05-10 00:56:59.555045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:57:59 EEST)" (scheduled at 2026-05-10 00:56:59.552045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:57:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:57:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:58:59 EEST)" (scheduled at 2026-05-10 00:57:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:58:59 EEST)" (scheduled at 2026-05-10 00:57:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:58:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:58:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:59:59 EEST)" (scheduled at 2026-05-10 00:58:59.555045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:59:59 EEST)" (scheduled at 2026-05-10 00:58:59.552045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:59:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 00:59:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:00:59 EEST)" (scheduled at 2026-05-10 00:59:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:00:59 EEST)" (scheduled at 2026-05-10 00:59:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:00:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:00:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:01:59 EEST)" (scheduled at 2026-05-10 01:00:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:01:59 EEST)" (scheduled at 2026-05-10 01:00:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:01:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:01:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:02:59 EEST)" (scheduled at 2026-05-10 01:01:59.552045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:02:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:02:59 EEST)" (scheduled at 2026-05-10 01:01:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:02:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:03:59 EEST)" (scheduled at 2026-05-10 01:02:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:03:59 EEST)" (scheduled at 2026-05-10 01:02:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:03:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:03:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:04:59 EEST)" (scheduled at 2026-05-10 01:03:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:04:59 EEST)" (scheduled at 2026-05-10 01:03:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:04:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:04:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:05:59 EEST)" (scheduled at 2026-05-10 01:04:59.555045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:05:59 EEST)" (scheduled at 2026-05-10 01:04:59.552045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:05:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:05:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:06:59 EEST)" (scheduled at 2026-05-10 01:05:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:06:59 EEST)" (scheduled at 2026-05-10 01:05:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:06:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:06:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:07:59 EEST)" (scheduled at 2026-05-10 01:06:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:07:59 EEST)" (scheduled at 2026-05-10 01:06:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:07:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:07:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:08:59 EEST)" (scheduled at 2026-05-10 01:07:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:08:59 EEST)" (scheduled at 2026-05-10 01:07:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:08:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:08:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:09:59 EEST)" (scheduled at 2026-05-10 01:08:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:09:59 EEST)" (scheduled at 2026-05-10 01:08:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:09:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:09:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:10:59 EEST)" (scheduled at 2026-05-10 01:09:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:10:59 EEST)" (scheduled at 2026-05-10 01:09:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:10:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:10:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:11:59 EEST)" (scheduled at 2026-05-10 01:10:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:11:59 EEST)" (scheduled at 2026-05-10 01:10:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:11:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:11:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:12:59 EEST)" (scheduled at 2026-05-10 01:11:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:12:59 EEST)" (scheduled at 2026-05-10 01:11:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:12:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:12:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:13:59 EEST)" (scheduled at 2026-05-10 01:12:59.552045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:13:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:13:59 EEST)" (scheduled at 2026-05-10 01:12:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:13:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:14:59 EEST)" (scheduled at 2026-05-10 01:13:59.552045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:14:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:14:59 EEST)" (scheduled at 2026-05-10 01:13:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:14:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:15:59 EEST)" (scheduled at 2026-05-10 01:14:59.552045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:15:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:15:59 EEST)" (scheduled at 2026-05-10 01:14:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:15:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:16:59 EEST)" (scheduled at 2026-05-10 01:15:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:16:59 EEST)" (scheduled at 2026-05-10 01:15:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:16:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:16:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:17:59 EEST)" (scheduled at 2026-05-10 01:16:59.552045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:17:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:17:59 EEST)" (scheduled at 2026-05-10 01:16:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:17:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:18:59 EEST)" (scheduled at 2026-05-10 01:17:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:18:59 EEST)" (scheduled at 2026-05-10 01:17:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:18:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:18:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:19:59 EEST)" (scheduled at 2026-05-10 01:18:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:19:59 EEST)" (scheduled at 2026-05-10 01:18:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:19:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:19:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:20:59 EEST)" (scheduled at 2026-05-10 01:19:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:20:59 EEST)" (scheduled at 2026-05-10 01:19:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:20:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:20:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:21:59 EEST)" (scheduled at 2026-05-10 01:20:59.552045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:21:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:21:59 EEST)" (scheduled at 2026-05-10 01:20:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:21:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:22:59 EEST)" (scheduled at 2026-05-10 01:21:59.555045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:22:59 EEST)" (scheduled at 2026-05-10 01:21:59.552045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:22:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:22:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:23:59 EEST)" (scheduled at 2026-05-10 01:22:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:23:59 EEST)" (scheduled at 2026-05-10 01:22:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:23:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:23:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:24:59 EEST)" (scheduled at 2026-05-10 01:23:59.555045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:24:59 EEST)" (scheduled at 2026-05-10 01:23:59.552045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:24:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:24:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:25:59 EEST)" (scheduled at 2026-05-10 01:24:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:25:59 EEST)" (scheduled at 2026-05-10 01:24:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:25:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:25:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:26:59 EEST)" (scheduled at 2026-05-10 01:25:59.555045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:26:59 EEST)" (scheduled at 2026-05-10 01:25:59.552045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:26:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:26:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:27:59 EEST)" (scheduled at 2026-05-10 01:26:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:27:59 EEST)" (scheduled at 2026-05-10 01:26:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:27:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:27:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:28:59 EEST)" (scheduled at 2026-05-10 01:27:59.552045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:28:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:28:59 EEST)" (scheduled at 2026-05-10 01:27:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:28:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:29:59 EEST)" (scheduled at 2026-05-10 01:28:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:29:59 EEST)" (scheduled at 2026-05-10 01:28:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:29:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:29:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:30:59 EEST)" (scheduled at 2026-05-10 01:29:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:30:59 EEST)" (scheduled at 2026-05-10 01:29:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:30:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:30:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:31:59 EEST)" (scheduled at 2026-05-10 01:30:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:31:59 EEST)" (scheduled at 2026-05-10 01:30:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:31:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:31:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:32:59 EEST)" (scheduled at 2026-05-10 01:31:59.555045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:32:59 EEST)" (scheduled at 2026-05-10 01:31:59.552045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:32:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:32:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+INFO:apscheduler.executors.default:Running job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:33:59 EEST)" (scheduled at 2026-05-10 01:32:59.552045+03:00)
+INFO:apscheduler.executors.default:Running job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:33:59 EEST)" (scheduled at 2026-05-10 01:32:59.555045+03:00)
+INFO:apscheduler.executors.default:Job "auto_start_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:33:59 EEST)" executed successfully
+INFO:apscheduler.executors.default:Job "auto_end_lectures (trigger: interval[0:01:00], next run at: 2026-05-10 01:33:59 EEST)" executed successfully
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.
+WARNING:routers.session:[STREAM] No frames found for 10227_1_20260510_0018 in shared state.

@@ -34,5 +34,16 @@ class ConnectionManager:
         for connection in dead:
             self.disconnect(connection)
 
+    def broadcast_sync(self, message: dict):
+        """Thread-safe way to broadcast from synchronous code (like Vision Pipeline)."""
+        loop = get_main_loop()
+        if loop and loop.is_running():
+            loop.call_soon_threadsafe(
+                lambda: asyncio.create_task(self.broadcast(message))
+            )
+        else:
+            # Fallback if loop isn't captured yet
+            print(f"[WS] Warning: Cannot broadcast_sync, main loop not set or not running.")
+
 
 manager = ConnectionManager()

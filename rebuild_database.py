@@ -28,7 +28,7 @@ def main():
     os.chdir("python-api")
     
     scripts = [
-        "import_real_lms.py",
+        "prod_import_and_seed.py",
         "seed_academic_glue.py",
         "final_db_fix.py"
     ]

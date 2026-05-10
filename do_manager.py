@@ -20,7 +20,7 @@ TOKEN    = os.getenv("DO_TOKEN", "")
 if not TOKEN:
     print("[ERROR] Set DO_TOKEN env var: set DO_TOKEN=dop_v1_...")
     sys.exit(1)
-APP_NAME = "classroom-emotion-system"
+APP_NAME = "classroomx"
 STATE_FILE = ".do_state.json"   # caches app_id so you don't have to look it up
 BASE = "https://api.digitalocean.com/v2"
 
@@ -184,9 +184,10 @@ def cmd_status():
                 headers={"Accept": "application/json"})
             with urllib.request.urlopen(req, timeout=10) as r:
                 body = json.loads(r.read())
-                print(f"  /health → {body}")
+                print(f"  /health -> {body}")
         except Exception as e:
-            print(f"  /health → UNREACHABLE ({e})")
+            print(f"  /health -> UNREACHABLE ({e})")
+
 
 def cmd_logs(component="backend"):
     app_id = get_app_id()
