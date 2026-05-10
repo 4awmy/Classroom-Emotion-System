@@ -9,9 +9,9 @@ import io
 import requests
 import numpy as np
 import re
-import cv2
 
 try:
+    import cv2
     from insightface.app import FaceAnalysis
     _VISION_AVAILABLE = True
 except ImportError:
