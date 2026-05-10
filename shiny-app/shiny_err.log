@@ -1,0 +1,1399 @@
+Loading required package: shiny
+Warning: package 'shinydashboard' was built under R version 4.5.3
+
+Attaching package: 'shinydashboard'
+
+The following object is masked from 'package:graphics':
+
+    box
+
+Warning: package 'shinyalert' was built under R version 4.5.3
+
+Attaching package: 'shinyalert'
+
+The following object is masked from 'package:shiny':
+
+    runExample
+
+Warning: package 'shinyjs' was built under R version 4.5.3
+
+Attaching package: 'shinyjs'
+
+The following object is masked from 'package:shinyalert':
+
+    runExample
+
+The following object is masked from 'package:shiny':
+
+    runExample
+
+The following objects are masked from 'package:methods':
+
+    removeClass, show
+
+Warning: package 'shinyWidgets' was built under R version 4.5.3
+
+Attaching package: 'shinyWidgets'
+
+The following object is masked from 'package:shinyjs':
+
+    alert
+
+Warning: package 'DT' was built under R version 4.5.3
+
+Attaching package: 'DT'
+
+The following objects are masked from 'package:shiny':
+
+    dataTableOutput, renderDataTable
+
+Warning: package 'plotly' was built under R version 4.5.3
+Loading required package: ggplot2
+Warning: package 'ggplot2' was built under R version 4.5.3
+
+Attaching package: 'plotly'
+
+The following object is masked from 'package:ggplot2':
+
+    last_plot
+
+The following object is masked from 'package:stats':
+
+    filter
+
+The following object is masked from 'package:graphics':
+
+    layout
+
+Warning: package 'dplyr' was built under R version 4.5.3
+
+Attaching package: 'dplyr'
+
+The following objects are masked from 'package:stats':
+
+    filter, lag
+
+The following objects are masked from 'package:base':
+
+    intersect, setdiff, setequal, union
+
+Warning: package 'lubridate' was built under R version 4.5.3
+
+Attaching package: 'lubridate'
+
+The following objects are masked from 'package:base':
+
+    date, intersect, setdiff, union
+
+Warning: package 'httr2' was built under R version 4.5.3
+Warning: package 'curl' was built under R version 4.5.3
+Using libcurl 8.14.1 with Schannel
+Warning: package 'openxlsx' was built under R version 4.5.3
+Warning: package 'rmarkdown' was built under R version 4.5.3
+Warning: package 'bslib' was built under R version 4.5.3
+
+Attaching package: 'bslib'
+
+The following object is masked from 'package:shinyWidgets':
+
+    show_toast
+
+The following object is masked from 'package:utils':
+
+    page
+
+Warning: package 'config' was built under R version 4.5.3
+Do not use `library(config)` to attach the config package.
+Use `config::get()` directly.
+Attaching the config package can lead to namespace conflicts.
+
+Attaching package: 'config'
+
+The following objects are masked from 'package:base':
+
+    get, merge
+
+Warning: package 'DBI' was built under R version 4.5.3
+Warning: package 'RPostgres' was built under R version 4.5.3
+
+Listening on http://127.0.0.1:3838
+Warning: Error in : 'small' is not an exported object from 'namespace:shiny'
+  124: dots_list
+  123: shiny::div
+  116: renderUI
+  115: func
+   99: output$lecturer_home_kpis
+    1: shiny::runApp
+Warning: Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `"course"` instead of `.data$course`
+Warning: Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `"code"` instead of `.data$code`
+Warning: Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `"class"` instead of `.data$class`
+Warning: Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `"subject_key"` instead of `.data$subject_key`
+Warning: Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `"exam_id"` instead of `.data$exam_id`
+Warning: Error in load_csv: could not find function "load_csv"
+  124: exprFunc
+  123: widgetFunc
+  122: ::
+htmlwidgets
+shinyRenderWidget
+  121: func
+  105: renderFunc
+  101: renderFunc
+   99: output$lecturer_materials_table
+    1: shiny::runApp
+Warning: Error in : 'small' is not an exported object from 'namespace:shiny'
+  124: dots_list
+  123: shiny::div
+  116: renderUI
+  115: func
+   99: output$lecturer_home_kpis
+    1: shiny::runApp
+Warning: Error in load_csv: could not find function "load_csv"
+  124: exprFunc
+  123: widgetFunc
+  122: ::
+htmlwidgets
+shinyRenderWidget
+  121: func
+  105: renderFunc
+  101: renderFunc
+   99: output$lecturer_materials_table
+    1: shiny::runApp
+Warning: Error in : 'small' is not an exported object from 'namespace:shiny'
+  124: dots_list
+  123: shiny::div
+  116: renderUI
+  115: func
+   99: output$lecturer_home_kpis
+    1: shiny::runApp
+Warning: Error in : 'small' is not an exported object from 'namespace:shiny'
+  124: dots_list
+  123: shiny::div
+  116: renderUI
+  115: func
+   99: output$lecturer_home_kpis
+    1: shiny::runApp
+Warning: Error in : 'small' is not an exported object from 'namespace:shiny'
+  124: dots_list
+  123: shiny::div
+  116: renderUI
+  115: func
+   99: output$lecturer_home_kpis
+    1: shiny::runApp
+Warning: Error in : 'li' is not an exported object from 'namespace:shiny'
+  116: renderUI
+  115: func
+   99: output$lecturer_mobile_attendance_panel
+    1: shiny::runApp
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "2
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  144: <Anonymous>
+  143: signalCondition
+  142: signal_abort
+  141: abort
+  140: h
+  139: .handleSimpleError
+  138: stop
+  137: unsupported_date_time
+  136: to_posixct
+  133: timechange::time_floor
+  132: lubridate::floor_date
+  131: eval
+  130: mask$eval_all_mutate
+  129: mutate_col
+  127: mutate_cols
+  126: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_d2_timeline
+    1: shiny::runApp
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "2
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  139: <Anonymous>
+  138: signalCondition
+  137: signal_abort
+  136: abort
+  135: h
+  134: .handleSimpleError
+  133: stop
+  132: unsupported_date_time
+  131: to_posixct
+  128: timechange::time_floor
+  127: lubridate::floor_date
+  126: eval
+  125: mask$eval_all_mutate
+  124: mutate_col
+  122: mutate_cols
+  121: mutate.data.frame
+  116: renderUI
+  115: func
+   99: output$lecturer_d7_peak
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "2
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  139: <Anonymous>
+  138: signalCondition
+  137: signal_abort
+  136: abort
+  135: h
+  134: .handleSimpleError
+  133: stop
+  132: unsupported_date_time
+  131: to_posixct
+  128: timechange::time_floor
+  127: lubridate::floor_date
+  126: eval
+  125: mask$eval_all_mutate
+  124: mutate_col
+  122: mutate_cols
+  121: mutate.data.frame
+  116: renderUI
+  115: func
+   99: output$lecturer_d7_peak
+    1: shiny::runApp
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "2
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  144: <Anonymous>
+  143: signalCondition
+  142: signal_abort
+  141: abort
+  140: h
+  139: .handleSimpleError
+  138: stop
+  137: unsupported_date_time
+  136: to_posixct
+  133: timechange::time_floor
+  132: lubridate::floor_date
+  131: eval
+  130: mask$eval_all_mutate
+  129: mutate_col
+  127: mutate_cols
+  126: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_d2_timeline
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "2
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  139: <Anonymous>
+  138: signalCondition
+  137: signal_abort
+  136: abort
+  135: h
+  134: .handleSimpleError
+  133: stop
+  132: unsupported_date_time
+  131: to_posixct
+  128: timechange::time_floor
+  127: lubridate::floor_date
+  126: eval
+  125: mask$eval_all_mutate
+  124: mutate_col
+  122: mutate_cols
+  121: mutate.data.frame
+  116: renderUI
+  115: func
+   99: output$lecturer_d7_peak
+    1: shiny::runApp
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "2
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  144: <Anonymous>
+  143: signalCondition
+  142: signal_abort
+  141: abort
+  140: h
+  139: .handleSimpleError
+  138: stop
+  137: unsupported_date_time
+  136: to_posixct
+  133: timechange::time_floor
+  132: lubridate::floor_date
+  131: eval
+  130: mask$eval_all_mutate
+  129: mutate_col
+  127: mutate_cols
+  126: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_d2_timeline
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  215: <Anonymous>
+  214: signalCondition
+  213: signal_abort
+  212: abort
+  211: h
+  210: .handleSimpleError
+  209: stop
+  208: unsupported_date_time
+  207: to_posixct
+  204: timechange::time_floor
+  203: lubridate::floor_date
+  202: eval
+  201: mask$eval_all_mutate
+  200: mutate_col
+  198: mutate_cols
+  197: mutate.data.frame
+  192: renderPlot
+   99: output$lecturer_d5_heatmap
+    1: shiny::runApp
+Warning: Error in dplyr::mutate: ℹ In argument: `week = lubridate::floor_date(.data$timestamp, "week")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  214: <Anonymous>
+  213: signalCondition
+  212: signal_abort
+  211: abort
+  210: h
+  209: .handleSimpleError
+  208: stop
+  207: unsupported_date_time
+  206: to_posixct
+  203: timechange::time_floor
+  202: lubridate::floor_date
+  201: eval
+  200: mask$eval_all_mutate
+  199: mutate_col
+  197: mutate_cols
+  196: mutate.data.frame
+  192: renderPlot
+   99: output$lecturer_course_heatmap
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `week = lubridate::floor_date(.data$timestamp, "week")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_class_engagement_trend
+    1: shiny::runApp
+Warning: Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `"avg_focused"` instead of `.data$avg_focused`
+Warning: Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `"avg_engaged"` instead of `.data$avg_engaged`
+Warning: Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `"avg_confused"` instead of `.data$avg_confused`
+Warning: Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `"avg_frustrated"` instead of `.data$avg_frustrated`
+Warning: Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `"avg_anxious"` instead of `.data$avg_anxious`
+Warning: Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `"avg_disengaged"` instead of `.data$avg_disengaged`
+No trace type specified:
+  Based on info supplied, a 'scatter' trace seems appropriate.
+  Read more about this trace type -> https://plotly.com/r/reference/#scatter
+Warning: Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `"lecture_id"` instead of `.data$lecture_id`
+Warning: Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `"engagement_score"` instead of `.data$engagement_score`
+Warning: Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `"confusion_rate"` instead of `.data$confusion_rate`
+Warning: Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `"attendance_rate"` instead of `.data$attendance_rate`
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `"student_id"` instead of `.data$student_id`
+Warning: Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `"emotion"` instead of `.data$emotion`
+Warning: Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `"consecutive"` instead of `.data$consecutive`
+Warning: Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `"status"` instead of `.data$status`
+Warning: Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `"method"` instead of `.data$method`
+Warning: Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `"timestamp"` instead of `.data$timestamp`
+Warning: Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `"drop"` instead of `.data$drop`
+Warning: Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `"consec_run"` instead of `.data$consec_run`
+Warning: Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `"flag_type"` instead of `.data$flag_type`
+Warning: Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `"severity"` instead of `.data$severity`
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
+Warning: Error in dplyr::mutate: ℹ In argument: `time_bucket = lubridate::floor_date(.data$timestamp, "5
+  minutes")`.
+Caused by error in `unsupported_date_time()`:
+! Unsupported date-time class 'character'
+  142: <Anonymous>
+  141: signalCondition
+  140: signal_abort
+  139: abort
+  138: h
+  137: .handleSimpleError
+  136: stop
+  135: unsupported_date_time
+  134: to_posixct
+  131: timechange::time_floor
+  130: lubridate::floor_date
+  129: eval
+  128: mask$eval_all_mutate
+  127: mutate_col
+  125: mutate_cols
+  124: mutate.data.frame
+  120: ::
+plotly
+renderPlotly
+  119: func
+  116: shinyRenderWidget
+  115: func
+   99: output$lecturer_student_load
+    1: shiny::runApp
+Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
