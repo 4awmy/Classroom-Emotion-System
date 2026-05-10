@@ -92,19 +92,20 @@ def seed_database(x_seed_secret: str = None):
     finally:
         db.close()
 
-# Include routers
-app.include_router(auth.router,        prefix="/auth",       tags=["Auth"])
-app.include_router(admin.router,       prefix="/admin",      tags=["Admin"])
-app.include_router(courses.router,     prefix="/courses",    tags=["Courses"])
-app.include_router(emotion.router,     prefix="/emotion",    tags=["Emotion"])
-app.include_router(attendance.router,  prefix="/attendance", tags=["Attendance"])
-app.include_router(session.router,     prefix="/session",    tags=["Session"])
-app.include_router(gemini.router,      prefix="/gemini",     tags=["Gemini"])
-app.include_router(notes.router,       prefix="/notes",      tags=["Notes"])
-app.include_router(exam.router,        prefix="/exam",       tags=["Exam"])
-app.include_router(roster.router,      prefix="/roster",     tags=["Roster"])
-app.include_router(upload.router,      prefix="/upload",     tags=["Upload"])
-app.include_router(notify.router,      prefix="/notify",     tags=["Notify"])
+# Include routers with global /api prefix to match production routing
+app.include_router(auth.router,        prefix="/api/auth",       tags=["Auth"])
+app.include_router(admin.router,       prefix="/api/admin",      tags=["Admin"])
+app.include_router(courses.router,     prefix="/api/courses",    tags=["Courses"])
+app.include_router(emotion.router,     prefix="/api/emotion",    tags=["Emotion"])
+app.include_router(attendance.router,  prefix="/api/attendance", tags=["Attendance"])
+app.include_router(session.router,     prefix="/api/session",    tags=["Session"])
+app.include_router(gemini.router,      prefix="/api/gemini",     tags=["Gemini"])
+app.include_router(notes.router,       prefix="/api/notes",      tags=["Notes"])
+app.include_router(exam.router,        prefix="/api/exam",       tags=["Exam"])
+app.include_router(roster.router,      prefix="/api/roster",     tags=["Roster"])
+app.include_router(upload.router,      prefix="/api/upload",     tags=["Upload"])
+app.include_router(notify.router,      prefix="/api/notify",     tags=["Notify"])
+
 
 if __name__ == "__main__":
     logger.info("[INIT] Launching server on port 8000...")
