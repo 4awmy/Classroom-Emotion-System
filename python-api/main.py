@@ -67,11 +67,21 @@ def health_check(db: Session = Depends(get_db)):
     return {
         "status": "ok" if db_ok else "error",
         "database": "connected" if db_ok else "disconnected",
-        "version": "3.4.1", 
+        "version": "3.4.2", 
         "message": "pong"
     }
 
-# Include routers twice: with and without /api prefix to handle DO ingress stripping
+@app.get("/debug/students")
+def debug_students(db: Session = Depends(get_db)):
+    try:
+        count = db.execute(text("SELECT count(*) FROM students")).fetchone()[0]
+        first = db.execute(text("SELECT name FROM students LIMIT 1")).fetchone()[0]
+        return {"count": count, "sample": first}
+    except Exception as e:
+        return {"error": str(e)}
+
+# Include routers
+# We include them TWICE: with and without /api to handle internal/external routing perfectly
 for prefix in ["", "/api"]:
     app.include_router(auth.router,        prefix=f"{prefix}/auth",       tags=["Auth"])
     app.include_router(admin.router,       prefix=f"{prefix}/admin",      tags=["Admin"])
