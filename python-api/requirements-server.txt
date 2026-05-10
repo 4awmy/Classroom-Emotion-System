@@ -25,6 +25,7 @@ openpyxl
 requests
 qrcode[pil]
 anyascii
+opencv-python-headless
 
 # Scheduling
 apscheduler
