@@ -370,6 +370,74 @@ lecturer_server <- function(input, output, session) {
 
   live_reactive <- shiny::reactiveTimer(2000)
 
+  # Cloud Health & Vision Status
+  output$lecturer_cloud_health_ui <- shiny::renderUI({
+    live_reactive()
+    res <- tryCatch({
+      httr2::request(paste0(FASTAPI_BASE, "/health")) |> httr2::req_perform()
+      TRUE
+    }, error = function(e) FALSE)
+    
+    if (res) {
+      shiny::div(class = "label label-success", "Cloud Online")
+    } else {
+      shiny::div(class = "label label-danger", "Cloud Unreachable")
+    }
+  })
+
+  output$lecturer_vision_status_text <- shiny::renderText({
+    live_reactive()
+    emotions <- emotions_data()
+    lecture_id <- get_live_lecture_id()
+    if (is.null(lecture_id)) return("Ready")
+    
+    # Check if we got any data in the last 10 seconds
+    recent <- emotions |> 
+      dplyr::filter(.data$lecture_id == lecture_id) |>
+      dplyr::filter(.data$timestamp >= (lubridate::now() - lubridate::seconds(10)))
+    
+    if (nrow(recent) > 0) "Vision Node Streaming" else "Waiting for Local Node..."
+  })
+
+  # Vision Launcher Generator
+  output$lecturer_download_launcher <- shiny::downloadHandler(
+    filename = function() {
+      paste0("run_classroom_ai_", get_live_lecture_id() %||% "L1", ".ps1")
+    },
+    content = function(file) {
+      lecture_id <- get_live_lecture_id() %||% "L1"
+      source_val <- input$lecturer_vision_source
+      video_src <- if (source_val == "ip") {
+        paste0("http://", input$lecturer_vision_ip, "/video")
+      } else {
+        source_val
+      }
+      
+      # Build the PowerShell script
+      script <- c(
+        "# AAST Classroom Emotion System - Auto Launcher",
+        paste0("$env:API_URL = '", FASTAPI_BASE, "'"),
+        paste0("$env:VIDEO_SOURCE = '", video_src, "'"),
+        paste0("$env:LECTURE_ID = '", lecture_id, "'"),
+        "",
+        "Write-Host '-----------------------------------------' -ForegroundColor Cyan",
+        "Write-Host '   AAST VISION NODE STARTING...' -ForegroundColor Cyan",
+        "Write-Host '-----------------------------------------' -ForegroundColor Cyan",
+        "Write-Host 'Cloud API: ' -NoNewline; Write-Host $env:API_URL -ForegroundColor Green",
+        "Write-Host 'Lecture:   ' -NoNewline; Write-Host $env:LECTURE_ID -ForegroundColor Green",
+        "Write-Host 'Camera:    ' -NoNewline; Write-Host $env:VIDEO_SOURCE -ForegroundColor Green",
+        "",
+        "if (Get-Command python -ErrorAction SilentlyContinue) {",
+        "    python vision/main.py",
+        "} else {",
+        "    Write-Host 'ERROR: Python not found in PATH.' -ForegroundColor Red",
+        "    Read-Host 'Press Enter to exit'",
+        "}"
+      )
+      writeLines(script, file)
+    }
+  )
+
   get_live_lecture_id <- function() {
     lid <- input$lecturer_live_lecture
     if (is.null(lid) || nchar(trimws(lid)) == 0) return(NULL)

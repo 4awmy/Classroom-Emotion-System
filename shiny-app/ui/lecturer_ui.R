@@ -268,24 +268,34 @@ lecturer_ui <- function() {
           h2("Live Class Monitoring"),
           fluidRow(
             column(3,
-              textInput("lecturer_live_lecture", "Lecture ID",
-                       placeholder = "e.g. L1")
+              wellPanel(
+                h4(icon("gear"), "Session Config"),
+                textInput("lecturer_live_lecture", "Lecture ID", placeholder = "e.g. L1"),
+                actionButton("lecturer_live_start", "Start Session", class = "btn-success btn-block", icon = icon("play")),
+                br(),
+                actionButton("lecturer_live_end", "End Session", class = "btn-danger btn-block", icon = icon("stop"))
+              )
             ),
-            column(3,
-              selectInput("lecturer_live_camera", "Camera",
-                         choices = list("Default (0)" = "0", "Phone Camera" = "1", "External Cam" = "2", "Custom URL" = "custom"),
-                         selected = "0"),
-              uiOutput("lecturer_live_custom_cam_ui")
+            column(5,
+              wellPanel(
+                h4(icon("video"), "Vision Node Setup"),
+                p("Process AI on this laptop to use a Phone or Webcam."),
+                selectInput("lecturer_vision_source", "Camera Source",
+                           choices = list("Laptop Webcam (0)" = "0", "Phone (IP Webcam)" = "ip", "External Cam" = "1")),
+                conditionalPanel(
+                  condition = "input.lecturer_vision_source == 'ip'",
+                  textInput("lecturer_vision_ip", "Phone IP Address", placeholder = "192.168.1.5:8080")
+                ),
+                downloadButton("lecturer_download_launcher", "Download Launcher", class = "btn-info btn-block")
+              )
             ),
-            column(3,
-              br(),
-              actionButton("lecturer_live_start", "Start Lecture",
-                          class = "btn-success", icon = icon("play"))
-            ),
-            column(3,
-              br(),
-              actionButton("lecturer_live_end", "End Lecture",
-                          class = "btn-danger", icon = icon("stop"))
+            column(4,
+              wellPanel(
+                h4(icon("link"), "Cloud Status"),
+                uiOutput("lecturer_cloud_health_ui"),
+                br(),
+                p("Status: ", strong(textOutput("lecturer_vision_status_text", inline = TRUE)))
+              )
             )
           ),
           br(),
