@@ -139,6 +139,29 @@ export const notesAPI = {
   },
 };
 
+export const attendanceAPI = {
+  scanCheckIn: async (lectureId: string, studentId: string) => {
+    const response = await apiClient.post("/attendance/scan", {
+      lecture_id: lectureId,
+      student_id: studentId,
+    });
+    return response.data;
+  },
+};
+
+export const checkAPI = {
+  submitAnswer: async (checkId: number, studentId: string, chosenOption: number) => {
+    const response = await apiClient.post("/gemini/check/submit", null, {
+      params: {
+        check_id: checkId,
+        student_id: studentId,
+        chosen_option: chosenOption,
+      },
+    });
+    return response.data;
+  },
+};
+
 // WebSocket message listeners
 const messageListeners: Array<(data: Record<string, unknown>) => void> = [];
 

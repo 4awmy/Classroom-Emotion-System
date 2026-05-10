@@ -308,3 +308,40 @@ class FocusStrikeResponse(FocusStrikeBase):
     id: int
     timestamp: datetime
     model_config = ConfigDict(from_attributes=True)
+
+# Comprehension Check
+class ComprehensionCheckBase(BaseModel):
+    lecture_id: str
+    material_id: Optional[str] = None
+    question: str
+    options: str # JSON string
+    correct_option: int
+    topic: Optional[str] = None
+
+class ComprehensionCheckCreate(ComprehensionCheckBase):
+    pass
+
+class ComprehensionCheckResponse(ComprehensionCheckBase):
+    id: int
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+# Student Answer
+class StudentAnswerBase(BaseModel):
+    check_id: int
+    student_id: str
+    chosen_option: int
+
+class StudentAnswerCreate(StudentAnswerBase):
+    pass
+
+class StudentAnswerResponse(StudentAnswerBase):
+    id: int
+    is_correct: bool
+    timestamp: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+# Attendance Scan
+class AttendanceScanRequest(BaseModel):
+    lecture_id: str
+    student_id: str

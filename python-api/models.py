@@ -218,3 +218,28 @@ class FocusStrike(Base):
 
     student: Mapped["Student"] = relationship(back_populates="focus_strikes")
     lecture: Mapped["Lecture"] = relationship(back_populates="focus_strikes")
+
+class ComprehensionCheck(Base):
+    __tablename__ = "comprehension_checks"
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    lecture_id: Mapped[str] = mapped_column(ForeignKey("lectures.lecture_id", ondelete="CASCADE"))
+    material_id: Mapped[Optional[str]] = mapped_column(ForeignKey("materials.material_id", ondelete="SET NULL"))
+    question: Mapped[str] = mapped_column(String, nullable=False)
+    options: Mapped[str] = mapped_column(String, nullable=False) # JSON encoded list
+    correct_option: Mapped[int] = mapped_column(Integer, nullable=False) # 0-based index
+    topic: Mapped[Optional[str]] = mapped_column(String) # For mapping back to notes
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    lecture: Mapped["Lecture"] = relationship()
+    answers: Mapped[List["StudentAnswer"]] = relationship(back_populates="check")
+
+class StudentAnswer(Base):
+    __tablename__ = "student_answers"
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    check_id: Mapped[int] = mapped_column(ForeignKey("comprehension_checks.id", ondelete="CASCADE"))
+    student_id: Mapped[str] = mapped_column(ForeignKey("students.student_id", ondelete="CASCADE"))
+    chosen_option: Mapped[int] = mapped_column(Integer, nullable=False)
+    is_correct: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    timestamp: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    check: Mapped["ComprehensionCheck"] = relationship(back_populates="answers")

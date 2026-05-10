@@ -53,6 +53,15 @@ export default function StudentLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="scan"
+        options={{
+          title: "Scan",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="qr-code" size={size} color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }

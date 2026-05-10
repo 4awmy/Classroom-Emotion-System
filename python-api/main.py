@@ -31,6 +31,35 @@ async def lifespan(app: FastAPI):
     # --- Startup ---
     logger.info("[INIT] Production Startup...")
     
+    # 0. Capture main loop for WebSocket broadcast_sync
+    import asyncio
+    from services.websocket import set_main_loop
+    set_main_loop(asyncio.get_running_loop())
+    
+    # Try to ensure tables exist via Direct SQL
+    try:
+        with engine.connect() as conn:
+            tables_sql = [
+                "CREATE TABLE IF NOT EXISTS admins (admin_id VARCHAR PRIMARY KEY, auth_user_id UUID UNIQUE, name VARCHAR, email VARCHAR UNIQUE, needs_password_reset BOOLEAN DEFAULT false, phone VARCHAR, created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), password_hash VARCHAR);",
+                "CREATE TABLE IF NOT EXISTS lecturers (lecturer_id VARCHAR PRIMARY KEY, auth_user_id UUID UNIQUE, name VARCHAR, email VARCHAR UNIQUE, needs_password_reset BOOLEAN DEFAULT false, phone VARCHAR, photo_url VARCHAR, created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), password_hash VARCHAR);",
+                "CREATE TABLE IF NOT EXISTS students (student_id VARCHAR PRIMARY KEY, auth_user_id UUID UNIQUE, name VARCHAR, email VARCHAR, needs_password_reset BOOLEAN DEFAULT false, department VARCHAR, year INTEGER, face_encoding BYTEA, photo_url VARCHAR, enrolled_at TIMESTAMP WITH TIME ZONE DEFAULT now(), password_hash VARCHAR);",
+                "CREATE TABLE IF NOT EXISTS comprehension_checks (id SERIAL PRIMARY KEY, lecture_id VARCHAR REFERENCES lectures(lecture_id) ON DELETE CASCADE, material_id VARCHAR REFERENCES materials(material_id) ON DELETE SET NULL, question TEXT NOT NULL, options TEXT NOT NULL, correct_option INTEGER NOT NULL, topic VARCHAR, created_at TIMESTAMP WITH TIME ZONE DEFAULT now());",
+                "CREATE TABLE IF NOT EXISTS student_answers (id SERIAL PRIMARY KEY, check_id INTEGER REFERENCES comprehension_checks(id) ON DELETE CASCADE, student_id VARCHAR REFERENCES students(student_id) ON DELETE CASCADE, chosen_option INTEGER NOT NULL, is_correct BOOLEAN NOT NULL, timestamp TIMESTAMP WITH TIME ZONE DEFAULT now());"
+            ]
+            for sql in tables_sql:
+                try:
+                    conn.execute(text(sql))
+                    conn.commit()
+                except: pass
+            
+            # Create default admin
+            demo_uuid = "2737e12f-5771-4cd9-b4af-4cc4c3349fa0"
+            conn.execute(text(f"INSERT INTO admins (admin_id, auth_user_id, name, email, needs_password_reset) VALUES ('admin', '{demo_uuid}', 'System Admin', 'admin@aast.edu', false) ON CONFLICT DO NOTHING;"))
+            conn.commit()
+            logger.info("[INIT] Database initialization complete.")
+    except Exception as e:
+        logger.error(f"[INIT] Database pre-init failed: {e}")
+
     # Start scheduler (Optional AI deps)
     try:
         from services.lecture_scheduler import start_scheduler
@@ -43,7 +72,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="AAST LMS API", lifespan=lifespan)
 
-# WIDE OPEN CORS for production stability
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -55,24 +84,44 @@ app.add_middleware(
 # Root/Health
 @app.get("/")
 @app.get("/health")
+@app.get("/api/health")
 @app.get("/ping")
 def health_check(db: Session = Depends(get_db)):
     db_ok = False
     try:
         db.execute(text("SELECT 1"))
         db_ok = True
+    except: pass
+    return {"status": "ok" if db_ok else "error", "version": "3.5.1", "db": "connected" if db_ok else "disconnected"}
+
+# One-shot DB seed endpoint
+@app.post("/api/internal/seed")
+@app.post("/internal/seed")
+def seed_database(x_seed_secret: str = None):
+    import os
+    secret = os.getenv("JWT_SECRET", "aast-lms-secret-2026")
+    if x_seed_secret != secret:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    
+    results = {"status": "starting"}
+    try:
+        inspector = inspect(engine)
+        tables = inspector.get_table_names()
+        counts = {}
+        db = SessionLocal()
+        for t in tables:
+            try:
+                counts[t] = db.execute(text(f"SELECT COUNT(*) FROM {t}")).scalar()
+            except: pass
+        db.close()
+        results["status"] = "ok"
+        results["tables"] = tables
+        results["counts"] = counts
+        return results
     except Exception as e:
-        logger.error(f"Health check DB error: {e}")
-        
-    return {
-        "status": "ok" if db_ok else "error",
-        "database": "connected" if db_ok else "disconnected",
-        "version": "3.5.0", 
-        "message": "pong"
-    }
+        return {"status": "error", "error": str(e), "results": results}
 
 # Include routers
-# We include them TWICE: with and without /api to handle internal/external routing perfectly
 for prefix in ["", "/api"]:
     app.include_router(auth.router,        prefix=f"{prefix}/auth",       tags=["Auth"])
     app.include_router(admin.router,       prefix=f"{prefix}/admin",      tags=["Admin"])
