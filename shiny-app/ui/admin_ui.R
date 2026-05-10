@@ -37,6 +37,7 @@ admin_ui <- function() {
         tags$li(class = "header", "ADMINISTRATION"),
         shinydashboard::menuItem("Course Manager", tabName = "admin_courses", icon = icon("book")),
         shinydashboard::menuItem("Class Manager", tabName = "admin_classes", icon = icon("chalkboard")),
+        shinydashboard::menuItem("Roster Upload", tabName = "admin_roster", icon = icon("file-upload")),
         
         tags$li(class = "header", "USER ACCESS"),
         shinydashboard::menuItem("Admins", tabName = "admin_manage_admins", icon = icon("user-shield")),
@@ -101,6 +102,24 @@ admin_ui <- function() {
               )
             ),
             column(8, DT::dataTableOutput("admin_classes_table"))
+          )
+        ),
+
+        # --- Roster Upload ---
+        shinydashboard::tabItem(tabName = "admin_roster",
+          h2("Student Roster Upload"),
+          p("Upload the student roster XLSX file. Face images are fetched automatically from Google Drive links."),
+          fluidRow(
+            column(4,
+              wellPanel(
+                fileInput("admin_roster_xlsx", "Select Roster XLSX File", accept = c(".xlsx")),
+                helpText("Expected columns: student_id, name, email, photo_link"),
+                actionButton("admin_roster_upload", "Upload Roster", class = "btn-primary", icon = icon("upload"))
+              )
+            ),
+            column(8,
+              uiOutput("admin_roster_status")
+            )
           )
         ),
 

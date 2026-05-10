@@ -29,24 +29,68 @@ library(RPostgres)
 # Configuration
 # ============================================================================
 
-# We use the Public URL for maximum reliability
-# DigitalOcean's internal networking is bypassable via the public ingress
-FASTAPI_BASE <- "https://classroomx-lkbxf.ondigitalocean.app/api"
+# Prioritize Environment Variables (DigitalOcean)
+FASTAPI_BASE <- Sys.getenv("API_URL", "")
+
+if (FASTAPI_BASE == "") {
+  # Fallback to config file for local development
+  tryCatch({
+    cfg <- config::get(file = "config.yml")
+    FASTAPI_BASE <- cfg$fastapi_base
+  }, error = function(e) {
+    FASTAPI_BASE <- "http://localhost:8000"
+  })
+}
+
+# Ensure API_URL points to /api if not already specified (for multi-service routing)
+if (!grepl("/api$", FASTAPI_BASE) && !grepl("/api/$", FASTAPI_BASE)) {
+    # Strip trailing slash then add /api
+    FASTAPI_BASE <- paste0(sub("/$", "", FASTAPI_BASE), "/api")
+}
 
 # --- Database Query Helper ---
+# Local Shiny defaults to cached CSV exports to avoid repeated failed DB connects.
+.query_table_cache <- new.env(parent = emptyenv())
+
 query_table <- function(table_name) {
+  cache_key <- table_name
+  if (exists(cache_key, envir = .query_table_cache, inherits = FALSE)) {
+    return(base::get(cache_key, envir = .query_table_cache, inherits = FALSE))
+  }
+
+  use_database <- identical(tolower(Sys.getenv("USE_DATABASE", "false")), "true")
   db_url <- Sys.getenv("DATABASE_URL", "")
-  if (db_url == "") return(data.frame())
-  
-  tryCatch({
-    con <- dbConnect(RPostgres::Postgres(), url = db_url)
-    res <- dbReadTable(con, table_name)
-    dbDisconnect(con)
-    return(res)
-  }, error = function(e) {
-    message(paste("[DB] Query failed:", e$message))
-    return(data.frame())
-  })
+  if (use_database && db_url != "") {
+    db_result <- tryCatch({
+      con <- dbConnect(RPostgres::Postgres(), dbname = db_url)
+      on.exit(dbDisconnect(con), add = TRUE)
+      dbReadTable(con, table_name)
+    }, error = function(e) {
+      print(paste("[DB] Query failed for", table_name, ":", e$message))
+      NULL
+    })
+    if (!is.null(db_result)) {
+      assign(cache_key, db_result, envir = .query_table_cache)
+      return(db_result)
+    }
+  }
+
+  csv_name <- switch(
+    table_name,
+    "emotion_log" = "emotions",
+    "attendance_log" = "attendance",
+    table_name
+  )
+  csv_path <- file.path("..", "python-api", "data", "exports", paste0(csv_name, ".csv"))
+  if (file.exists(csv_path)) {
+    csv_result <- read.csv(csv_path, stringsAsFactors = FALSE)
+    assign(cache_key, csv_result, envir = .query_table_cache)
+    return(csv_result)
+  }
+
+  empty_result <- data.frame()
+  assign(cache_key, empty_result, envir = .query_table_cache)
+  empty_result
 }
 
 # ============================================================================
@@ -54,17 +98,13 @@ query_table <- function(table_name) {
 # ============================================================================
 
 api_call <- function(endpoint, method = "GET", body = NULL, auth_token = NULL, content_type = "application/json") {
-  # Endpoint should start with /
-  if (!grepl("^/", endpoint)) endpoint <- paste0("/", endpoint)
-  
   url <- paste0(FASTAPI_BASE, endpoint)
   print(paste("[API] Calling:", method, url))
 
   req <- request(url) |>
     req_method(method) |>
     req_headers("Content-Type" = content_type) |>
-    req_error(is_error = \(resp) FALSE) |>
-    req_timeout(15)
+    req_error(is_error = \(resp) FALSE)
 
   if (!is.null(auth_token)) {
     req <- req |> req_headers("Authorization" = paste("Bearer", auth_token))
@@ -80,28 +120,30 @@ api_call <- function(endpoint, method = "GET", body = NULL, auth_token = NULL, c
     
     if (resp_status(resp) >= 400) {
       # Handle common error responses
-      err_body <- tryCatch(resp_body_json(resp), error = function(e) list(detail = "Unknown error"))
-      detail <- if (!is.null(err_body$detail)) {
-        if (is.list(err_body$detail)) paste(err_body$detail, collapse = "; ") else err_body$detail
-      } else {
-        "Unauthorized or invalid request"
-      }
-      
-      shinyalert::shinyalert(
-        title = paste("Login Error", resp_status(resp)),
-        text = as.character(detail),
-        type = "error"
-      )
+      try({
+        err_body <- resp_body_json(resp)
+        detail <- if (!is.null(err_body$detail)) {
+          if (is.list(err_body$detail)) paste(err_body$detail, collapse = "; ") else err_body$detail
+        } else {
+          err_body$message %||% "Internal Server Error"
+        }
+        
+        shinyalert::shinyalert(
+          title = paste("Login Failed"),
+          text = as.character(detail),
+          type = "error"
+        )
+      }, silent = TRUE)
       return(NULL)
     }
     
     resp_body_json(resp)
   }, error = function(e) {
-    print(paste("[API] CONNECTION FAILED:", e$message))
+    print(paste("[API] FATAL ERROR:", e$message))
     shinyalert::shinyalert(
-      title = "System Busy",
-      text = "The security server is currently initializing. Please wait 30 seconds and try again.",
-      type = "info"
+      title = "Connection Error",
+      text = paste("Could not reach backend:", e$message),
+      type = "error"
     )
     return(NULL)
   })
@@ -133,5 +175,6 @@ get_emotion_color <- function(emotion) {
 # ============================================================================
 # Initial Boot Logs
 # ============================================================================
-print("✓ Shiny System Active")
-print(paste("✓ Target Gateway:", FASTAPI_BASE))
+print("✓ Shiny Global.R loaded successfully")
+print(paste("✓ API URL Target:", FASTAPI_BASE))
+print(paste("✓ DB URL Present:", nchar(Sys.getenv("DATABASE_URL", "")) > 0))

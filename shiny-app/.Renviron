@@ -3,3 +3,6 @@ SUPABASE_DB_HOST=aws-0-eu-central-1.pooler.supabase.com
 SUPABASE_DB_NAME=postgres
 SUPABASE_DB_USER=postgres.asefcgykjadlekhwwzar
 SUPABASE_DB_PORT=6543
+API_URL=http://127.0.0.1:8000
+DATABASE_URL=postgresql://postgres.asefcgykjadlekhwwzar:kdJTnejv0XYhud5C@aws-0-eu-central-1.pooler.supabase.com:6543/postgres
+USE_DATABASE=false

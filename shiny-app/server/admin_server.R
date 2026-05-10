@@ -207,6 +207,38 @@ admin_server <- function(input, output, session, session_state) {
     class_refresh(class_refresh() + 1)
   })
 
+  # --- Roster Upload ---
+  shiny::observeEvent(input$admin_roster_upload, {
+    req(input$admin_roster_xlsx)
+
+    file_info <- input$admin_roster_xlsx
+
+    result <- tryCatch({
+      httr2::request(paste0(FASTAPI_BASE, "/roster/upload")) |>
+        httr2::req_body_multipart(
+          roster_xlsx = curl::form_file(
+            file_info$datapath,
+            type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          )
+        ) |>
+        httr2::req_perform() |>
+        httr2::resp_body_json()
+    }, error = function(e) {
+      shinyalert::shinyalert("Upload Failed", as.character(e), type = "error")
+      NULL
+    })
+
+    if (!is.null(result)) {
+      output$admin_roster_status <- shiny::renderUI({
+        shiny::div(
+          class = "alert alert-success",
+          sprintf("Upload complete: %d students created, %d face encodings saved",
+                  result$students_created %||% 0, result$encodings_saved %||% 0)
+        )
+      })
+    }
+  })
+
   # --- Admin Manager ---
   admin_refresh <- reactiveVal(0)
   output$admin_list_table <- DT::renderDataTable({ admin_refresh(); data <- api_call("/admin/admins", auth_token = session_state$token); if (is.null(data)) return(data.frame()); dplyr::bind_rows(lapply(data, as.data.frame)) |> DT::datatable() })

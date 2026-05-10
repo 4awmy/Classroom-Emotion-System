@@ -1,64 +1,235 @@
 # lecturer_server.R - Server logic for 5 lecturer submodules
 
-lecturer_server <- function(input, output, session) {
+lecturer_server <- function(input, output, session, session_state = NULL) {
   source("modules/engagement_score.R", local = TRUE)
   source("modules/clustering.R", local = TRUE)
   source("modules/attendance.R", local = TRUE)
 
-  # Reactive data - accelerated for Live Dashboard
+  # Reactive data - cached and moderately refreshed for dashboard responsiveness.
   emotions_data <- shiny::reactive({
-    shiny::invalidateLater(2000, session)
+    shiny::invalidateLater(30000, session)
     query_table("emotions")
   })
 
   attendance_data <- shiny::reactive({
-    shiny::invalidateLater(2000, session)
+    shiny::invalidateLater(30000, session)
     query_table("attendance")
   })
 
   incidents_data <- shiny::reactive({
-    shiny::invalidateLater(2000, session)
+    shiny::invalidateLater(30000, session)
     query_table("incidents")
   })
 
-  # ========================================================================
-  # Submodule A: Roster Setup
-  # ========================================================================
+  home_pct <- function(value) {
+    if (is.null(value) || length(value) == 0 || is.na(value)) return("0%")
+    sprintf("%.0f%%", value * 100)
+  }
 
-  shiny::observeEvent(input$lecturer_roster_upload, {
-    req(input$lecturer_roster_xlsx)
+  output$lecturer_home_kpis <- shiny::renderUI({
+    attendance <- attendance_data()
+    emotions <- emotions_data()
+    incidents <- incidents_data()
 
-    file_info <- input$lecturer_roster_xlsx
+    total_subjects <- nrow(unique(lecturer_course_rows[c("code", "class")]))
+    planned_lectures <- total_subjects * 16
+    lecture_count <- length(unique(c(attendance$lecture_id, emotions$lecture_id)))
 
-    result <- tryCatch({
-      httr2::request(paste0(FASTAPI_BASE, "/roster/upload")) |>
-        httr2::req_body_multipart(
-          roster_xlsx = curl::form_file(
-            file_info$datapath,
-            type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-          )
-        ) |>
-        httr2::req_perform() |>
-        httr2::resp_body_json()
-    }, error = function(e) {
-      shinyalert::shinyalert("Upload Failed", as.character(e), type = "error")
-      NULL
-    })
-
-    if (!is.null(result)) {
-      output$lecturer_roster_status <- shiny::renderUI({
-        shiny::div(
-          class = "alert alert-success",
-          sprintf("✓ Upload complete: %d students created, %d face encodings saved",
-                  result$students_created %||% 0, result$encodings_saved %||% 0)
-        )
-      })
+    attendance_rate <- if (nrow(attendance) > 0 && "status" %in% names(attendance)) {
+      mean(tolower(attendance$status) == "present", na.rm = TRUE)
+    } else {
+      NA_real_
     }
+
+    avg_engagement <- if (nrow(emotions) > 0 && "engagement_score" %in% names(emotions)) {
+      mean(emotions$engagement_score, na.rm = TRUE)
+    } else {
+      NA_real_
+    }
+
+    confusion_rate <- if (nrow(emotions) > 0 && "emotion" %in% names(emotions)) {
+      mean(emotions$emotion %in% c("Confused", "Frustrated"), na.rm = TRUE)
+    } else {
+      NA_real_
+    }
+
+    exam_ids <- if (nrow(incidents) > 0 && "exam_id" %in% names(incidents)) {
+      unique(stats::na.omit(incidents$exam_id))
+    } else {
+      character(0)
+    }
+
+    high_severity <- if (nrow(incidents) > 0 && "severity" %in% names(incidents)) {
+      sum(suppressWarnings(as.numeric(incidents$severity)) >= 3, na.rm = TRUE)
+    } else {
+      0
+    }
+
+    shiny::fluidRow(
+      shiny::column(2, shiny::div(class = "lecturer-kpi-card", shiny::span("Subjects"), shiny::strong(total_subjects), shiny::small("assigned"))),
+      shiny::column(2, shiny::div(class = "lecturer-kpi-card", shiny::span("Planned Lectures"), shiny::strong(planned_lectures), shiny::small("16 weeks each"))),
+      shiny::column(2, shiny::div(class = "lecturer-kpi-card", shiny::span("Active Lectures"), shiny::strong(lecture_count), shiny::small("with records"))),
+      shiny::column(2, shiny::div(class = "lecturer-kpi-card", shiny::span("Attendance"), shiny::strong(home_pct(attendance_rate)), shiny::small("present rate"))),
+      shiny::column(2, shiny::div(class = "lecturer-kpi-card", shiny::span("Engagement"), shiny::strong(home_pct(avg_engagement)), shiny::small("average score"))),
+      shiny::column(2, shiny::div(class = "lecturer-kpi-card", shiny::span("Exam Risk"), shiny::strong(high_severity), shiny::small(sprintf("%d exams tracked", length(exam_ids)))))
+    )
+  })
+
+  output$lecturer_home_weekly_trend <- plotly::renderPlotly({
+    attendance <- attendance_data()
+    emotions <- emotions_data()
+
+    att_week <- data.frame()
+    if (nrow(attendance) > 0 && all(c("timestamp", "status") %in% names(attendance))) {
+      attendance$timestamp <- as.POSIXct(attendance$timestamp)
+      att_week <- attendance |>
+        dplyr::mutate(week = lubridate::floor_date(.data$timestamp, "week"),
+                      present = tolower(.data$status) == "present") |>
+        dplyr::group_by(.data$week) |>
+        dplyr::summarise(attendance_rate = mean(.data$present, na.rm = TRUE), .groups = "drop")
+    }
+
+    eng_week <- data.frame()
+    if (nrow(emotions) > 0 && all(c("timestamp", "engagement_score") %in% names(emotions))) {
+      emotions$timestamp <- as.POSIXct(emotions$timestamp)
+      eng_week <- emotions |>
+        dplyr::mutate(week = lubridate::floor_date(.data$timestamp, "week")) |>
+        dplyr::group_by(.data$week) |>
+        dplyr::summarise(engagement = mean(.data$engagement_score, na.rm = TRUE), .groups = "drop")
+    }
+
+    if (nrow(att_week) == 0 && nrow(eng_week) == 0) {
+      return(plotly::plot_ly() |> plotly::add_text(text = "No weekly attendance or engagement data yet"))
+    }
+
+    p <- plotly::plot_ly()
+    if (nrow(att_week) > 0) {
+      p <- p |> plotly::add_trace(data = att_week, x = ~week, y = ~attendance_rate, name = "Attendance", type = "scatter", mode = "lines+markers")
+    }
+    if (nrow(eng_week) > 0) {
+      p <- p |> plotly::add_trace(data = eng_week, x = ~week, y = ~engagement, name = "Engagement", type = "scatter", mode = "lines+markers")
+    }
+    p |> plotly::layout(yaxis = list(title = "Rate", range = c(0, 1)), xaxis = list(title = "Week"))
+  })
+
+  output$lecturer_home_emotion_mix <- plotly::renderPlotly({
+    emotions <- emotions_data()
+    if (nrow(emotions) == 0 || !"emotion" %in% names(emotions)) {
+      return(plotly::plot_ly() |> plotly::add_text(text = "No emotion data yet"))
+    }
+    mix <- emotions |>
+      dplyr::group_by(.data$emotion) |>
+      dplyr::summarise(count = dplyr::n(), .groups = "drop")
+
+    plotly::plot_ly(mix, labels = ~emotion, values = ~count, type = "pie", hole = 0.45) |>
+      plotly::layout(showlegend = TRUE)
+  })
+
+  output$lecturer_home_subject_table <- DT::renderDataTable({
+    attendance <- attendance_data()
+    emotions <- emotions_data()
+
+    subjects <- lecturer_course_rows |>
+      dplyr::mutate(subject_key = paste(.data$code, .data$class, sep = "-")) |>
+      dplyr::select(Subject = .data$course, Code = .data$code, Class = .data$class, subject_key)
+
+    att <- data.frame()
+    if (nrow(attendance) > 0 && all(c("lecture_id", "status") %in% names(attendance))) {
+      att <- attendance |>
+        dplyr::mutate(subject_key = sub("-W[0-9]{2}$", "", .data$lecture_id),
+                      present = tolower(.data$status) == "present") |>
+        dplyr::group_by(.data$subject_key) |>
+        dplyr::summarise(`Attendance %` = mean(.data$present, na.rm = TRUE), `Attendance Records` = dplyr::n(), .groups = "drop")
+    }
+
+    eng <- data.frame()
+    if (nrow(emotions) > 0 && all(c("lecture_id", "engagement_score", "emotion") %in% names(emotions))) {
+      eng <- emotions |>
+        dplyr::mutate(subject_key = sub("-W[0-9]{2}$", "", .data$lecture_id)) |>
+        dplyr::group_by(.data$subject_key) |>
+        dplyr::summarise(
+          `Engagement %` = mean(.data$engagement_score, na.rm = TRUE),
+          `Confusion %` = mean(.data$emotion %in% c("Confused", "Frustrated"), na.rm = TRUE),
+          .groups = "drop"
+        )
+    }
+
+    out <- subjects |>
+      dplyr::left_join(att, by = "subject_key") |>
+      dplyr::left_join(eng, by = "subject_key") |>
+      dplyr::mutate(
+        `Attendance %` = ifelse(is.na(`Attendance %`), 0, round(`Attendance %` * 100, 1)),
+        `Engagement %` = ifelse(is.na(`Engagement %`), 0, round(`Engagement %` * 100, 1)),
+        `Confusion %` = ifelse(is.na(`Confusion %`), 0, round(`Confusion %` * 100, 1)),
+        `Attendance Records` = ifelse(is.na(`Attendance Records`), 0, `Attendance Records`)
+      ) |>
+      dplyr::select(-.data$subject_key)
+
+    DT::datatable(out, options = list(pageLength = 6, dom = "tip"), rownames = FALSE)
+  })
+
+  output$lecturer_home_assessment_table <- DT::renderDataTable({
+    attendance <- attendance_data()
+    incidents <- incidents_data()
+
+    exam_summary <- if (nrow(incidents) > 0 && "exam_id" %in% names(incidents)) {
+      incidents |>
+        dplyr::filter(!is.na(.data$exam_id), .data$exam_id != "") |>
+        dplyr::mutate(severity_num = suppressWarnings(as.numeric(.data$severity))) |>
+        dplyr::group_by(.data$exam_id) |>
+        dplyr::summarise(
+          `Exam Incidents` = dplyr::n(),
+          `High Severity` = sum(.data$severity_num >= 3, na.rm = TRUE),
+          `Students Flagged` = dplyr::n_distinct(.data$student_id),
+          .groups = "drop"
+        ) |>
+        dplyr::rename(`Exam ID` = .data$exam_id)
+    } else {
+      data.frame(`Exam ID` = character(), `Exam Incidents` = integer(), `High Severity` = integer(), `Students Flagged` = integer())
+    }
+
+    if (nrow(exam_summary) == 0) {
+      lecture_att <- if (nrow(attendance) > 0 && all(c("lecture_id", "status") %in% names(attendance))) {
+        attendance |>
+          dplyr::mutate(present = tolower(.data$status) == "present") |>
+          dplyr::group_by(.data$lecture_id) |>
+          dplyr::summarise(`Attendance %` = round(mean(.data$present, na.rm = TRUE) * 100, 1), `Records` = dplyr::n(), .groups = "drop") |>
+          dplyr::rename(`Lecture ID` = .data$lecture_id) |>
+          head(8)
+      } else {
+        data.frame(Message = "No exam incidents or lecture attendance records yet.")
+      }
+      return(DT::datatable(lecture_att, options = list(dom = "t"), rownames = FALSE))
+    }
+
+    DT::datatable(exam_summary, options = list(pageLength = 6, dom = "tip"), rownames = FALSE)
   })
 
   # ========================================================================
   # Submodule B: Material Upload
   # ========================================================================
+
+  resolve_lecturer_subject <- function(row_index) {
+    idx <- suppressWarnings(as.integer(row_index))
+    if (is.na(idx) || idx < 1 || idx > nrow(lecturer_course_rows)) {
+      idx <- 1
+    }
+    as.list(lecturer_course_rows[idx, ])
+  }
+
+  build_week_lecture_id <- function(subject, week_value) {
+    week <- if (is.null(week_value) || nchar(trimws(week_value)) == 0) "W01" else trimws(week_value)
+    paste(subject$code, subject$class, week, sep = "-")
+  }
+
+  format_subject_label <- function(subject) {
+    sprintf("%s (%s) - Class %s", subject$course, subject$code, subject$class)
+  }
+
+  get_material_lecture_id <- function() {
+    subject <- resolve_lecturer_subject(input$lecturer_material_subject)
+    build_week_lecture_id(subject, input$lecturer_week_select)
+  }
 
   output$lecturer_materials_table <- DT::renderDataTable({
     materials <- load_csv("../python-api/data/exports/materials.csv")
@@ -70,15 +241,16 @@ lecturer_server <- function(input, output, session) {
   })
 
   shiny::observeEvent(input$lecturer_material_upload, {
-    req(input$lecturer_material_file, input$lecturer_lecture_select,
-        input$lecturer_material_title)
+    req(input$lecturer_material_file, input$lecturer_material_subject,
+        input$lecturer_week_select, input$lecturer_material_title)
 
     file_info <- input$lecturer_material_file
+    lecture_id <- get_material_lecture_id()
 
     result <- tryCatch({
       httr2::request(paste0(FASTAPI_BASE, "/upload/material")) |>
         httr2::req_body_multipart(
-          lecture_id  = input$lecturer_lecture_select,
+          lecture_id  = lecture_id,
           lecturer_id = "LECTURER_1",   # TODO: replace with session user_id
           title       = input$lecturer_material_title,
           file        = curl::form_file(file_info$datapath, type = file_info$type)
@@ -101,6 +273,7 @@ lecturer_server <- function(input, output, session) {
 
   attendance_list <- shiny::reactiveVal(list())
   attendance_qr_base64 <- shiny::reactiveVal(NULL)
+  attendance_page <- shiny::reactiveVal("index")
   selected_attendance_course <- shiny::reactiveVal(list(
     course = "Big data Analytics",
     code = "CIS4103",
@@ -113,14 +286,15 @@ lecturer_server <- function(input, output, session) {
   get_attendance_lecture_id <- function() {
     selected <- selected_attendance_course()
     if (is.null(selected$code) || is.null(selected$class)) return("")
-    paste(selected$code, selected$class, sep = "-")
+    build_week_lecture_id(selected, input$lecturer_attendance_week %||% "W01")
   }
 
   output$lecturer_selected_course_title <- shiny::renderUI({
     selected <- selected_attendance_course()
+    week <- input$lecturer_attendance_week %||% "W01"
     shiny::div(
       class = "selected-course-title",
-      shiny::span(class = "selected-course-kicker", "Selected Session"),
+      shiny::span(class = "selected-course-kicker", sprintf("Selected Session - %s", week)),
       shiny::strong(sprintf("%s | %s | Class %s", selected$course, selected$code, selected$class)),
       shiny::span(sprintf("%s, %s", selected$day, selected$slots))
     )
@@ -155,12 +329,98 @@ lecturer_server <- function(input, output, session) {
     )
   })
 
-  output$lecturer_course_table <- shiny::renderUI({
+  render_attendance_index <- function() {
     selected <- selected_attendance_course()
-    lecturer_attendance_course_table(
-      selected_code = selected$code,
-      selected_class = selected$class
+    shiny::div(
+      class = "reference-page-card reference-attendance-page",
+      shiny::div(class = "semester-eyebrow", "The First Semester 2025/2026"),
+      shiny::div(
+        class = "attendance-title-row",
+        shiny::h2("Attendance"),
+        shiny::div(
+          class = "attendance-filters",
+          shiny::div(
+            class = "department-filter",
+            shiny::tags$label("Department"),
+            shiny::selectInput(
+              "lecturer_reference_department",
+              NULL,
+              choices = c("All", "Computing", "Business", "Engineering"),
+              selected = "All",
+              width = "100%"
+            )
+          ),
+          shiny::div(
+            class = "department-filter",
+            shiny::tags$label("Lecture Week"),
+            shiny::selectInput(
+              "lecturer_attendance_week",
+              NULL,
+              choices = lecturer_week_choices(),
+              selected = input$lecturer_attendance_week %||% "W01",
+              width = "100%"
+            )
+          )
+        )
+      ),
+      shiny::div(
+        class = "reference-attendance-table-wrap",
+        lecturer_attendance_course_table(
+          selected_code = selected$code,
+          selected_class = selected$class
+        )
+      )
     )
+  }
+
+  render_student_attendance_page <- function() {
+    shiny::div(
+      class = "course-attendance-detail",
+      shiny::div(
+        class = "attendance-destination-heading",
+        shiny::h2("Student Attendance"),
+        shiny::p("Manage attendance for the selected subject and lecture week.")
+      ),
+      shiny::div(
+        class = "course-attendance-detail-header",
+        shiny::uiOutput("lecturer_selected_course_title"),
+        shiny::div(
+          class = "course-attendance-actions",
+          shiny::actionButton("lecturer_back_to_attendance_index", "Back", class = "btn-info", icon = shiny::icon("arrow-left")),
+          shiny::actionButton("lecturer_attendance_refresh", "Refresh", class = "btn-info", icon = shiny::icon("sync")),
+          shiny::actionButton("lecturer_attendance_save", "Save Changes", class = "btn-success", icon = shiny::icon("save"))
+        )
+      ),
+      shiny::uiOutput("lecturer_attendance_grid")
+    )
+  }
+
+  render_qr_attendance_page <- function() {
+    shiny::div(
+      class = "course-attendance-detail",
+      shiny::div(
+        class = "attendance-destination-heading",
+        shiny::h2("Mobile Attendance QR"),
+        shiny::p("Show the QR page for students to check in to the selected lecture.")
+      ),
+      shiny::div(
+        class = "course-attendance-detail-header",
+        shiny::uiOutput("lecturer_selected_course_title"),
+        shiny::div(
+          class = "course-attendance-actions",
+          shiny::actionButton("lecturer_back_to_attendance_index", "Back", class = "btn-info", icon = shiny::icon("arrow-left")),
+          shiny::actionButton("lecturer_qr_generate", "Regenerate QR", class = "btn-primary", icon = shiny::icon("qrcode"))
+        )
+      ),
+      shiny::uiOutput("lecturer_mobile_attendance_panel")
+    )
+  }
+
+  output$lecturer_attendance_page <- shiny::renderUI({
+    page <- attendance_page()
+    if (identical(page, "students")) return(render_student_attendance_page())
+    if (identical(page, "qr")) return(render_qr_attendance_page())
+    render_attendance_index()
   })
 
   shiny::observeEvent(input$lecturer_course_nav, {
@@ -175,21 +435,17 @@ lecturer_server <- function(input, output, session) {
     selected_attendance_course(as.list(lecturer_course_rows[row_index, ]))
 
     if (identical(destination, "students")) {
+      attendance_page("students")
       refresh_attendance()
-      shinydashboard::updateTabItems(session, "lecturer_menu", selected = "lec_attendance_students")
     } else {
+      attendance_page("qr")
       refresh_attendance()
       generate_attendance_qr()
-      shinydashboard::updateTabItems(session, "lecturer_menu", selected = "lec_attendance_qr")
     }
   }, ignoreInit = TRUE)
 
-  shiny::observeEvent(input$lecturer_back_to_courses_from_students, {
-    shinydashboard::updateTabItems(session, "lecturer_menu", selected = "lec_attendance")
-  })
-
-  shiny::observeEvent(input$lecturer_back_to_courses_from_qr, {
-    shinydashboard::updateTabItems(session, "lecturer_menu", selected = "lec_attendance")
+  shiny::observeEvent(input$lecturer_back_to_attendance_index, {
+    attendance_page("index")
   })
 
   generate_attendance_qr <- function() {
@@ -315,11 +571,6 @@ lecturer_server <- function(input, output, session) {
     )
   })
 
-  shiny::observe({
-    attendance_data()
-    refresh_attendance()
-  })
-
   shiny::observeEvent(input$lecturer_attendance_refresh, {
     refresh_attendance()
   })
@@ -365,10 +616,10 @@ lecturer_server <- function(input, output, session) {
 
   # ========================================================================
   # Submodule D: Live Dashboard (D1-D7)
-  # Uses input$lecturer_live_lecture for lecture_id
+  # Uses assigned subject + 16-week lecture selection for lecture_id
   # ========================================================================
 
-  live_reactive <- shiny::reactiveTimer(2000)
+  live_reactive <- shiny::reactiveTimer(5000)
 
   # Cloud Health & Vision Status
   output$lecturer_cloud_health_ui <- shiny::renderUI({
@@ -402,10 +653,10 @@ lecturer_server <- function(input, output, session) {
   # Vision Launcher Generator
   output$lecturer_download_launcher <- shiny::downloadHandler(
     filename = function() {
-      paste0("run_classroom_ai_", get_live_lecture_id() %||% "L1", ".ps1")
+      paste0("run_classroom_ai_", get_live_lecture_id() %||% "W01", ".ps1")
     },
     content = function(file) {
-      lecture_id <- get_live_lecture_id() %||% "L1"
+      lecture_id <- get_live_lecture_id() %||% "W01"
       source_val <- input$lecturer_vision_source
       video_src <- if (source_val == "ip") {
         paste0("http://", input$lecturer_vision_ip, "/video")
@@ -439,9 +690,14 @@ lecturer_server <- function(input, output, session) {
   )
 
   get_live_lecture_id <- function() {
-    lid <- input$lecturer_live_lecture
-    if (is.null(lid) || nchar(trimws(lid)) == 0) return(NULL)
-    trimws(lid)
+    if (is.null(input$lecturer_live_subject) || is.null(input$lecturer_live_week)) return(NULL)
+    subject <- resolve_lecturer_subject(input$lecturer_live_subject)
+    build_week_lecture_id(subject, input$lecturer_live_week)
+  }
+
+  get_live_subject_label <- function() {
+    subject <- resolve_lecturer_subject(input$lecturer_live_subject)
+    sprintf("%s, %s", format_subject_label(subject), input$lecturer_live_week %||% "W01")
   }
 
   output$lecturer_live_custom_cam_ui <- shiny::renderUI({
@@ -456,7 +712,7 @@ lecturer_server <- function(input, output, session) {
     if (is.null(lecture_id)) {
       return(shiny::div(
         style = "color:#fff;padding:170px 20px;",
-        "Enter a Lecture ID and start the lecture."
+        "Select a subject and week, then start the lecture."
       ))
     }
 
@@ -498,14 +754,14 @@ lecturer_server <- function(input, output, session) {
   shiny::observeEvent(input$lecturer_live_start, {
     lecture_id <- get_live_lecture_id()
     if (is.null(lecture_id)) {
-      shinyalert::shinyalert("Error", "Enter a Lecture ID first.", type = "error")
+      shinyalert::shinyalert("Error", "Select a subject and lecture week first.", type = "error")
       return()
     }
 
-    cam_url <- if (input$lecturer_live_camera == "custom") {
-      input$lecturer_live_custom_cam
+    cam_url <- if (identical(input$lecturer_vision_source, "ip")) {
+      paste0("http://", input$lecturer_vision_ip, "/video")
     } else {
-      input$lecturer_live_camera
+      input$lecturer_vision_source
     }
 
     if (is.null(cam_url) || nchar(trimws(cam_url)) == 0) cam_url <- "0"
@@ -518,7 +774,7 @@ lecturer_server <- function(input, output, session) {
 
     if (!is.null(result)) {
       shinyalert::shinyalert("Lecture Started",
-                             paste("Lecture", lecture_id, "is now live using camera:", cam_url), type = "success")
+                             paste(get_live_subject_label(), "is now live using camera:", cam_url), type = "success")
     }
   })
 

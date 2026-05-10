@@ -17,16 +17,37 @@ lecturer_course_button_id <- function(prefix, code, class) {
   paste(prefix, code, class, sep = "_")
 }
 
-lecturer_course_click_button <- function(row_index, destination, icon_name) {
+lecturer_course_click_button <- function(row_index, destination, icon_name, label) {
   tags$button(
     type = "button",
-    class = "reference-round-action",
+    class = "reference-round-action reference-page-link",
+    title = label,
+    `aria-label` = label,
     onclick = sprintf(
-      "Shiny.setInputValue('lecturer_course_nav', {row:%d, dest:'%s', nonce:Math.random()}, {priority:'event'});",
+      "Shiny.setInputValue('lecturer_course_nav', {row:%d, dest:'%s', nonce:Math.random()}, {priority:'event'}); window.scrollTo({top:0, behavior:'smooth'});",
       row_index,
       destination
     ),
     icon(icon_name)
+  )
+}
+
+lecturer_subject_choices <- function() {
+  stats::setNames(
+    seq_len(nrow(lecturer_course_rows)),
+    sprintf(
+      "%s (%s) - Class %s",
+      lecturer_course_rows$course,
+      lecturer_course_rows$code,
+      lecturer_course_rows$class
+    )
+  )
+}
+
+lecturer_week_choices <- function() {
+  stats::setNames(
+    sprintf("W%02d", 1:16),
+    sprintf("Week %02d Lecture", 1:16)
   )
 }
 
@@ -57,12 +78,14 @@ lecturer_attendance_course_table <- function(selected_code = "CIS4103", selected
           tags$td(lecturer_course_click_button(
             i,
             "students",
-            "clipboard-list"
+            "clipboard-list",
+            "Open Student Attendance page"
           )),
           tags$td(lecturer_course_click_button(
             i,
             "qr",
-            "qrcode"
+            "qrcode",
+            "Open Mobile Attendance QR page"
           ))
         )
       })
@@ -95,7 +118,7 @@ lecturer_ui <- function() {
         tags$li(class = "header", "Home"),
         shinydashboard::menuItem(
           "Home",
-          tabName = "lec_roster",
+          tabName = "lec_home",
           icon = icon("house")
         ),
         tags$li(class = "header", "Lecturer"),
@@ -106,7 +129,7 @@ lecturer_ui <- function() {
           shinydashboard::menuSubItem("Schedule/Results/Samples", tabName = "lec_materials", icon = icon("calendar-days")),
           shinydashboard::menuSubItem("Attendance", tabName = "lec_attendance", icon = icon("check-square")),
           shinydashboard::menuSubItem("My Office Hours", tabName = "lec_live", icon = icon("clock")),
-          shinydashboard::menuSubItem("Term Models", tabName = "lec_roster", icon = icon("book")),
+          shinydashboard::menuSubItem("Term Models", tabName = "lec_reports", icon = icon("book")),
           shinydashboard::menuSubItem("Feedback", tabName = "lec_reports", icon = icon("comment"))
         ),
         tags$li(class = "header", "Reports"),
@@ -118,18 +141,6 @@ lecturer_ui <- function() {
           shinydashboard::menuSubItem("Progress Sheet", tabName = "lec_reports", icon = icon("chart-line")),
           shinydashboard::menuSubItem("Course Review", tabName = "lec_reports", icon = icon("file-lines")),
           shinydashboard::menuSubItem("Program Reports", tabName = "lec_reports", icon = icon("folder-open"))
-        ),
-        shinydashboard::menuItem(
-          "Student Attendance",
-          tabName = "lec_attendance_students",
-          icon = icon("users"),
-          style = "display: none;"
-        ),
-        shinydashboard::menuItem(
-          "Mobile Attendance QR",
-          tabName = "lec_attendance_qr",
-          icon = icon("qrcode"),
-          style = "display: none;"
         )
       )
     ),
@@ -140,23 +151,54 @@ lecturer_ui <- function() {
       shinydashboard::tabItems(
 
         # ====================================================================
-        # Submodule A: Roster Setup
+        # Submodule A: Lecturer Home
         # ====================================================================
         shinydashboard::tabItem(
-          tabName = "lec_roster",
-          h2("Student Roster Setup"),
-          p("Upload the student roster XLSX file. Face images are fetched automatically from Google Drive links."),
-          br(),
-          wellPanel(
-            fileInput("lecturer_roster_xlsx", "Select Roster XLSX File",
-                     accept = c(".xlsx")),
-            helpText("Expected columns: student_id, name, email, photo_link"),
-            br(),
-            actionButton("lecturer_roster_upload", "Upload Roster",
-                        class = "btn-primary", icon = icon("upload"))
-          ),
-          br(),
-          uiOutput("lecturer_roster_status")
+          tabName = "lec_home",
+          div(
+            class = "lecturer-home-page",
+            div(class = "semester-eyebrow", "Lecturer Analytics"),
+            h2("Teaching Summary"),
+            fluidRow(
+              column(12, uiOutput("lecturer_home_kpis"))
+            ),
+            fluidRow(
+              column(
+                7,
+                div(
+                  class = "lecturer-analytics-panel",
+                  h3("Weekly Attendance and Engagement"),
+                  plotly::plotlyOutput("lecturer_home_weekly_trend", height = "320px")
+                )
+              ),
+              column(
+                5,
+                div(
+                  class = "lecturer-analytics-panel",
+                  h3("Emotion Mix"),
+                  plotly::plotlyOutput("lecturer_home_emotion_mix", height = "320px")
+                )
+              )
+            ),
+            fluidRow(
+              column(
+                6,
+                div(
+                  class = "lecturer-analytics-panel",
+                  h3("Subject Performance"),
+                  DT::dataTableOutput("lecturer_home_subject_table")
+                )
+              ),
+              column(
+                6,
+                div(
+                  class = "lecturer-analytics-panel",
+                  h3("Assessment and Risk Summary"),
+                  DT::dataTableOutput("lecturer_home_assessment_table")
+                )
+              )
+            )
+          )
         ),
 
         # ====================================================================
@@ -168,14 +210,25 @@ lecturer_ui <- function() {
           p("Organize materials by academic week."),
           br(),
           wellPanel(
+            class = "lecturer-control-panel",
             fluidRow(
-              column(4,
-                textInput("lecturer_lecture_select", "Lecture ID",
-                          placeholder = "e.g. L1")
+              column(5,
+                selectInput(
+                  "lecturer_material_subject",
+                  "Subject",
+                  choices = lecturer_subject_choices(),
+                  selected = "6",
+                  width = "100%"
+                )
               ),
-              column(4,
-                selectInput("lecturer_week_select", "Academic Week",
-                           choices = paste("Week", 1:16))
+              column(3,
+                selectInput(
+                  "lecturer_week_select",
+                  "Lecture Week",
+                  choices = lecturer_week_choices(),
+                  selected = "W01",
+                  width = "100%"
+                )
               ),
               column(4,
                 textInput("lecturer_material_title", "Material Title")
@@ -195,69 +248,7 @@ lecturer_ui <- function() {
         # ====================================================================
         shinydashboard::tabItem(
           tabName = "lec_attendance",
-          div(
-            class = "reference-page-card reference-attendance-page",
-            div(class = "semester-eyebrow", "The First Semester 2025/2026"),
-            div(
-              class = "attendance-title-row",
-              h2("Attendance"),
-              div(
-                class = "department-filter",
-                tags$label("Department"),
-                selectInput(
-                  "lecturer_reference_department",
-                  NULL,
-                  choices = c("All", "Computing", "Business", "Engineering"),
-                  selected = "All",
-                  width = "100%"
-                )
-              )
-            ),
-            div(
-              class = "reference-attendance-table-wrap",
-              uiOutput("lecturer_course_table")
-            )
-          )
-        ),
-
-        shinydashboard::tabItem(
-          tabName = "lec_attendance_students",
-          div(
-            class = "course-attendance-detail",
-            div(
-              class = "course-attendance-detail-header",
-              uiOutput("lecturer_selected_course_title"),
-              div(
-                class = "course-attendance-actions",
-                actionButton("lecturer_back_to_courses_from_students", "Back",
-                            class = "btn-info", icon = icon("arrow-left")),
-                actionButton("lecturer_attendance_refresh", "Refresh",
-                            class = "btn-info", icon = icon("sync")),
-                actionButton("lecturer_attendance_save", "Save Changes",
-                            class = "btn-success", icon = icon("save"))
-              )
-            ),
-            uiOutput("lecturer_attendance_grid")
-          )
-        ),
-
-        shinydashboard::tabItem(
-          tabName = "lec_attendance_qr",
-          div(
-            class = "course-attendance-detail",
-            div(
-              class = "course-attendance-detail-header",
-              uiOutput("lecturer_selected_course_title"),
-              div(
-                class = "course-attendance-actions",
-                actionButton("lecturer_back_to_courses_from_qr", "Back",
-                            class = "btn-info", icon = icon("arrow-left")),
-                actionButton("lecturer_qr_generate", "Regenerate QR",
-                            class = "btn-primary", icon = icon("qrcode"))
-              )
-            ),
-            uiOutput("lecturer_mobile_attendance_panel")
-          )
+          uiOutput("lecturer_attendance_page")
         ),
 
         # ====================================================================
@@ -269,8 +260,22 @@ lecturer_ui <- function() {
           fluidRow(
             column(3,
               wellPanel(
+                class = "lecturer-control-panel",
                 h4(icon("gear"), "Session Config"),
-                textInput("lecturer_live_lecture", "Lecture ID", placeholder = "e.g. L1"),
+                selectInput(
+                  "lecturer_live_subject",
+                  "Subject",
+                  choices = lecturer_subject_choices(),
+                  selected = "6",
+                  width = "100%"
+                ),
+                selectInput(
+                  "lecturer_live_week",
+                  "Lecture Week",
+                  choices = lecturer_week_choices(),
+                  selected = "W01",
+                  width = "100%"
+                ),
                 actionButton("lecturer_live_start", "Start Session", class = "btn-success btn-block", icon = icon("play")),
                 br(),
                 actionButton("lecturer_live_end", "End Session", class = "btn-danger btn-block", icon = icon("stop"))
@@ -278,6 +283,7 @@ lecturer_ui <- function() {
             ),
             column(5,
               wellPanel(
+                class = "lecturer-control-panel",
                 h4(icon("video"), "Vision Node Setup"),
                 p("Process AI on this laptop to use a Phone or Webcam."),
                 selectInput("lecturer_vision_source", "Camera Source",
@@ -291,6 +297,7 @@ lecturer_ui <- function() {
             ),
             column(4,
               wellPanel(
+                class = "lecturer-control-panel",
                 h4(icon("link"), "Cloud Status"),
                 uiOutput("lecturer_cloud_health_ui"),
                 br(),
