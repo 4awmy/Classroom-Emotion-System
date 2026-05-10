@@ -1,0 +1,4 @@
+mcp>=1.0.0
+httpx
+psycopg2-binary
+python-dotenv
