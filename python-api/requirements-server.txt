@@ -33,3 +33,5 @@ apscheduler
 # AI (Gemini for question generation + PDF parsing)
 google-generativeai
 pdfplumber
+torch
+torchvision
