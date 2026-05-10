@@ -136,13 +136,11 @@ api_call <- function(endpoint, method = "GET", body = NULL, auth_token = NULL, c
           err_body$message %||% "Internal Server Error"
         }
         
-        if (resp_status(resp) != 401) {
-          shinyalert::shinyalert(
-            title = paste("API Error", resp_status(resp)),
-            text = as.character(detail),
-            type = "error"
-          )
-        }
+        shinyalert::shinyalert(
+          title = paste("Login Failed"),
+          text = as.character(detail),
+          type = "error"
+        )
       }, silent = TRUE)
       return(NULL)
     }
