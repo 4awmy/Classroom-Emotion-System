@@ -14,13 +14,8 @@ services:
     routes:
       - path: /api
       - path: /docs
+      - path: /openapi.json
       - path: /health
-      - path: /session
-      - path: /emotion
-      - path: /attendance
-      - path: /roster
-      - path: /auth
-      - path: /internal
     envs:
       - key: DATABASE_URL
         scope: RUN_TIME
@@ -28,6 +23,9 @@ services:
       - key: ENVIRONMENT
         scope: RUN_TIME
         value: production
+      - key: JWT_SECRET
+        scope: RUN_TIME
+        value: aast-lms-secret-2026
 
   - name: frontend
     github:

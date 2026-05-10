@@ -35,17 +35,22 @@ def stop_all_background_tasks():
 async def lifespan(app: FastAPI):
     # --- Startup ---
     logger.info("[INIT] Performing background initializations...")
+    
+    # 1. Initialize database tables
     try:
-        # 1. Initialize database tables
         models.Base.metadata.create_all(bind=engine)
-        logger.info("[INIT] Database initialized.")
+        logger.info("[INIT] Database initialization call completed (or table already exists).")
+    except Exception as e:
+        logger.warning(f"[INIT] Database table creation skipped or failed: {e}")
+        logger.warning("[INIT] Note: You may need to run 'python do_manager.py seed-db' or manual SQL if tables are missing.")
         
-        # 2. Start background schedulers
+    # 2. Start background schedulers
+    try:
         from services.lecture_scheduler import start_scheduler
         start_scheduler()
         logger.info("[INIT] Scheduler started.")
     except Exception as e:
-        logger.error(f"[INIT] Startup failed: {e}")
+        logger.error(f"[INIT] Scheduler failed to start: {e}")
         
     yield
     # --- Shutdown ---
