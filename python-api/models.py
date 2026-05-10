@@ -9,20 +9,22 @@ import uuid
 class Admin(Base):
     __tablename__ = "admins"
     admin_id: Mapped[str] = mapped_column(String, primary_key=True)
-    auth_user_id: Mapped[uuid.UUID] = mapped_column(Uuid, unique=True, nullable=False) # Linked to Supabase
+    auth_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, unique=True, nullable=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
-    needs_password_reset: Mapped[bool] = mapped_column(Boolean, default=True) # NEW: For first-time reset
+    password_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    needs_password_reset: Mapped[bool] = mapped_column(Boolean, default=True)
     phone: Mapped[Optional[str]] = mapped_column(String)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 class Lecturer(Base):
     __tablename__ = "lecturers"
     lecturer_id: Mapped[str] = mapped_column(String, primary_key=True)
-    auth_user_id: Mapped[uuid.UUID] = mapped_column(Uuid, unique=True, nullable=False)
+    auth_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, unique=True, nullable=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
-    needs_password_reset: Mapped[bool] = mapped_column(Boolean, default=True) # NEW
+    password_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    needs_password_reset: Mapped[bool] = mapped_column(Boolean, default=True)
     department: Mapped[Optional[str]] = mapped_column(String)
     title: Mapped[Optional[str]] = mapped_column(String)
     phone: Mapped[Optional[str]] = mapped_column(String)
@@ -37,10 +39,11 @@ class Lecturer(Base):
 class Student(Base):
     __tablename__ = "students"
     student_id: Mapped[str] = mapped_column(String, primary_key=True)
-    auth_user_id: Mapped[uuid.UUID] = mapped_column(Uuid, unique=True, nullable=False)
+    auth_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, unique=True, nullable=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     email: Mapped[Optional[str]] = mapped_column(String)
-    needs_password_reset: Mapped[bool] = mapped_column(Boolean, default=True) # NEW
+    password_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    needs_password_reset: Mapped[bool] = mapped_column(Boolean, default=True)
     department: Mapped[Optional[str]] = mapped_column(String)
     year: Mapped[Optional[int]] = mapped_column(Integer)
     face_encoding: Mapped[Optional[bytes]] = mapped_column(LargeBinary) # Stored as BYTEA in Postgres

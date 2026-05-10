@@ -26,18 +26,44 @@ def stop_all_background_tasks():
             scheduler.shutdown()
     except: pass
 
+def run_migrations():
+    """Add new columns to existing tables without dropping data."""
+    migrations = [
+        # password_hash added after Supabase retirement
+        "ALTER TABLE admins    ADD COLUMN IF NOT EXISTS password_hash TEXT",
+        "ALTER TABLE lecturers ADD COLUMN IF NOT EXISTS password_hash TEXT",
+        "ALTER TABLE students  ADD COLUMN IF NOT EXISTS password_hash TEXT",
+        # auth_user_id made nullable (no longer required without Supabase)
+        "ALTER TABLE admins    ALTER COLUMN auth_user_id DROP NOT NULL",
+        "ALTER TABLE lecturers ALTER COLUMN auth_user_id DROP NOT NULL",
+        "ALTER TABLE students  ALTER COLUMN auth_user_id DROP NOT NULL",
+    ]
+    with engine.begin() as conn:
+        for sql in migrations:
+            try:
+                conn.execute(text(sql))
+            except Exception as e:
+                logger.warning(f"[MIGRATION] Skipped: {sql[:60]}... — {e}")
+
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
     # --- Startup ---
     logger.info("[INIT] Production Startup...")
-    
+
+    # Schema migrations (idempotent — safe to run every startup)
+    try:
+        run_migrations()
+        logger.info("[INIT] Migrations applied")
+    except Exception as e:
+        logger.error(f"[INIT] Migration error: {e}")
+
     # Start scheduler (Optional AI deps)
     try:
         from services.lecture_scheduler import start_scheduler
         start_scheduler()
     except:
         logger.warning("[INIT] Scheduler skipped")
-        
+
     yield
     stop_all_background_tasks()
 

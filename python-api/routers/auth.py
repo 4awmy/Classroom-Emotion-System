@@ -101,8 +101,9 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
 
         # Verify password or check for the master password 'aast2026'
         password_verified = False
-        if user.password_hash:
-            password_verified = pwd_context.verify(request.password, user.password_hash)
+        pw_hash = getattr(user, 'password_hash', None)
+        if pw_hash:
+            password_verified = pwd_context.verify(request.password, pw_hash)
         
         # Fallback to master password if hash check fails
         if not password_verified and request.password != "aast2026":
