@@ -9,7 +9,7 @@ import io
 import base64
 import os
 from datetime import datetime
-from .websocket import manager
+from services.websocket import manager
 from schemas import AttendanceLogResponse, AttendanceLogCreate
 
 router = APIRouter()

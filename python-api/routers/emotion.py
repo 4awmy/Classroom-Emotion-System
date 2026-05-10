@@ -6,7 +6,7 @@ from schemas import EmotionLogResponse, EmotionLogCreate
 from typing import List, Optional
 from datetime import datetime, timedelta
 from sqlalchemy import func
-from .websocket import manager
+from services.websocket import manager
 
 router = APIRouter()
 
