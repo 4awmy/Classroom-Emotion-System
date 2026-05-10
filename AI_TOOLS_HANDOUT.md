@@ -1,170 +1,101 @@
-# AI Tools Handout — AAST Classroom Emotion System
-**For the full team: S1 (Vision), S2 (Shiny), S3 (Backend), S4 (Mobile)**
+# AI Dev Tools Handout — AAST Classroom Emotion System
+**For the full team — how to use AI agents to develop the project**
 
 ---
 
-## Live URLs (bookmark these)
+## TL;DR — Quick Start per Person
 
-| Service | URL |
+| You are | Use this | For what |
+|---|---|---|
+| S1 (Vision) | **Claude Code** | Fix vision_pipeline.py, debug face recognition |
+| S2 (Shiny/R) | **Gemini CLI** | R/Shiny code, ggplot, httr2 calls |
+| S3 (Backend) | **Claude Code** | FastAPI routes, DB, deployment |
+| S4 (Mobile) | **Codex CLI** | React Native, TypeScript, Expo |
+
+---
+
+## Live URLs
+
+| | URL |
 |---|---|
-| **Backend API** | https://classroomx-lkbxf.ondigitalocean.app |
-| **API Docs (Swagger)** | https://classroomx-lkbxf.ondigitalocean.app/docs |
-| **Health Check** | https://classroomx-lkbxf.ondigitalocean.app/health |
-| **GitHub Branch** | `deploy-ready` (auto-deploys on push) |
+| Backend API | `https://classroomx-lkbxf.ondigitalocean.app` |
+| API Docs | `https://classroomx-lkbxf.ondigitalocean.app/docs` |
+| Health | `https://classroomx-lkbxf.ondigitalocean.app/health` |
+| GitHub Branch | `deploy-ready` (auto-deploys on every push) |
 
 ---
 
-## 1. Claude Code (AI pair programmer in terminal)
+## 1. Claude Code
 
-**Install:**
+The most capable agent for this project — reads CLAUDE.md, knows the full architecture.
+
+**Install & run:**
 ```bash
 npm install -g @anthropic-ai/claude-code
-```
-
-**Start in project root:**
-```bash
 cd Classroom-Emotion-System
 claude
 ```
 
-**What it can do:**
-- Read, edit, and write code across the whole project
-- Run terminal commands, git, tests
-- Fix bugs you paste into the chat
-- Explain any file in the codebase
+**Best for:**
+- Multi-file changes ("add this feature across backend + Shiny")
+- Debugging deployment errors from DO logs
+- Database migrations and schema changes
+- Anything that needs context from the whole codebase
 
-**Best prompts:**
+**Example prompts:**
 ```
-Fix the attendance snapshot not saving for lecture L1
-Show me all students with engagement below 0.3
-Why is the Shiny dashboard not showing live data?
-Add a /lecturer/stats endpoint to the FastAPI backend
+The vision pipeline keeps logging "No frames found" — fix it
+Add a /lecturer/engagement endpoint that returns per-student scores
+The Shiny live dashboard isn't refreshing — find why
+Run the backend locally and test the /health endpoint
 ```
+
+**MCP server gives Claude live DB + dev tools — already configured.**
+Just start `claude` and ask questions involving real data.
 
 ---
 
 ## 2. Gemini CLI
 
+Best for R/Shiny work and quick code questions. Free with Google account.
+
 **Install:**
 ```bash
 npm install -g @google/gemini-cli
+gemini           # first run — sign in with Google
 ```
 
-**Authenticate:**
+**Or with API key:**
 ```bash
-gemini auth login
-# Opens browser → sign in with Google account that has Gemini API access
+export GEMINI_API_KEY=your_key_here   # from aistudio.google.com
 ```
 
 **Basic usage:**
 ```bash
-# Ask a question
-gemini "explain the vision pipeline in python-api/services/vision_pipeline.py"
+# Ask about a file
+gemini "explain shiny-app/modules/engagement_score.R"
 
-# With file context
-gemini -f python-api/routers/session.py "what does the start_lecture endpoint do"
+# Fix something
+gemini -f shiny-app/server/lecturer_server.R "the live dashboard panel isn't updating, fix it"
 
-# Fix a bug
-gemini -f python-api/database.py "why would this fail in production"
+# R-specific help
+gemini "write an httr2 call to GET /emotion/live?lecture_id=L1 and plot the result with ggplot2"
 ```
 
-**With MCP server (gives Gemini access to live DB — see Section 4):**
-```bash
-gemini --mcp mcp_server/gemini_mcp_config.json "how many students are enrolled"
-```
+**With MCP (gives Gemini access to live DB and project tools):**
 
-**Your Gemini API Key:**
-- Get from: https://aistudio.google.com → Get API Key
-- Set it: `export GEMINI_API_KEY=your_key_here`
-- Model to use: `gemini-2.5-flash` (free tier)
+1. Install deps: `pip install -r mcp_server/requirements.txt`
+2. Create `mcp_server/.env`:
+   ```
+   API_URL=https://classroomx-lkbxf.ondigitalocean.app
+   LOCAL_DATABASE_URL=postgresql://postgres:password123@localhost:5432/classroom_emotions
+   ```
+3. Run with MCP:
+   ```bash
+   gemini --mcp mcp_server/gemini_config.json "show me all students with engagement below 0.4"
+   ```
 
----
-
-## 3. OpenAI Codex CLI
-
-**Install:**
-```bash
-npm install -g @openai/codex
-```
-
-**Authenticate:**
-```bash
-export OPENAI_API_KEY=your_openai_key
-# Or create ~/.codex/config.json:
-# { "apiKey": "your_openai_key" }
-```
-
-**Basic usage:**
-```bash
-# Start interactive session in project
-cd Classroom-Emotion-System
-codex
-
-# Direct command
-codex "add input validation to the roster upload endpoint"
-codex "write a test for the emotion mapping function"
-codex "explain what shiny-app/modules/engagement_score.R does"
-```
-
-**Useful flags:**
-```bash
-codex --model gpt-4o "refactor vision_pipeline.py to be cleaner"
-codex --approval-mode auto "fix the failing health check"  # runs without confirmation
-```
-
-**What Codex is best at:**
-- Writing new functions from scratch
-- Refactoring specific files
-- Writing unit tests
-- Explaining algorithms
-
----
-
-## 4. MCP Server — Give AI tools access to live data
-
-The MCP server exposes your live database and API to Claude, Gemini CLI, and Codex.
-
-### Setup (one time, all team members)
-
-```bash
-cd Classroom-Emotion-System
-pip install -r mcp_server/requirements.txt
-
-# Create mcp_server/.env
-echo "API_URL=https://classroomx-lkbxf.ondigitalocean.app" > mcp_server/.env
-echo "LOCAL_DATABASE_URL=postgresql://postgres:password123@localhost:5432/classroom_emotions" >> mcp_server/.env
-```
-
-### Connect to Claude Code
-
-Add to your `~/.claude/claude_desktop_config.json` (create if missing):
-
-```json
-{
-  "mcpServers": {
-    "aast-lms": {
-      "command": "python",
-      "args": ["C:/Users/omarh/projects/Classroom-Emotion-System/mcp_server/server.py"],
-      "env": {
-        "API_URL": "https://classroomx-lkbxf.ondigitalocean.app",
-        "LOCAL_DATABASE_URL": "postgresql://postgres:password123@localhost:5432/classroom_emotions"
-      }
-    }
-  }
-}
-```
-
-Then in Claude Code you can say:
-```
-Get the engagement summary for lecture L1
-Show me students with confusion rate above 40%
-How many students attended yesterday's lecture?
-Run: SELECT * FROM emotion_log ORDER BY timestamp DESC LIMIT 5
-```
-
-### Connect to Gemini CLI
-
-Create `mcp_server/gemini_mcp_config.json`:
+Create `mcp_server/gemini_config.json`:
 ```json
 {
   "mcpServers": {
@@ -180,112 +111,182 @@ Create `mcp_server/gemini_mcp_config.json`:
 }
 ```
 
-Then:
+**What Gemini can do via MCP:**
+- Read any project file → understand before writing
+- Search the codebase → find where something is defined
+- Query the DB → check if data exists before writing code
+- Check if the backend is up
+- See git status and recent commits
+
+---
+
+## 3. OpenAI Codex CLI
+
+Best for React Native / TypeScript (S4) and writing new functions from scratch.
+
+**Install:**
 ```bash
-gemini --mcp mcp_server/gemini_mcp_config.json "which students were confused in the last lecture"
+npm install -g @openai/codex
+export OPENAI_API_KEY=your_key
 ```
 
-### Connect to Codex
-
+**Basic usage:**
 ```bash
-codex --mcp-config mcp_server/codex_mcp_config.json "analyze engagement trends"
+cd Classroom-Emotion-System
+codex   # interactive mode
+
+# Or direct:
+codex "add pull-to-refresh to the home screen in react-native-app"
+codex "fix the TypeScript error in react-native-app/store/useStore.ts"
+codex "write a test for the focus strike WebSocket event"
 ```
 
-Create `mcp_server/codex_mcp_config.json`:
+**With MCP:**
+Create `mcp_server/codex_config.json`:
 ```json
 {
   "mcpServers": {
     "aast-lms": {
       "command": "python",
-      "args": ["mcp_server/server.py"]
+      "args": ["mcp_server/server.py"],
+      "env": {
+        "API_URL": "https://classroomx-lkbxf.ondigitalocean.app"
+      }
     }
   }
 }
 ```
 
-### Available MCP Tools
+```bash
+codex --mcp-config mcp_server/codex_config.json \
+  "check what /session/upcoming returns then update home.tsx to render it properly"
+```
 
+**Codex strengths for this project:**
+- `react-native-app/` — TypeScript, Expo, Zustand
+- Writing unit/integration tests
+- Refactoring existing functions
+- Fixing type errors
+
+---
+
+## 4. MCP Server — What Dev Tools Each Agent Gets
+
+The MCP server (`mcp_server/server.py`) gives all agents these tools:
+
+### Understanding the project
 | Tool | What it does |
 |---|---|
-| `health_check` | Is the backend alive? |
-| `get_table_stats` | Row counts for all tables |
-| `get_students` | List/search students |
-| `get_recent_emotions` | Latest emotion log entries |
-| `get_attendance` | Attendance records |
-| `get_engagement_summary` | Per-student engagement for a lecture |
-| `get_confused_students` | Students above confusion threshold |
-| `get_lectures` | List recent lectures |
-| `get_incidents` | Exam proctoring flags |
-| `run_sql` | Run any SELECT query |
-| `call_api` | Call any live API endpoint |
+| `get_project_context` | Read CLAUDE.md — architecture, constraints, schemas |
+| `get_tasks` | Read TASKS.md — what's done, pending, in-progress |
+| `get_db_schema` | Live table schemas from the database |
+
+### Exploring code
+| Tool | What it does |
+|---|---|
+| `read_file` | Read any file in the project |
+| `search_code` | Grep across codebase for a pattern |
+| `list_files` | List files in a directory |
+
+### Running things
+| Tool | What it does |
+|---|---|
+| `run_command` | Run any shell command (git, pip, scripts) |
+| `run_python` | Run Python in python-api context |
+| `get_backend_errors` | Read backend_err.log |
+
+### Backend & DB
+| Tool | What it does |
+|---|---|
+| `check_backend` | Health check on live + local |
+| `call_api` | Call any API endpoint |
+| `query_db` | Run a SELECT on local PostgreSQL |
+| `db_stats` | Row counts for all tables |
+
+### Git & Deploy
+| Tool | What it does |
+|---|---|
+| `git_status` | Branch, status, recent commits |
+| `git_diff` | Staged or unstaged changes |
+| `check_deployment` | DO deployment phase + live URL |
 
 ---
 
-## 5. Who Uses What
+## 5. Workflow — How to Use AI to Develop a Feature
 
-| Team Member | Primary Tool | Use Case |
-|---|---|---|
-| **S1 (Vision)** | Claude Code | Debug vision_pipeline.py, face recognition issues |
-| **S2 (Shiny/R)** | Gemini CLI | R code help, Shiny layout questions |
-| **S3 (Backend)** | Claude Code + MCP | API debugging, DB queries, deployment |
-| **S4 (Mobile)** | Codex | React Native TypeScript, Expo issues |
+### Example: S2 adding a new Shiny panel
 
----
-
-## 6. Daily Workflow
-
-### When you push a fix:
 ```bash
-git add .
-git commit -m "fix: your change"
+# 1. Ask Gemini to understand the project first
+gemini --mcp mcp_server/gemini_config.json \
+  "read CLAUDE.md and explain how the admin panels work, then show me admin_server.R"
+
+# 2. Ask it to write the feature
+gemini --mcp mcp_server/gemini_config.json \
+  "add an 8th admin panel showing time-of-day engagement heatmap.
+   Use ggplot2 geom_tile. Data comes from emotions.csv via reactivePoll."
+
+# 3. Check it works
+gemini "does the heatmap code look correct? check shiny-app/server/admin_server.R"
+
+# 4. Push
+git add . && git commit -m "feat: time-of-day heatmap panel" && git push origin deploy-ready
+```
+
+### Example: S1 debugging vision pipeline
+
+```bash
+# With Claude Code (already has MCP)
+claude
+> check backend_err.log, then read vision_pipeline.py and tell me why frames aren't saving
+> query the DB to see if any emotion_log rows exist
+> fix the snapshot saving bug and test it
+```
+
+### Example: S4 adding a new screen
+
+```bash
+codex --mcp-config mcp_server/codex_config.json \
+  "call /session/upcoming to see the response shape,
+   then build a proper lecture list component in home.tsx"
+```
+
+---
+
+## 6. Daily Git Workflow
+
+```bash
+# Always work on deploy-ready
+git checkout deploy-ready
+git pull origin deploy-ready
+
+# Make changes...
+
+git add -p              # review what you're committing
+git commit -m "feat: what you did"
 git push origin deploy-ready
-# DO auto-deploys in ~3 minutes
-```
 
-### Check if your deploy worked:
-```bash
+# DO auto-deploys in ~3 min
+# Verify:
 curl https://classroomx-lkbxf.ondigitalocean.app/health
-# Should return: {"status":"ok"}
-```
-
-### View live logs:
-```bash
-# Install doctl first (see below)
-doctl apps logs 05c01b58-661a-4a35-af36-e2cccf78495c --type run
-```
-
-### Install doctl (DO CLI):
-```bash
-winget install DigitalOcean.Doctl   # Windows
-# or: brew install doctl            # Mac
-doctl auth init                     # paste DO token when prompted
 ```
 
 ---
 
-## 7. Emergency Contacts
+## 7. Key Files — Know These
 
-| Issue | Who to ping |
-|---|---|
-| Backend down / API errors | S3 |
-| Vision pipeline not detecting | S1 |
-| Shiny portal broken | S2 |
-| Mobile app crashes | S4 |
-| Database questions | S3 (has Docker locally) |
-
----
-
-## 8. Key Files Reference
-
-| File | What it is |
-|---|---|
-| `python-api/main.py` | FastAPI entry point |
-| `python-api/database.py` | DB connection |
-| `python-api/services/vision_pipeline.py` | Camera → emotion detection |
-| `shiny-app/app.R` | Shiny entry point |
-| `shiny-app/modules/engagement_score.R` | Core engagement math |
-| `react-native-app/app/(student)/focus.tsx` | Student focus mode |
-| `vision/main.py` | Standalone vision client (run locally on demo day) |
-| `mcp_server/server.py` | MCP server for AI tools |
-| `do_manager.py` | DigitalOcean management script |
-| `prod_seed.sql` | Full DB dump (119 students) |
+```
+python-api/main.py                    FastAPI entry point
+python-api/database.py                DB connection (reads DATABASE_URL)
+python-api/models.py                  SQLAlchemy ORM models
+python-api/services/vision_pipeline.py  Camera → YOLO → face → emotion
+shiny-app/app.R                       Shiny entry point
+shiny-app/global.R                    Libraries + FASTAPI_BASE config
+shiny-app/modules/engagement_score.R  Core engagement math (LOCKED)
+react-native-app/app/(student)/focus.tsx  AppState focus mode
+vision/main.py                        Local vision client (demo day only)
+mcp_server/server.py                  This MCP server
+prod_seed.sql                         Full DB dump — 119 students
+CLAUDE.md                             Single source of truth — READ THIS FIRST
+TASKS.md                              All tasks T001–T074
+```
