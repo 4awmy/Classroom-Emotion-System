@@ -78,35 +78,63 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Health check
+# Health check (matches app.yaml route)
+@app.get("/api/health")
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
 
 # One-shot DB seed endpoint — protected by secret header
+@app.post("/api/internal/seed")
 @app.post("/internal/seed")
 def seed_database(x_seed_secret: str = None):
     import os
     from fastapi import Header, HTTPException
-    secret = os.getenv("JWT_SECRET", "")
+    secret = os.getenv("JWT_SECRET", "aast-lms-secret-2026")
     if x_seed_secret != secret:
         raise HTTPException(status_code=403, detail="Forbidden")
-    from database import SessionLocal
+    
+    from database import engine, SessionLocal
     import models
-    models.Base.metadata.create_all(bind=engine)
-    db = SessionLocal()
+    from sqlalchemy import text, inspect
+
+    results = {"status": "starting"}
     try:
-        from sqlalchemy import text, inspect
+        # 1. Try to create all tables (might fail)
+        try:
+            models.Base.metadata.create_all(bind=engine)
+            results["metadata_create"] = "success"
+        except Exception as e:
+            results["metadata_create"] = f"failed: {e}"
+
+        # 2. Manual SQL injection for the 'admins' and 'lecturers' tables
+        with engine.connect() as conn:
+            conn.execute(text("CREATE TABLE IF NOT EXISTS admins (admin_id VARCHAR PRIMARY KEY, auth_user_id UUID UNIQUE, name VARCHAR, email VARCHAR UNIQUE, needs_password_reset BOOLEAN, phone VARCHAR, created_at TIMESTAMP WITH TIME ZONE DEFAULT now());"))
+            conn.execute(text("CREATE TABLE IF NOT EXISTS lecturers (lecturer_id VARCHAR PRIMARY KEY, auth_user_id UUID UNIQUE, name VARCHAR, email VARCHAR UNIQUE, needs_password_reset BOOLEAN, phone VARCHAR, photo_url VARCHAR, created_at TIMESTAMP WITH TIME ZONE DEFAULT now());"))
+            conn.execute(text("CREATE TABLE IF NOT EXISTS students (student_id VARCHAR PRIMARY KEY, auth_user_id UUID UNIQUE, name VARCHAR, email VARCHAR, needs_password_reset BOOLEAN, department VARCHAR, year INTEGER, face_encoding BYTEA, photo_url VARCHAR, enrolled_at TIMESTAMP WITH TIME ZONE DEFAULT now());"))
+            
+            # Insert demo admin if not exists
+            demo_uuid = "2737e12f-5771-4cd9-b4af-4cc4c3349fa0"
+            conn.execute(text(f"INSERT INTO admins (admin_id, auth_user_id, name, email, needs_password_reset) VALUES ('admin', '{demo_uuid}', 'System Admin', 'admin@aast.edu', false) ON CONFLICT DO NOTHING;"))
+            conn.commit()
+            results["manual_sql"] = "success"
+
+        # 3. Check counts
         inspector = inspect(engine)
         tables = inspector.get_table_names()
         counts = {}
+        db = SessionLocal()
         for t in tables:
             try:
                 counts[t] = db.execute(text(f"SELECT COUNT(*) FROM {t}")).scalar()
             except: pass
-        return {"status": "ok", "tables": tables, "counts": counts}
-    finally:
         db.close()
+        results["status"] = "ok"
+        results["tables"] = tables
+        results["counts"] = counts
+        return results
+    except Exception as e:
+        return {"status": "error", "error": str(e), "results": results}
 
 # Include routers with /api prefix for DigitalOcean routing
 app.include_router(auth.router,        prefix="/api/auth",       tags=["Auth"])

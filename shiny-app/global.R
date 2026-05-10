@@ -109,6 +109,9 @@ get_db_con <- function() {
 
 api_call <- function(endpoint, method = "GET", body = NULL, auth_token = NULL, content_type = "application/json") {
   url <- paste0(FASTAPI_BASE, endpoint)
+  
+  # DEBUG: Log the call
+  cat("[API] Calling:", method, url, "\n")
 
   req <- request(url) |>
     req_method(method) |>
