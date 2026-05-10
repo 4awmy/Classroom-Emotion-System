@@ -151,6 +151,10 @@ def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event, 
                                 db.add(AttendanceLog(student_id=sid, lecture_id=lecture_id, status="PRESENT", method="FACE"))
                                 db.commit()
                                 detected_this_session.add(sid)
+                                # Save attendance snapshot
+                                snap_dir = os.path.join("data", "snapshots", lecture_id)
+                                os.makedirs(snap_dir, exist_ok=True)
+                                cv2.imwrite(os.path.join(snap_dir, f"{sid}.jpg"), person_roi)
 
                             # Emotion Detection (Every 30 frames ~ 3 secs)
                             if fer_model and frame_count % 30 == 0:

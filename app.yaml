@@ -4,7 +4,7 @@ services:
   - name: backend
     github:
       repo: 4awmy/Classroom-Emotion-System
-      branch: main
+      branch: deploy-ready
       deploy_on_push: true
     dockerfile_path: python-api/Dockerfile
     source_dir: python-api
@@ -36,7 +36,7 @@ services:
   - name: frontend
     github:
       repo: 4awmy/Classroom-Emotion-System
-      branch: main
+      branch: deploy-ready
       deploy_on_push: true
     source_dir: shiny-app
     dockerfile_path: shiny-app/Dockerfile 
@@ -65,7 +65,7 @@ services:
   - name: vision
     github:
       repo: 4awmy/Classroom-Emotion-System
-      branch: main
+      branch: deploy-ready
       deploy_on_push: true
     dockerfile_path: vision/Dockerfile
     source_dir: vision
