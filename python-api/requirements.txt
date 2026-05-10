@@ -10,6 +10,8 @@ python-dotenv
 python-jose[cryptography]
 python-multipart
 email-validator
+passlib[bcrypt]
+bcrypt
 
 # Data processing
 pandas

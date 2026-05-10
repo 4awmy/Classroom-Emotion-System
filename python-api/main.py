@@ -5,6 +5,7 @@ import os
 from fastapi import FastAPI, Header, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text, inspect
+from sqlalchemy.orm import Session
 from database import engine, SessionLocal, get_db
 import models
 import uvicorn
@@ -55,8 +56,20 @@ app.add_middleware(
 @app.get("/")
 @app.get("/health")
 @app.get("/ping")
-def health_check():
-    return {"status": "ok", "version": "3.4.0", "message": "pong"}
+def health_check(db: Session = Depends(get_db)):
+    db_ok = False
+    try:
+        db.execute(text("SELECT 1"))
+        db_ok = True
+    except Exception as e:
+        logger.error(f"Health check DB error: {e}")
+        
+    return {
+        "status": "ok" if db_ok else "error",
+        "database": "connected" if db_ok else "disconnected",
+        "version": "3.4.1", 
+        "message": "pong"
+    }
 
 # Include routers
 # We include them TWICE: with and without /api to handle internal/external routing perfectly
