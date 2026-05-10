@@ -99,32 +99,43 @@ server <- function(input, output, session) {
     uid <- trimws(input$user_id)
     pwd <- trimws(input$password)
     
+    message(paste("[DEBUG] Login button clicked for user:", uid))
+    
     if (uid == "" || pwd == "") {
        shinyalert::shinyalert("Error", "Enter ID and Password", type="error")
        return()
     }
 
     # Attempt API login
+    message("[DEBUG] Calling /auth/login...")
     res <- api_call("/auth/login", method = "POST", body = list(user_id=uid, password=pwd))
     
     if (!is.null(res) && !is.null(res$access_token)) {
+      message("[DEBUG] Login successful, token received.")
       # CHECK FOR FORCED RESET (aast2026 logic)
       if (isTRUE(res$needs_password_reset)) {
+          message("[DEBUG] Force reset required.")
           shinyalert::shinyalert("Security", "Using default password. Please reset your password now.", type="info")
           session_state$view <- "forgot"
           return()
       }
 
       # Get user profile
+      message("[DEBUG] Fetching /auth/me...")
       me <- api_call("/auth/me", auth_token = res$access_token)
       if (!is.null(me)) {
+        message(paste("[DEBUG] Profile fetched. Role:", me$role))
         session_state$token <- res$access_token
         session_state$role <- me$role
         session_state$user_id <- me$user_id
         session_state$name <- me$name
         session_state$email <- me$email
         session_state$logged_in <- TRUE
+      } else {
+        message("[DEBUG] Failed to fetch /auth/me")
       }
+    } else {
+      message("[DEBUG] Login failed or returned empty response.")
     }
   })
 

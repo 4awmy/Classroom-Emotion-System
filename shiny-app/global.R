@@ -149,6 +149,7 @@ api_call <- function(endpoint, method = "GET", body = NULL, auth_token = NULL, c
     resp_body_json(resp)
   }, error = function(e) {
     # Network error or timeout
+    message(paste("[API] Network/Connection error:", e$message))
     return(NULL)
   })
 }

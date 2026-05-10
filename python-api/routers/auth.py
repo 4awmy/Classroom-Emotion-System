@@ -86,9 +86,13 @@ def get_password_hash(password):
 
 @router.post("/login", response_model=Token)
 async def login(request: LoginRequest, db: Session = Depends(get_db)):
+    print(f"[AUTH] Login attempt for: {request.user_id}")
+    
     # 1. Hardcoded Bypass (FAIL-SAFE for Demo/Production Setup)
+    # This runs BEFORE any database calls
     if request.user_id == "admin":
         if request.password in ["admin", "aast2026"]:
+            print(f"[AUTH] Admin bypass successful")
             return {
                 "access_token": create_access_token({"sub": "admin", "role": "admin"}), 
                 "token_type": "bearer", 
@@ -96,6 +100,7 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
             }
     
     if request.user_id == "omar" and request.password == "123":
+        print(f"[AUTH] Lecturer bypass successful")
         return {
             "access_token": create_access_token({"sub": "omar", "role": "lecturer"}), 
             "token_type": "bearer", 
@@ -103,27 +108,35 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
         }
 
     # 2. Database Lookup
-    user = db.query(models.Admin).filter(models.Admin.admin_id == request.user_id).first()
-    role = "admin"
-    if not user:
-        user = db.query(models.Lecturer).filter(models.Lecturer.lecturer_id == request.user_id).first()
-        role = "lecturer"
-    if not user:
-        user = db.query(models.Student).filter(models.Student.student_id == request.user_id).first()
-        role = "student"
+    try:
+        user = db.query(models.Admin).filter(models.Admin.admin_id == request.user_id).first()
+        role = "admin"
+        if not user:
+            user = db.query(models.Lecturer).filter(models.Lecturer.lecturer_id == request.user_id).first()
+            role = "lecturer"
+        if not user:
+            user = db.query(models.Student).filter(models.Student.student_id == request.user_id).first()
+            role = "student"
 
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
+        if not user:
+            print(f"[AUTH] User not found: {request.user_id}")
+            raise HTTPException(status_code=401, detail="User not found")
 
-    if not user.password_hash or not pwd_context.verify(request.password, user.password_hash):
-        if request.password != "aast2026":
-            raise HTTPException(status_code=401, detail="Incorrect password")
+        if not user.password_hash or not pwd_context.verify(request.password, user.password_hash):
+            if request.password != "aast2026":
+                print(f"[AUTH] Invalid password for: {request.user_id}")
+                raise HTTPException(status_code=401, detail="Incorrect password")
 
-    return {
-        "access_token": create_access_token({"sub": request.user_id, "role": role}), 
-        "token_type": "bearer",
-        "needs_password_reset": getattr(user, 'needs_password_reset', False) or (request.password == "aast2026")
-    }
+        print(f"[AUTH] Database login successful for: {request.user_id}")
+        return {
+            "access_token": create_access_token({"sub": request.user_id, "role": role}), 
+            "token_type": "bearer",
+            "needs_password_reset": getattr(user, 'needs_password_reset', False) or (request.password == "aast2026")
+        }
+    except Exception as e:
+        print(f"[AUTH] Database error during login: {e}")
+        # If DB is down but it's not a bypassed user, we must fail
+        raise HTTPException(status_code=503, detail="Authentication database unavailable")
 
 @router.get("/me", response_model=CurrentUser)
 async def read_users_me(current_user: CurrentUser = Depends(get_current_user)):
