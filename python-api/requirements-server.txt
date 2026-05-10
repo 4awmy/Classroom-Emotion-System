@@ -1,5 +1,5 @@
 # Server-only requirements for cloud deployment (DO App Platform)
-# Vision libraries (ultralytics, face-recognition, dlib, mediapipe, opencv)
+# Vision libraries (ultralytics, face-recognition, torch, torchvision, opencv)
 # run LOCALLY via vision/main.py — NOT needed on the cloud backend.
 
 # Core API
@@ -25,7 +25,6 @@ openpyxl
 requests
 qrcode[pil]
 anyascii
-opencv-python-headless
 
 # Scheduling
 apscheduler
@@ -33,5 +32,3 @@ apscheduler
 # AI (Gemini for question generation + PDF parsing)
 google-generativeai
 pdfplumber
-torch
-torchvision

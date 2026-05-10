@@ -51,10 +51,11 @@ def auto_start_lectures():
                 db.commit()
                 logger.info(f"Started lecture for class {schedule.class_id}")
                 
-                # Trigger vision pipeline
-                stop_event = threading.Event()
-                active_pipelines[new_lecture.lecture_id] = stop_event
-                threading.Thread(target=run_pipeline, args=(new_lecture.lecture_id, "0", stop_event)).start()
+                # [HYBRID FIX] Do NOT trigger vision pipeline on server. 
+                # This is now handled by the Local Vision Node.
+                # stop_event = threading.Event()
+                # active_pipelines[new_lecture.lecture_id] = stop_event
+                # threading.Thread(target=run_pipeline, args=(new_lecture.lecture_id, "0", stop_event)).start()
     finally:
         db.close()
 

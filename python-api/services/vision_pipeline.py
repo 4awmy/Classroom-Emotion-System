@@ -1,5 +1,4 @@
 import os
-import cv2
 import threading
 import time
 import numpy as np
@@ -12,21 +11,28 @@ from models import Student, EmotionLog, AttendanceLog, Lecture
 from services.websocket import manager
 from services.proctor_service import ProctorService
 from services.stream_state import latest_frames
-import torch
-import face_recognition
 import traceback
 
-# Try to import HSEmotion
+# Optional Heavy Imports (For Local Node only)
+try:
+    import torch
+    import face_recognition
+    from ultralytics import YOLO, settings
+    settings.update({'hub': False, 'sync': False})
+except ImportError:
+    torch = None
+    face_recognition = None
+    YOLO = None
+
 try:
     from hsemotion.face_emotions import HSEmotionRecognizer
 except ImportError:
     HSEmotionRecognizer = None
 
-# Ultralytics YOLOv8
-from ultralytics import YOLO, settings
-
-# Configure YOLO to be strictly offline
-settings.update({'hub': False, 'sync': False})
+try:
+    import cv2
+except ImportError:
+    cv2 = None
 
 # Paths
 YOLO_FACE_PATH = os.path.join(os.path.dirname(__file__), "..", "yolov8n-face.pt")
