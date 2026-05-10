@@ -12,9 +12,11 @@ python-dotenv
 
 # Auth
 python-jose[cryptography]
+passlib[bcrypt]
 python-multipart
 email-validator
 supabase
+httpx
 
 # Data processing
 pandas
@@ -22,6 +24,7 @@ numpy
 openpyxl
 requests
 qrcode[pil]
+anyascii
 
 # Scheduling
 apscheduler
