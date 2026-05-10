@@ -7,7 +7,12 @@ from database import get_db
 import models
 from schemas import IncidentResponse
 from services.websocket import manager
-from services.proctor_service import ProctorService
+try:
+    from services.proctor_service import ProctorService
+    _PROCTOR_AVAILABLE = True
+except ImportError:
+    ProctorService = None
+    _PROCTOR_AVAILABLE = False
 import uuid
 
 router = APIRouter()

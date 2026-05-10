@@ -11,8 +11,17 @@ from database import get_db, SessionLocal
 import models
 from models import FocusStrike
 from schemas import LectureResponse
-from services import vision_pipeline
-from services.stream_state import latest_frames
+try:
+    from services import vision_pipeline
+    _VISION_AVAILABLE = True
+except ImportError:
+    vision_pipeline = None
+    _VISION_AVAILABLE = False
+
+try:
+    from services.stream_state import latest_frames
+except ImportError:
+    latest_frames = {}
 import os
 import asyncio
 
@@ -97,14 +106,18 @@ async def start_session(request: SessionStartRequest, db: Session = Depends(get_
         stop_event = threading.Event()
         camera_url = request.camera_url or os.getenv("CLASSROOM_CAMERA_URL", "0")
         
-        # Start Vision Pipeline in daemon thread
-        vision_thread = threading.Thread(
-            target=vision_pipeline.run_pipeline,
-            args=(request.lecture_id, camera_url, stop_event, request.context, request.exam_id),
-            daemon=True
-        )
-        vision_thread.start()
-        active_lecture_tasks[request.lecture_id] = {"stop_event": stop_event, "thread": vision_thread}
+        # Start Vision Pipeline in daemon thread (only if running locally with vision libs)
+        if _VISION_AVAILABLE and vision_pipeline:
+            vision_thread = threading.Thread(
+                target=vision_pipeline.run_pipeline,
+                args=(request.lecture_id, camera_url, stop_event, request.context, request.exam_id),
+                daemon=True
+            )
+            vision_thread.start()
+            active_lecture_tasks[request.lecture_id] = {"stop_event": stop_event, "thread": vision_thread}
+        else:
+            logger.info("[SESSION] Vision pipeline not available in cloud — running in API-only mode")
+            active_lecture_tasks[request.lecture_id] = {"stop_event": stop_event, "thread": None}
 
         await manager.broadcast({
             "type": "session:start",
