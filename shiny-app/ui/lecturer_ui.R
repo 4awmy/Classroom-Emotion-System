@@ -171,11 +171,14 @@ lecturer_ui <- function() {
           h2("LMS Content Management"),
           wellPanel(
             fluidRow(
-              column(6, fileInput("lecturer_material_file", "Upload Lecture Slides (PDF)")),
-              column(6, br(), actionButton("lecturer_material_upload", "Process with Gemini", class = "btn-primary"))
+              column(4, selectInput("lecturer_material_week", "Academic Week", choices = paste("Week", 1:16))),
+              column(4, fileInput("lecturer_material_file", "Upload Slides (PDF)")),
+              column(4, br(), actionButton("lecturer_material_upload", "Upload & Process", class = "btn-primary btn-block"))
             )
           ),
-          DT::dataTableOutput("lecturer_materials_table")
+          shinydashboard::box(title = "Weekly Content", width = 12, status = "primary",
+            DT::dataTableOutput("lecturer_materials_table")
+          )
         )
       )
     )

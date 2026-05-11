@@ -47,13 +47,7 @@ async def gen_frames(lecture_id: str):
             retry_count += 1
             if retry_count % 50 == 0:
                 logger.warning(f"[STREAM] No frames found for {lecture_id} in shared state.")
-            
-            # Serve a placeholder "No Signal" if requested and still missing
-            if retry_count > 100:
-                # We could yield a black image here
-                pass
-                
-        await asyncio.sleep(0.06) # ~15 FPS sync
+        await asyncio.sleep(0.06)
 
 @router.get("/video_feed/{lecture_id}")
 async def video_feed(lecture_id: str):
@@ -67,7 +61,6 @@ class SessionStartRequest(BaseModel):
     lecturer_id: str
     class_id: Optional[str] = None
     title: Optional[str] = None
-    subject: Optional[str] = None
     slide_url: Optional[str] = None
     camera_url: Optional[str] = None
     context: Optional[str] = "lecture"
@@ -75,13 +68,6 @@ class SessionStartRequest(BaseModel):
 
 class SessionEndRequest(BaseModel):
     lecture_id: str
-
-def get_session_status(lecture: Optional[models.Lecture]) -> str:
-    if not lecture or not lecture.start_time:
-        return "not_started"
-    if lecture.end_time:
-        return "ended"
-    return "live"
 
 def stop_active_task(lecture_id: str):
     if lecture_id in active_lecture_tasks:
@@ -97,7 +83,10 @@ def remove_snapshot_dir(lecture_id: str):
 @router.get("/status/{lecture_id}")
 async def session_status(lecture_id: str, db: Session = Depends(get_db)):
     lecture = db.query(models.Lecture).filter(models.Lecture.lecture_id == lecture_id).first()
-    status = get_session_status(lecture)
+    
+    if not lecture:
+        return {"exists": False, "status": "not_started"}
+
     attendance_count = db.query(models.AttendanceLog).filter(
         models.AttendanceLog.lecture_id == lecture_id
     ).count()
@@ -110,13 +99,14 @@ async def session_status(lecture_id: str, db: Session = Depends(get_db)):
 
     return {
         "lecture_id": lecture_id,
-        "exists": lecture is not None,
-        "status": status,
-        "start_time": lecture.start_time.isoformat() if lecture and lecture.start_time else None,
-        "end_time": lecture.end_time.isoformat() if lecture and lecture.end_time else None,
+        "exists": True,
+        "status": lecture.status or "not_started",
+        "start_time": lecture.actual_start_time.isoformat() if lecture.actual_start_time else None,
+        "end_time": lecture.actual_end_time.isoformat() if lecture.actual_end_time else None,
         "attendance_count": attendance_count,
         "emotion_count": emotion_count,
         "check_count": check_count,
+        "frames_captured": lecture.total_frames_captured
     }
 
 @router.post("/start")
@@ -133,27 +123,22 @@ async def start_session(request: SessionStartRequest, db: Session = Depends(get_
                 lecturer_id=request.lecturer_id,
                 title=request.title or f"Lecture {request.lecture_id}",
                 slide_url=request.slide_url,
-                start_time=now,
-                scheduled_start=now,
-                session_type=request.context or "lecture"
+                actual_start_time=now,
+                status="live"
             )
             db.add(lecture)
         else:
-            lecture.start_time = now
-            lecture.end_time = None
+            lecture.actual_start_time = now
+            lecture.actual_end_time = None
+            lecture.status = "live"
         
         db.commit()
         db.refresh(lecture)
 
-        # Force kill previous if exists
-        if request.lecture_id in active_lecture_tasks:
-            active_lecture_tasks[request.lecture_id]["stop_event"].set()
-            await asyncio.sleep(1)
-
+        # Vision Thread Logic
         stop_event = threading.Event()
         camera_url = request.camera_url or os.getenv("CLASSROOM_CAMERA_URL", "0")
         
-        # Start Vision Pipeline in daemon thread (only if running locally with vision libs)
         if _VISION_AVAILABLE and vision_pipeline:
             vision_thread = threading.Thread(
                 target=vision_pipeline.run_pipeline,
@@ -163,16 +148,14 @@ async def start_session(request: SessionStartRequest, db: Session = Depends(get_
             vision_thread.start()
             active_lecture_tasks[request.lecture_id] = {"stop_event": stop_event, "thread": vision_thread}
         else:
-            logger.info("[SESSION] Vision pipeline not available in cloud — running in API-only mode")
             active_lecture_tasks[request.lecture_id] = {"stop_event": stop_event, "thread": None}
 
         await manager.broadcast({
             "type": "session:start",
             "lecture_id": request.lecture_id,
-            "lecturer_id": request.lecturer_id,
             "timestamp": now.isoformat() + "Z"
         })
-        return {"status": "started", "lecture_id": request.lecture_id}
+        return {"status": "live", "lecture_id": request.lecture_id}
     except Exception as e:
         logger.error(f"start_session error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -181,10 +164,12 @@ async def start_session(request: SessionStartRequest, db: Session = Depends(get_
 async def end_session(request: SessionEndRequest, db: Session = Depends(get_db)):
     lecture = db.query(models.Lecture).filter(models.Lecture.lecture_id == request.lecture_id).first()
     if lecture:
-        lecture.end_time = datetime.utcnow()
+        lecture.actual_end_time = datetime.utcnow()
+        lecture.status = "ended"
         db.commit()
 
     stop_active_task(request.lecture_id)
+    latest_frames.pop(request.lecture_id, None)
 
     await manager.broadcast({
         "type": "session:end",
@@ -197,67 +182,40 @@ async def end_session(request: SessionEndRequest, db: Session = Depends(get_db))
 async def reset_session(request: SessionEndRequest, db: Session = Depends(get_db)):
     lecture_id = request.lecture_id
     lecture = db.query(models.Lecture).filter(models.Lecture.lecture_id == lecture_id).first()
-    if not lecture:
-        return {"status": "not_started", "lecture_id": lecture_id, "deleted": {}}
-
+    
     stop_active_task(lecture_id)
-
-    check_ids = [
-        row[0]
-        for row in db.query(models.ComprehensionCheck.id)
-        .filter(models.ComprehensionCheck.lecture_id == lecture_id)
-        .all()
-    ]
-
-    deleted = {}
-    if check_ids:
-        deleted["student_answers"] = db.query(models.StudentAnswer).filter(
-            models.StudentAnswer.check_id.in_(check_ids)
-        ).delete(synchronize_session=False)
-    else:
-        deleted["student_answers"] = 0
-
-    deleted["comprehension_checks"] = db.query(models.ComprehensionCheck).filter(
-        models.ComprehensionCheck.lecture_id == lecture_id
-    ).delete(synchronize_session=False)
-    deleted["attendance_logs"] = db.query(models.AttendanceLog).filter(
-        models.AttendanceLog.lecture_id == lecture_id
-    ).delete(synchronize_session=False)
-    deleted["emotion_logs"] = db.query(models.EmotionLog).filter(
-        models.EmotionLog.lecture_id == lecture_id
-    ).delete(synchronize_session=False)
-    deleted["focus_strikes"] = db.query(models.FocusStrike).filter(
-        models.FocusStrike.lecture_id == lecture_id
-    ).delete(synchronize_session=False)
-    deleted["notifications"] = db.query(models.Notification).filter(
-        models.Notification.lecture_id_fk == lecture_id
-    ).delete(synchronize_session=False)
-
-    lecture.start_time = None
-    lecture.end_time = None
-    lecture.actual_start_time = None
-    lecture.actual_end_time = None
-    lecture.total_frames_captured = 0
-    lecture.expected_frames_count = 0
-
-    db.commit()
-    remove_snapshot_dir(lecture_id)
     latest_frames.pop(lecture_id, None)
 
-    await manager.broadcast({
-        "type": "session:reset",
-        "lecture_id": lecture_id,
-        "timestamp": datetime.utcnow().isoformat() + "Z"
-    })
-    return {"status": "not_started", "lecture_id": lecture_id, "deleted": deleted}
+    # SURGICAL DELETE (Option 2: Hard Reset)
+    # Delete dependent data
+    check_ids = [r[0] for r in db.query(models.ComprehensionCheck.id).filter(models.ComprehensionCheck.lecture_id == lecture_id).all()]
+    if check_ids:
+        db.query(models.StudentAnswer).filter(models.StudentAnswer.check_id.in_(check_ids)).delete(synchronize_session=False)
+    
+    db.query(models.ComprehensionCheck).filter(models.ComprehensionCheck.lecture_id == lecture_id).delete(synchronize_session=False)
+    db.query(models.AttendanceLog).filter(models.AttendanceLog.lecture_id == lecture_id).delete(synchronize_session=False)
+    db.query(models.EmotionLog).filter(models.EmotionLog.lecture_id == lecture_id).delete(synchronize_session=False)
+    db.query(models.FocusStrike).filter(models.FocusStrike.lecture_id == lecture_id).delete(synchronize_session=False)
+    db.query(models.Notification).filter(models.Notification.lecture_id_fk == lecture_id).delete(synchronize_session=False)
+
+    if lecture:
+        lecture.actual_start_time = None
+        lecture.actual_end_time = None
+        lecture.total_frames_captured = 0
+        lecture.status = "not_started"
+    
+    db.commit()
+    remove_snapshot_dir(lecture_id)
+
+    await manager.broadcast({"type": "session:reset", "lecture_id": lecture_id})
+    return {"status": "not_started", "lecture_id": lecture_id}
 
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     try:
         while True:
-            data = await websocket.receive_json()
-            # Handle strikes...
+            await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
     except:
