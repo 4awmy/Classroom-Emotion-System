@@ -13,62 +13,80 @@ from typing import Optional
 
 router = APIRouter()
 
-@router.post("/question", status_code=202)
+def extract_text_from_pdf(content: bytes) -> str:
+    """Extract text from first 5 pages of a PDF."""
+    try:
+        with pdfplumber.open(io.BytesIO(content)) as pdf:
+            return "\n".join([page.extract_text() or "" for page in pdf.pages[:5]])
+    except Exception:
+        return ""
+
+
+async def _fetch_material_text(db: Session, class_id: str) -> tuple[str, str]:
+    """
+    Find the most recent material for a class, download its PDF, and extract text.
+    Returns (slide_text, material_title).
+    """
+    from models import Material
+    material = (
+        db.query(Material)
+        .join(Lecture, Material.lecture_id == Lecture.lecture_id)
+        .filter(Lecture.class_id == class_id)
+        .order_by(Material.uploaded_at.desc())
+        .first()
+    )
+    if not material or not material.drive_link:
+        return "No lecture materials found.", ""
+
+    try:
+        async with httpx.AsyncClient(follow_redirects=True) as client:
+            resp = await client.get(material.drive_link, timeout=25.0)
+            if resp.status_code == 200 and len(resp.content) > 500:
+                text = await anyio.to_thread.run_sync(
+                    extract_text_from_pdf, resp.content
+                )
+                return text or "Could not extract text from PDF.", material.title
+    except Exception as e:
+        print(f"[GEMINI] Material download error: {e}")
+
+    return "Material download failed.", material.title
+
+
+@router.post("/question")
 async def get_clarifying_question(
     lecture_id: str,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     """
-    Generates a clarifying question from slide content using Gemini (Async).
-    Returns 202 Accepted immediately and pushes result via WebSocket.
+    Generates a clarifying question from the most recent class material using Gemini.
+    Returns the question synchronously so Shiny can display it directly.
+    Also broadcasts via WebSocket for connected student devices.
     """
     lecture = db.query(Lecture).filter(Lecture.lecture_id == lecture_id).first()
     if not lecture:
         raise HTTPException(status_code=404, detail="Lecture not found")
 
-    background_tasks.add_task(
-        process_question_task,
-        lecture_id,
-        lecture.slide_url
-    )
-
-    return {"status": "processing", "message": "AI is generating a question..."}
-
-
-def extract_text_from_pdf(content: bytes) -> str:
-    """Sync function to extract text from PDF bytes (offloaded to thread)."""
-    with pdfplumber.open(io.BytesIO(content)) as pdf:
-        return "\n".join([page.extract_text() or "" for page in pdf.pages[:5]])
-
-
-async def process_question_task(lecture_id: str, slide_url: Optional[str]):
-    """Background task: download PDF, extract text, generate question, push via WS."""
-    slide_text = "No slide text available."
-
-    if slide_url:
-        try:
-            from routers.roster import extract_drive_id
-            file_id = extract_drive_id(slide_url)
-            if file_id:
-                async with httpx.AsyncClient() as client:
-                    resp = await client.get(
-                        f"https://drive.google.com/uc?export=download&id={file_id}",
-                        timeout=20.0
-                    )
-                    if resp.status_code == 200:
-                        slide_text = await anyio.to_thread.run_sync(
-                            extract_text_from_pdf, resp.content
-                        )
-        except Exception as e:
-            print(f"[GEMINI] Slide extraction error: {e}")
-
+    slide_text, material_title = await _fetch_material_text(db, lecture.class_id)
     question = gemini_service.generate_fresh_brainer(slide_text)
+
+    # Broadcast to any connected student devices
     await manager.broadcast({
         "type": "freshbrainer",
         "lecture_id": lecture_id,
         "question": question
     })
+
+    return {
+        "status": "ok",
+        "question": question,
+        "material_title": material_title,
+        "lecture_id": lecture_id,
+    }
+
+
+async def process_question_task(lecture_id: str, slide_url: Optional[str]):
+    """Legacy background task — kept for backward compat."""
+    pass
 
 @router.get("/refresher")
 async def get_refresher(lecture_id: str, db: Session = Depends(get_db)):

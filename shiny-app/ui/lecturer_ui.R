@@ -142,8 +142,9 @@ lecturer_ui <- function() {
                 uiOutput("lecturer_live_sentiment_ticker")
               ),
               shinydashboard::box(title = "AI Interventions", width = 12, status = "danger",
-                actionButton("lecturer_trigger_refresher", "Push Refresher", class = "btn-info btn-block"),
-                actionButton("lecturer_trigger_check", "Push AI Quiz", class = "btn-warning btn-block"),
+                actionButton("lecturer_trigger_refresher",
+                             tagList(icon("robot"), " Ask AI (from materials)"),
+                             class = "btn-info btn-block"),
                 hr(),
                 uiOutput("lecturer_confusion_alert_ui")
               )

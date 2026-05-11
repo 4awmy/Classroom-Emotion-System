@@ -492,14 +492,67 @@ lecturer_server <- function(input, output, session, session_state) {
     })
   })
 
-  # ── AI interventions ─────────────────────────────────────────────────────
-  observeEvent(input$lecturer_trigger_refresher, {
-    shinyalert::shinyalert("Refresher Sent",
-      "A refresher prompt has been pushed to all connected student devices.",
-      type = "success")
+  # ── Auto confusion detection ─────────────────────────────────────────────
+  observe({
+    req(current_session_status() == "live")
+    invalidateLater(15000, session)
+    df <- live_emotions()
+    if (nrow(df) < 10) {
+      output$lecturer_confusion_alert_ui <- renderUI({ div() })
+      return()
+    }
+    recent        <- head(df, 40)
+    confusion_rate <- mean(recent$emotion %in% c("Confused", "Frustrated"), na.rm = TRUE)
+    if (confusion_rate >= 0.40) {
+      output$lecturer_confusion_alert_ui <- renderUI({
+        div(class = "alert alert-warning", style = "margin-top:8px; padding:10px;",
+            icon("exclamation-triangle"), " ",
+            strong(sprintf("%.0f%% of class is confused or frustrated.", confusion_rate * 100)),
+            br(),
+            small("Click ", strong("Ask AI"), " to get a clarifying question from your materials."))
+      })
+    } else {
+      output$lecturer_confusion_alert_ui <- renderUI({ div() })
+    }
   })
 
-  output$lecturer_confusion_alert_ui <- renderUI({ div() })
+  # ── AI intervention button ────────────────────────────────────────────────
+  observeEvent(input$lecturer_trigger_refresher, {
+    lid <- current_lecture_id()
+    if (nchar(lid) == 0 || current_session_status() != "live") {
+      shinyalert::shinyalert("Not Active",
+        "Start a session first before triggering an AI intervention.",
+        type = "warning")
+      return()
+    }
+    result <- tryCatch({
+      httr2::request(paste0(FASTAPI_BASE, "/gemini/question")) |>
+        httr2::req_url_query(lecture_id = lid) |>
+        httr2::req_method("POST") |>
+        httr2::req_headers("Authorization" = paste("Bearer", session_state$token)) |>
+        httr2::req_timeout(30) |>
+        httr2::req_error(is_error = \(r) FALSE) |>
+        httr2::req_perform() |>
+        httr2::resp_body_json()
+    }, error = function(e) NULL)
+
+    if (!is.null(result) && !is.null(result$question)) {
+      mat <- if (!is.null(result$material_title) && nchar(result$material_title) > 0)
+               paste0("<small>Source: <em>", result$material_title, "</em></small><br><br>")
+             else ""
+      shinyalert::shinyalert(
+        title           = "AI Clarifying Question",
+        text            = paste0(mat, "<strong>", result$question, "</strong>"),
+        html            = TRUE,
+        type            = "info",
+        confirmButtonText = "Got it"
+      )
+    } else {
+      shinyalert::shinyalert("AI Unavailable",
+        "Could not generate question. Ensure materials are uploaded for this course.",
+        type = "warning")
+    }
+  })
 
   # ════════════════════════════════════════════════════════════════════════════
   # REPORTS TAB
