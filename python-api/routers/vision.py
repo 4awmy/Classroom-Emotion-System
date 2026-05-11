@@ -1,9 +1,9 @@
 """
-Vision router — cloud-side frame processing.
-Face detection:  OpenCV Haar cascade (pre-built wheels, no C compilation).
-Face matching:   HOG descriptor cosine similarity stored as BLOB per student.
+Vision router - cloud-side frame processing.
+Face detection: OpenCV Haar cascade.
+Face matching: DeepFace ArcFace 512-dim embeddings stored as BLOB per student.
 Enrollment check: Only students enrolled in the lecture's class are marked present.
-Emotion:         HSEmotion ONNX (AffectNet, pure-Python wheel).
+Emotion: HSEmotion ONNX (AffectNet).
 """
 
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
@@ -11,6 +11,15 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from database import get_db
 from models import Student, AttendanceLog, EmotionLog, Lecture, Enrollment
+from services.face_embeddings import (
+    ENCODING_DIM,
+    ENCODING_DTYPE,
+    arcface_embedding,
+    cosine_sim,
+    cv2_available,
+    deepface_available,
+    get_cascade,
+)
 import numpy as np
 
 try:
@@ -25,30 +34,18 @@ try:
 except ImportError:
     _HSEMOTION_OK = False
 
-_VISION_OK = _CV2_OK
+_VISION_OK = _CV2_OK and cv2_available()
 
 router = APIRouter()
 
 _fer = None
-_face_cascade = None
 
 CONFIDENCE_MAP = {
     "Focused": 1.00, "Engaged": 0.85, "Confused": 0.55,
     "Anxious": 0.35, "Frustrated": 0.25, "Disengaged": 0.00,
 }
 
-_HOG_SIZE = (64, 64)
-ENCODING_DTYPE = np.float32
-SIMILARITY_THRESHOLD = 0.75
-
-
-def _get_cascade():
-    global _face_cascade
-    if _face_cascade is None and _CV2_OK:
-        _face_cascade = cv2.CascadeClassifier(
-            cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
-        )
-    return _face_cascade
+SIMILARITY_THRESHOLD = 0.60
 
 
 def _get_fer():
@@ -56,21 +53,6 @@ def _get_fer():
     if _fer is None and _HSEMOTION_OK:
         _fer = HSEmotionRecognizer(model_name="enet_b0_8_best_afew")
     return _fer
-
-
-def _hog_descriptor(face_bgr: np.ndarray) -> np.ndarray:
-    gray = cv2.cvtColor(cv2.resize(face_bgr, _HOG_SIZE), cv2.COLOR_BGR2GRAY)
-    hog = cv2.HOGDescriptor(
-        _winSize=(64, 64), _blockSize=(16, 16), _blockStride=(8, 8),
-        _cellSize=(8, 8), _nbins=9
-    )
-    desc = hog.compute(gray).flatten().astype(ENCODING_DTYPE)
-    norm = np.linalg.norm(desc)
-    return desc / norm if norm > 0 else desc
-
-
-def _cosine_sim(a: np.ndarray, b: np.ndarray) -> float:
-    return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-8))
 
 
 def _map_emotion(label: str, score: float) -> str:
@@ -92,13 +74,15 @@ async def process_frame(
     """
     Accept a JPEG frame from the browser webcam.
     - Detects all faces using Haar cascade.
-    - Matches each face against enrolled HOG encodings.
+    - Matches each face against enrolled ArcFace encodings.
     - Checks if matched student is enrolled in the lecture's class.
     - Writes AttendanceLog + EmotionLog only for enrolled+matched students.
-    - Returns bounding boxes for all detected faces (for overlay drawing in UI).
+    - Returns bounding boxes for all detected faces.
     """
     if not _VISION_OK:
         raise HTTPException(status_code=503, detail="OpenCV not available on this backend.")
+    if not deepface_available():
+        raise HTTPException(status_code=503, detail="DeepFace not available on this backend.")
 
     img_bytes = await image.read()
     np_arr = np.frombuffer(img_bytes, np.uint8)
@@ -108,28 +92,28 @@ async def process_frame(
 
     frame_h, frame_w = frame.shape[:2]
 
-    # Resolve the class linked to this lecture (for enrollment check)
     lecture = db.query(Lecture).filter(Lecture.lecture_id == lecture_id).first()
     class_id = lecture.class_id if lecture else None
 
     if class_id:
-        enrolled_ids = set(
+        enrolled_ids = {
             e.student_id
             for e in db.query(Enrollment).filter(Enrollment.class_id == class_id).all()
-        )
+        }
     else:
-        enrolled_ids = None  # No class linked — skip enrollment check
+        enrolled_ids = None
 
-    # Load all HOG encodings from DB
     students = db.query(Student).filter(Student.face_encoding.isnot(None)).all()
     known = []
-    for s in students:
-        enc = np.frombuffer(s.face_encoding, dtype=ENCODING_DTYPE)
-        if enc.shape[0] > 100:  # HOG vectors ~1764-dim; skip legacy 128/512-dim blobs
-            known.append((s, enc))
+    for student in students:
+        enc = np.frombuffer(student.face_encoding, dtype=ENCODING_DTYPE)
+        if enc.shape[0] == ENCODING_DIM:
+            known.append((student, enc))
 
-    # Detect all faces in the frame
-    cascade = _get_cascade()
+    cascade = get_cascade()
+    if cascade is None:
+        raise HTTPException(status_code=503, detail="OpenCV face cascade not available.")
+
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     faces = cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=3, minSize=(20, 20))
 
@@ -143,37 +127,43 @@ async def process_frame(
 
         bbox = {"x": int(x), "y": int(y), "w": int(w), "h": int(h)}
 
-        # No encodings enrolled yet
         if not known:
             detected.append({
                 "student_id": None, "name": "Unknown",
                 "emotion": None, "confidence": None,
                 "similarity": None, "enrolled": None,
                 "bbox": bbox,
-                "message": "No HOG encodings enrolled — upload roster first",
+                "message": "No ArcFace encodings enrolled - upload roster or re-run scripts/load_roster.py",
             })
             continue
 
-        # Match face against enrolled encodings
-        query_vec = _hog_descriptor(face_roi)
-        sims = [_cosine_sim(query_vec, vec) for _, vec in known]
+        query_vec = arcface_embedding(face_roi)
+        if query_vec is None:
+            detected.append({
+                "student_id": None, "name": "Unknown",
+                "emotion": None, "confidence": None,
+                "similarity": None, "enrolled": None,
+                "bbox": bbox,
+                "message": "Face embedding failed",
+            })
+            continue
+
+        sims = [cosine_sim(query_vec, vec) for _, vec in known]
         best_idx = int(np.argmax(sims))
         best_sim = sims[best_idx]
 
         if best_sim < SIMILARITY_THRESHOLD:
-            # Face detected but not recognised
             detected.append({
                 "student_id": None, "name": "Unknown",
                 "emotion": None, "confidence": None,
                 "similarity": round(best_sim, 3), "enrolled": None,
                 "bbox": bbox,
-                "message": "Face not found in database",
+                "message": f"Best match similarity {best_sim:.2f} below threshold {SIMILARITY_THRESHOLD}",
             })
             continue
 
         student = known[best_idx][0]
 
-        # Recognised but not enrolled in this class
         if enrolled_ids is not None and student.student_id not in enrolled_ids:
             detected.append({
                 "student_id": student.student_id, "name": student.name,
@@ -184,7 +174,6 @@ async def process_frame(
             })
             continue
 
-        # Enrolled & recognised — record attendance (idempotent)
         already = db.query(AttendanceLog).filter(
             AttendanceLog.student_id == student.student_id,
             AttendanceLog.lecture_id == lecture_id,
@@ -198,7 +187,6 @@ async def process_frame(
                 method="AI",
             ))
 
-        # Detect emotion
         emotion = "Focused"
         confidence = CONFIDENCE_MAP["Focused"]
         if fer is not None and face_roi.size > 0:
@@ -253,10 +241,13 @@ def vision_status():
         "packages": {
             "opencv": _CV2_OK,
             "hsemotion_onnx": _HSEMOTION_OK,
+            "deepface": deepface_available(),
         },
         "models_loaded": {
-            "face_cascade": _face_cascade is not None,
+            "face_cascade": get_cascade() is not None,
             "emotion_recognizer": _fer is not None,
         },
-        "method": "HOG descriptors + Haar cascade (OpenCV built-in)",
+        "method": "DeepFace ArcFace 512-dim embeddings + Haar cascade",
+        "encoding_dim": ENCODING_DIM,
+        "similarity_threshold": SIMILARITY_THRESHOLD,
     }

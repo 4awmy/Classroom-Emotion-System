@@ -8,14 +8,13 @@ from dotenv import load_dotenv
 import threading
 
 # We might need these for the heavy lifting
-# If running standalone, ensure these are installed: 
-# pip install opencv-python requests numpy ultralytics face_recognition hse-emotion
+# If running standalone, ensure these are installed:
+# pip install opencv-python requests numpy ultralytics hsemotion-onnx
 try:
     from ultralytics import YOLO
-    import face_recognition
     from hsemotion.face_emotions import HSEmotionRecognizer as HSEmotionRecognize
 except ImportError:
-    print("[ERROR] Missing dependencies. Run: pip install ultralytics face_recognition hsemotion-onnx opencv-python requests")
+    print("[ERROR] Missing dependencies. Run: pip install ultralytics hsemotion-onnx opencv-python requests")
 
 # Load environment variables
 load_dotenv()
@@ -105,24 +104,18 @@ class VisionNode:
             person_roi = frame[y1:y2, x1:x2]
             if person_roi.size == 0: continue
             
-            # 2. Identify Student (Face Recognition)
-            # In a real classroom, we'd compare encodings. 
-            # For this prototype, we'll mock detection of a test student if a face is seen.
-            rgb_roi = cv2.cvtColor(person_roi, cv2.COLOR_BGR2RGB)
-            encs = face_recognition.face_encodings(rgb_roi)
-            
-            if encs:
+            # 2. Identify Student. This prototype still uses a fixed student id
+            # when a face is detected; the API pipeline performs ArcFace matching.
+            face_results = self.face_model(person_roi, verbose=False)
+
+            if len(face_results[0].boxes) > 0:
                 # Mock: Always detect '231006131' for demo if any face found
                 student_id = "231006131" 
                 
                 # 3. Detect Emotion
                 # Get tight face crop
-                face_results = self.face_model(person_roi, verbose=False)
-                if len(face_results[0].boxes) > 0:
-                    fx1, fy1, fx2, fy2 = face_results[0].boxes.xyxy[0].cpu().numpy().astype(int)
-                    face_roi = person_roi[fy1:fy2, fx1:fx2]
-                else:
-                    face_roi = person_roi # Fallback
+                fx1, fy1, fx2, fy2 = face_results[0].boxes.xyxy[0].cpu().numpy().astype(int)
+                face_roi = person_roi[fy1:fy2, fx1:fx2]
                 
                 res = self.fer_model.predict_emotions(face_roi, logits=False)
                 label = max(res, key=lambda x: res[x])

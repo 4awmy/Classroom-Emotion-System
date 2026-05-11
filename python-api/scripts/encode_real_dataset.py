@@ -1,10 +1,7 @@
 import os
 import sys
 import pandas as pd
-import io
 import requests
-import face_recognition
-import numpy as np
 import re
 from sqlalchemy.orm import Session
 
@@ -13,6 +10,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database import SessionLocal, engine
 from models import Student, Base
+from services.face_embeddings import image_bytes_to_embedding_bytes
 
 def extract_drive_id(url: str) -> str | None:
     if not url or str(url) == "nan":
@@ -30,10 +28,7 @@ def extract_drive_id(url: str) -> str | None:
 
 def get_face_encoding(image_bytes: bytes) -> bytes | None:
     try:
-        img = face_recognition.load_image_file(io.BytesIO(image_bytes))
-        encodings = face_recognition.face_encodings(img)
-        if encodings:
-            return encodings[0].astype(np.float64).tobytes()
+        return image_bytes_to_embedding_bytes(image_bytes)
     except Exception as e:
         print(f"  [ERROR] Face encoding failed: {e}")
     return None

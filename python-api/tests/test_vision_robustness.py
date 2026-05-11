@@ -16,10 +16,6 @@ sys.modules['mediapipe'] = mock_mp
 sys.modules['mediapipe.solutions'] = mock_mp.solutions
 sys.modules['mediapipe.solutions.face_mesh'] = mock_mp.solutions.face_mesh
 
-# Mock face_recognition to avoid missing model errors
-mock_fr = MagicMock()
-sys.modules['face_recognition'] = mock_fr
-
 # Mock ultralytics
 mock_yolo = MagicMock()
 sys.modules['ultralytics'] = mock_yolo
@@ -56,9 +52,9 @@ class TestVisionRobustness(unittest.TestCase):
             student = Student(
                 student_id="999999999",
                 name="Test Student",
-                face_encoding=np.zeros(128).tobytes()
             )
             db.add(student)
+        student.face_encoding = np.zeros(512, dtype=np.float32).tobytes()
 
         # Ensure test lecture exists for Gemini test
         lecture = db.query(Lecture).filter(Lecture.lecture_id == "TEST_L").first()
@@ -100,15 +96,17 @@ class TestVisionRobustness(unittest.TestCase):
             with patch('services.vision_pipeline.SessionLocal', return_value=self.db):
                 # Mock YOLO models to avoid loading them
                 with patch('services.vision_pipeline.YOLO'):
-                    t = threading.Thread(target=run_pipeline, args=("TEST_RECONNECT", "0", stop_event))
-                    t.daemon = True
-                    t.start()
+                    with patch('services.vision_pipeline.deepface_available', return_value=True):
+                        with patch('services.vision_pipeline.arcface_embedding', return_value=np.zeros(512, dtype=np.float32)):
+                            t = threading.Thread(target=run_pipeline, args=("TEST_RECONNECT", "0", stop_event))
+                            t.daemon = True
+                            t.start()
 
-                    # Wait >1s so the pipeline's stop_event.wait(timeout=1) backoff
-                    # completes and the thread makes a second VideoCapture attempt.
-                    time.sleep(1.2)
-                    stop_event.set()
-                    t.join(timeout=5)
+                            # Wait >1s so the pipeline's stop_event.wait(timeout=1) backoff
+                            # completes and the thread makes a second VideoCapture attempt.
+                            time.sleep(1.2)
+                            stop_event.set()
+                            t.join(timeout=5)
 
         # Pipeline must have called VideoCapture at least twice:
         # once that fails (isOpened=False), once after backoff retry (isOpened=True).

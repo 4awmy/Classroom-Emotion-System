@@ -1,6 +1,4 @@
 # Server-only requirements for cloud deployment (DO App Platform)
-# Vision libraries (ultralytics, face-recognition, torch, torchvision, opencv)
-# run LOCALLY via vision/main.py — NOT needed on the cloud backend.
 
 # Core API
 fastapi
@@ -33,9 +31,9 @@ apscheduler
 google-generativeai
 pdfplumber
 
-# Vision — pure OpenCV (pre-built wheels, zero C compilation) + HSEmotion ONNX
-# opencv-python-headless: face detection via Haar cascade, HOG descriptors
-# hsemotion-onnx: AffectNet emotion model (pure Python wheel)
+# Vision - OpenCV face detection, DeepFace ArcFace identity, HSEmotion ONNX emotion
 opencv-python-headless
 hsemotion-onnx
 onnxruntime
+deepface
+tf-keras

@@ -1,38 +1,14 @@
 import io
 import base64
 import pandas as pd
-import numpy as np
 import uuid
-
-try:
-    import cv2
-    _CV2_OK = True
-except ImportError:
-    _CV2_OK = False
-
-ENCODING_DTYPE = np.float32
-_HOG_SIZE = (64, 64)
-
-def _get_cascade():
-    if not _CV2_OK:
-        return None
-    return cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
-
-def _hog_descriptor(face_bgr: np.ndarray) -> np.ndarray:
-    gray = cv2.cvtColor(cv2.resize(face_bgr, _HOG_SIZE), cv2.COLOR_BGR2GRAY)
-    hog = cv2.HOGDescriptor(
-        _winSize=(64, 64), _blockSize=(16, 16), _blockStride=(8, 8),
-        _cellSize=(8, 8), _nbins=9
-    )
-    desc = hog.compute(gray).flatten().astype(ENCODING_DTYPE)
-    norm = np.linalg.norm(desc)
-    return desc / norm if norm > 0 else desc
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy.orm import Session
 from typing import List
 
 from database import get_db
 from routers.auth import get_current_user, get_password_hash
+from services.face_embeddings import embeddings_available, image_bytes_to_embedding_bytes
 import models
 import schemas
 
@@ -43,28 +19,13 @@ router = APIRouter(
 # --- Helpers ---
 
 def generate_face_encoding(photo_b64: str):
-    """Generate HOG face encoding from base64 photo (works on DO cloud, no compilation needed)."""
-    if not _CV2_OK:
+    """Generate ArcFace face embedding from a base64 photo."""
+    if not embeddings_available():
         return None
     try:
         _, encoded = photo_b64.split(",", 1) if "," in photo_b64 else (None, photo_b64)
         data = base64.b64decode(encoded)
-        nparr = np.frombuffer(data, np.uint8)
-        img_bgr = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        if img_bgr is None:
-            return None
-        cascade = _get_cascade()
-        if cascade is None:
-            return None
-        gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
-        faces = cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
-        if len(faces) == 0:
-            return None
-        x, y, w, h = max(faces, key=lambda f: f[2] * f[3])
-        face_roi = img_bgr[y:y+h, x:x+w]
-        if face_roi.size == 0:
-            return None
-        return _hog_descriptor(face_roi).tobytes()
+        return image_bytes_to_embedding_bytes(data)
     except Exception as e:
         print(f"[ADMIN] Encoding error: {e}")
         return None

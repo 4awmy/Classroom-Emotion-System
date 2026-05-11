@@ -1,8 +1,8 @@
 import cv2
 import numpy as np
-import face_recognition
 from ultralytics import YOLO
 import os
+from services.face_embeddings import arcface_embedding
 
 def diagnose():
     img_path = 'data/snapshots/TEST_PHASE3/999999999.jpg'
@@ -23,15 +23,13 @@ def diagnose():
         roi = img[y1:y2, x1:x2]
         print(f"ROI {i} shape: {roi.shape}")
         
-        rgb_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2RGB)
-        encs = face_recognition.face_encodings(rgb_roi)
-        print(f"ROI {i} face encodings: {len(encs)}")
+        emb = arcface_embedding(roi)
+        print(f"ROI {i} ArcFace embedding: {emb is not None}")
         
-        if len(encs) == 0:
-            # Try a slightly larger ROI or the whole frame
+        if emb is None:
             print(f"ROI {i} failed. Trying full frame...")
-            full_encs = face_recognition.face_encodings(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-            print(f"Full frame face encodings: {len(full_encs)}")
+            full_emb = arcface_embedding(img)
+            print(f"Full frame ArcFace embedding: {full_emb is not None}")
 
 if __name__ == "__main__":
     diagnose()

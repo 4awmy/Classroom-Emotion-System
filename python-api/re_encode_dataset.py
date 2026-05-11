@@ -1,12 +1,12 @@
 import os
 import cv2
-import face_recognition
 import numpy as np
 from sqlalchemy.orm import Session
 from database import SessionLocal
 import models
 import requests
 import io
+from services.face_embeddings import image_bytes_to_embedding_bytes
 
 def get_google_drive_direct_link(url):
     """Converts a Google Drive sharing link to a direct download link."""
@@ -49,18 +49,13 @@ def re_encode_all_students():
             print(f"[!] Network error for {student.student_id}: {e}")
                 
         if img is not None:
-            # AI Encoding
-            rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            face_locations = face_recognition.face_locations(rgb_img)
-            
-            if face_locations:
-                encodings = face_recognition.face_encodings(rgb_img, face_locations)
-                if encodings:
-                    student.face_encoding = encodings[0].tobytes()
-                    db.commit()
-                    print(f"[v] SUCCESS: Biometrics generated for {student.student_id}")
-                    success_count += 1
-                    continue
+            encoding = image_bytes_to_embedding_bytes(resp.content)
+            if encoding:
+                student.face_encoding = encoding
+                db.commit()
+                print(f"[v] SUCCESS: Biometrics generated for {student.student_id}")
+                success_count += 1
+                continue
         
         print(f"[x] FAILED: Could not detect face for student {student.student_id}")
         fail_count += 1

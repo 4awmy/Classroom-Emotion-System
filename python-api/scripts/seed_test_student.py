@@ -1,10 +1,9 @@
 import cv2
-import face_recognition
-import numpy as np
 from sqlalchemy.orm import Session
 from database import SessionLocal
 from models import Student
 import os
+from services.face_embeddings import arcface_embedding
 
 def seed_self():
     print("Please look at the camera for 3 seconds...")
@@ -21,15 +20,12 @@ def seed_self():
         print("Error: Could not capture from webcam.")
         return
 
-    # Find face encoding
-    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    encodings = face_recognition.face_encodings(rgb_frame)
-    
-    if not encodings:
+    encoding = arcface_embedding(frame)
+
+    if encoding is None:
         print("Error: No face detected in the frame. Please try again.")
         return
-    
-    encoding = encodings[0]
+
     encoding_bytes = encoding.tobytes()
 
     db = SessionLocal()

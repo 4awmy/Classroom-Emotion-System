@@ -26,7 +26,8 @@ apscheduler
 # AI/ML
 ultralytics
 hsemotion-onnx
-face-recognition
+deepface
+tf-keras
 google-generativeai
 pdfplumber
 opencv-python

@@ -22,14 +22,27 @@ except ImportError:
 
 try:
     import torch
-    import face_recognition
     from ultralytics import YOLO, settings
     if settings:
         settings.update({'hub': False, 'sync': False})
 except ImportError:
     torch = None
-    face_recognition = None
     YOLO = None
+
+try:
+    from services.face_embeddings import (
+        ENCODING_DIM,
+        ENCODING_DTYPE,
+        arcface_embedding,
+        cosine_sim,
+        deepface_available,
+    )
+except ImportError:
+    ENCODING_DIM = 512
+    ENCODING_DTYPE = np.float32
+    arcface_embedding = None
+    cosine_sim = None
+    deepface_available = lambda: False
 
 try:
     from hsemotion.face_emotions import HSEmotionRecognizer
@@ -45,22 +58,22 @@ def _ensure_yolo_face():
         print(f"[VISION] Warning: Face model not found at {YOLO_FACE_PATH}")
 
 def load_student_encodings(db: Session):
-    """Loads all student IDs and their face encodings."""
+    """Loads all student IDs and their ArcFace face encodings."""
     students = db.query(Student).all()
     encodings = {}
     for s in students:
         if s.face_encoding:
             try:
-                vec = np.frombuffer(s.face_encoding, dtype=np.float64)
-                if len(vec) == 128:
+                vec = np.frombuffer(s.face_encoding, dtype=ENCODING_DTYPE)
+                if len(vec) == ENCODING_DIM:
                     encodings[s.student_id] = vec
             except: pass
     return encodings
 
 def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event, context: str = "lecture", exam_id: str = None):
     """Main vision pipeline loop."""
-    if cv2 is None or YOLO is None:
-        print("[VISION] Skipping pipeline: AI dependencies (cv2/torch/ultralytics) not installed on this machine.")
+    if cv2 is None or YOLO is None or arcface_embedding is None or not deepface_available():
+        print("[VISION] Skipping pipeline: AI dependencies (cv2/torch/ultralytics/deepface) not installed on this machine.")
         return
 
     camera_source = int(camera_url) if isinstance(camera_url, str) and camera_url.isdigit() else camera_url
@@ -138,20 +151,15 @@ def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event, 
                         if face_roi.size == 0: continue
                         
                         sid = "unknown"
-                        # recognition logic...
-                        rgb_face = cv2.cvtColor(face_roi, cv2.COLOR_BGR2RGB)
-                        
-                        # DEMO MODE: If face seen, we MUST identify someone
                         if known_vectors:
                             # Only run expensive encodings every 20 frames
                             if frame_count % 20 == 0:
-                                current_encodings = face_recognition.face_encodings(rgb_face)
-                                if current_encodings:
-                                    matches = face_recognition.compare_faces(known_vectors, current_encodings[0], tolerance=0.6)
-                                    if True in matches:
-                                        sid = known_ids[matches.index(True)]
-                                    else:
-                                        sid = "unknown"
+                                current_encoding = arcface_embedding(face_roi)
+                                if current_encoding is not None:
+                                    similarities = [cosine_sim(current_encoding, known) for known in known_vectors]
+                                    best_idx = int(np.argmax(similarities))
+                                    if similarities[best_idx] >= 0.60:
+                                        sid = known_ids[best_idx]
                             else:
                                 # For frames where we don't run re-recognition, we assume 
                                 # the face in this bounding box is the same as before?
@@ -171,6 +179,7 @@ def run_pipeline(lecture_id: str, camera_url: str, stop_event: threading.Event, 
 
                             # Emotion Detection (Every 30 frames ~ 3 secs)
                             if fer_model and frame_count % 30 == 0:
+                                rgb_face = cv2.cvtColor(face_roi, cv2.COLOR_BGR2RGB)
                                 res = fer_model.predict_emotions(rgb_face, logits=False)
                                 emotion = max(res, key=lambda x: res[x])
                                 db.add(EmotionLog(student_id=sid, lecture_id=lecture_id, emotion=emotion, confidence=float(res[emotion]), engagement_score=float(res[emotion])))
