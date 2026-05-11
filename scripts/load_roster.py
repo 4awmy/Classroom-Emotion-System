@@ -25,7 +25,7 @@ import numpy as np
 import pandas as pd
 import psycopg2
 import requests
-from deepface import DeepFace
+from insightface.app import FaceAnalysis
 
 
 DB = dict(
@@ -42,28 +42,17 @@ ROSTER_PATH = os.environ.get("ROSTER_PATH") or os.environ.get("XLSX_PATH", r"C:\
 ENCODING_DTYPE = np.float32
 ENCODING_DIM = 512
 
-
-def _get_cascade():
-    return cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+_insight_app = None
 
 
-_cascade = _get_cascade()
-
-
-def _arcface_embedding(face_bgr: np.ndarray):
-    result = DeepFace.represent(
-        img_path=face_bgr,
-        model_name="ArcFace",
-        detector_backend="skip",
-        enforce_detection=False,
-    )
-    if not result:
-        return None
-    embedding = np.array(result[0]["embedding"], dtype=ENCODING_DTYPE)
-    if embedding.shape[0] != ENCODING_DIM:
-        return None
-    norm = np.linalg.norm(embedding)
-    return embedding / norm if norm > 0 else embedding
+def _get_insight_app():
+    global _insight_app
+    if _insight_app is None:
+        print("  [FACE] Loading InsightFace buffalo_sc model (first run only)…")
+        _insight_app = FaceAnalysis(name="buffalo_sc", providers=["CPUExecutionProvider"])
+        _insight_app.prepare(ctx_id=0, det_size=(640, 640))
+        print("  [FACE] InsightFace ready.")
+    return _insight_app
 
 
 def extract_drive_id(url: str):
@@ -88,16 +77,18 @@ def get_face_encoding(image_bytes: bytes):
         img_bgr = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
         if img_bgr is None:
             return None
-        gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
-        faces = _cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
-        if len(faces) == 0:
+        app   = _get_insight_app()
+        faces = app.get(img_bgr)
+        if not faces:
             return None
-        x, y, w, h = max(faces, key=lambda f: f[2] * f[3])
-        face_roi = img_bgr[y:y + h, x:x + w]
-        if face_roi.size == 0:
+        # Use the largest detected face
+        face = max(faces, key=lambda f: (f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1]))
+        emb  = face.embedding.astype(ENCODING_DTYPE)
+        norm = np.linalg.norm(emb)
+        emb  = emb / norm if norm > 0 else emb
+        if emb.shape[0] != ENCODING_DIM:
             return None
-        embedding = _arcface_embedding(face_roi)
-        return embedding.tobytes() if embedding is not None else None
+        return emb.tobytes()
     except Exception as exc:
         print(f"  [ENCODING] {str(exc)[:80]}")
         return None

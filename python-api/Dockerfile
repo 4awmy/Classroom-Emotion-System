@@ -15,11 +15,17 @@ RUN apt-get update && apt-get install -y \
 COPY requirements-server.txt ./
 RUN pip install --no-cache-dir -r requirements-server.txt
 
+# Pre-download InsightFace buffalo_sc models at build time (~66 MB).
+# This avoids a cold-start download delay on every container restart.
+RUN python -c "\
+from insightface.app import FaceAnalysis; \
+app = FaceAnalysis(name='buffalo_sc', providers=['CPUExecutionProvider']); \
+app.prepare(ctx_id=0, det_size=(640,640)); \
+print('InsightFace buffalo_sc ready')"
+
 # Copy the backend source
 COPY . .
 
-# Expose port 8000
 EXPOSE 8000
 
-# Start uvicorn
 CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

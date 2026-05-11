@@ -1,5 +1,4 @@
 from typing import Optional
-
 import numpy as np
 
 try:
@@ -9,16 +8,16 @@ except ImportError:
     _CV2_OK = False
 
 try:
-    from deepface import DeepFace
-    _DEEPFACE_OK = True
+    from insightface.app import FaceAnalysis
+    _INSIGHT_OK = True
 except ImportError:
-    _DEEPFACE_OK = False
+    _INSIGHT_OK = False
 
 
 ENCODING_DTYPE = np.float32
-ENCODING_DIM = 512
-ARCFACE_MODEL_NAME = "ArcFace"
+ENCODING_DIM   = 512  # InsightFace ArcFace (buffalo_sc) embedding dimension
 
+_insight_app  = None
 _face_cascade = None
 
 
@@ -27,14 +26,27 @@ def cv2_available() -> bool:
 
 
 def deepface_available() -> bool:
-    return _DEEPFACE_OK
+    """Kept for backward compat with vision.py imports — now means insightface available."""
+    return _INSIGHT_OK
 
 
 def embeddings_available() -> bool:
-    return _CV2_OK and _DEEPFACE_OK
+    return _CV2_OK and _INSIGHT_OK
+
+
+def _get_insight_app():
+    global _insight_app
+    if _insight_app is None and _INSIGHT_OK:
+        _insight_app = FaceAnalysis(
+            name="buffalo_sc",
+            providers=["CPUExecutionProvider"],
+        )
+        _insight_app.prepare(ctx_id=0, det_size=(640, 640))
+    return _insight_app
 
 
 def get_cascade():
+    """Haar cascade — still used for emotion ROI cropping in vision.py."""
     global _face_cascade
     if _face_cascade is None and _CV2_OK:
         _face_cascade = cv2.CascadeClassifier(
@@ -54,51 +66,74 @@ def cosine_sim(a: np.ndarray, b: np.ndarray) -> float:
     return float(np.dot(a, b) / (denom + 1e-8))
 
 
+def detect_and_embed(frame_bgr: np.ndarray) -> list:
+    """
+    Detect all faces in a full frame using InsightFace RetinaFace + ArcFace.
+    Returns list of {"bbox": {x,y,w,h}, "embedding": np.ndarray (512-dim)}.
+    Produces properly aligned embeddings — more accurate than Haar+crop.
+    """
+    if not _INSIGHT_OK or frame_bgr is None or frame_bgr.size == 0:
+        return []
+    try:
+        app = _get_insight_app()
+        if app is None:
+            return []
+        faces = app.get(frame_bgr)
+        result = []
+        for face in faces:
+            if face.embedding is None:
+                continue
+            x1, y1, x2, y2 = [int(c) for c in face.bbox]
+            x1, y1 = max(0, x1), max(0, y1)
+            result.append({
+                "bbox": {"x": x1, "y": y1, "w": max(1, x2 - x1), "h": max(1, y2 - y1)},
+                "embedding": normalize_embedding(face.embedding),
+            })
+        return result
+    except Exception as exc:
+        print(f"[FACE] detect_and_embed error: {exc}")
+        return []
+
+
 def arcface_embedding(face_bgr: np.ndarray) -> Optional[np.ndarray]:
-    if not _DEEPFACE_OK or face_bgr.size == 0:
+    """
+    Get embedding from a pre-cropped face ROI.
+    Runs detection again inside the crop — use detect_and_embed on full frames instead.
+    """
+    if not _INSIGHT_OK or face_bgr is None or face_bgr.size == 0:
         return None
     try:
-        result = DeepFace.represent(
-            img_path=face_bgr,
-            model_name=ARCFACE_MODEL_NAME,
-            detector_backend="skip",
-            enforce_detection=False,
-        )
-        if not result:
+        h, w = face_bgr.shape[:2]
+        if h < 64 or w < 64:
+            face_bgr = cv2.resize(face_bgr, (128, 128))
+        faces = detect_and_embed(face_bgr)
+        if faces:
+            return faces[0]["embedding"]
+        # Fallback: no face detected in the crop — embed the crop directly
+        app = _get_insight_app()
+        if app is None:
             return None
-        embedding = np.array(result[0]["embedding"], dtype=ENCODING_DTYPE)
-        if embedding.shape[0] != ENCODING_DIM:
+        rec = next((m for m in app.models.values() if hasattr(m, "get_feat")), None)
+        if rec is None:
             return None
-        return normalize_embedding(embedding)
+        face_resized = cv2.resize(face_bgr, (112, 112))
+        emb = rec.get_feat(face_resized[np.newaxis, ...])
+        return normalize_embedding(emb[0])
     except Exception as exc:
-        print(f"[FACE] ArcFace embedding error: {exc}")
+        print(f"[FACE] arcface_embedding error: {exc}")
         return None
-
-
-def largest_face_roi(img_bgr: np.ndarray) -> Optional[np.ndarray]:
-    if not _CV2_OK or img_bgr is None:
-        return None
-    cascade = get_cascade()
-    if cascade is None:
-        return None
-    gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
-    faces = cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
-    if len(faces) == 0:
-        return None
-    x, y, w, h = max(faces, key=lambda f: f[2] * f[3])
-    face_roi = img_bgr[y:y + h, x:x + w]
-    return face_roi if face_roi.size > 0 else None
 
 
 def image_bytes_to_embedding_bytes(image_bytes: bytes) -> Optional[bytes]:
+    """For roster loading: detect largest face, return its ArcFace embedding as bytes."""
     if not embeddings_available():
         return None
     np_arr = np.frombuffer(image_bytes, np.uint8)
     img_bgr = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
     if img_bgr is None:
         return None
-    face_roi = largest_face_roi(img_bgr)
-    if face_roi is None:
+    faces = detect_and_embed(img_bgr)
+    if not faces:
         return None
-    embedding = arcface_embedding(face_roi)
-    return embedding.tobytes() if embedding is not None else None
+    largest = max(faces, key=lambda f: f["bbox"]["w"] * f["bbox"]["h"])
+    return largest["embedding"].tobytes()

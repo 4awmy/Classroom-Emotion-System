@@ -31,9 +31,8 @@ apscheduler
 google-generativeai
 pdfplumber
 
-# Vision - OpenCV face detection, DeepFace ArcFace identity, HSEmotion ONNX emotion
+# Vision - OpenCV face detection, InsightFace ArcFace identity, HSEmotion ONNX emotion
 opencv-python-headless
 hsemotion-onnx
 onnxruntime
-deepface
-tf-keras
+insightface
