@@ -95,12 +95,35 @@ async def upload_roster(
         else:
             df = pd.read_excel(io.BytesIO(contents))
 
-        # Normalise column names (strip whitespace, lowercase for matching)
+        # Normalise column names (strip whitespace)
         df.columns = [c.strip() for c in df.columns]
 
-        required_cols = ["student_id", "name", "email", "photo_link"]
+        # Map common alternate column name formats to expected names
+        col_aliases = {
+            "Student ID":   "student_id",
+            "student id":   "student_id",
+            "StudentID":    "student_id",
+            "ID":           "student_id",
+            "Student Name": "name",
+            "student name": "name",
+            "StudentName":  "name",
+            "Full Name":    "name",
+            "Photo Link":   "photo_link",
+            "photo link":   "photo_link",
+            "PhotoLink":    "photo_link",
+            "Photo URL":    "photo_link",
+            "Email":        "email",
+            "email":        "email",
+        }
+        df.rename(columns=col_aliases, inplace=True)
+
+        # email is optional — add blank column if missing
+        if "email" not in df.columns:
+            df["email"] = ""
+
+        required_cols = ["student_id", "name", "photo_link"]
         if not all(col in df.columns for col in required_cols):
-            raise HTTPException(status_code=400, detail=f"File must contain columns: {required_cols}. Found: {list(df.columns)}")
+            raise HTTPException(status_code=400, detail=f"File must contain: {required_cols}. Found: {list(df.columns)}")
 
         created = 0
         encoded = 0
