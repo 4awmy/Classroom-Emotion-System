@@ -111,6 +111,43 @@ def health_check(db: Session = Depends(get_db)):
         "message": "Gemini Integration Stable"
     }
 
+# Re-encode all students with current face model (Internal Only)
+@app.post("/api/internal/reencode-students")
+@app.post("/internal/reencode-students")
+def reencode_students(x_seed_secret: str = None):
+    secret = os.getenv("JWT_SECRET", "aast-lms-secret-2026")
+    if x_seed_secret != secret:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    try:
+        from re_encode_dataset import re_encode_all_students
+        import threading
+        threading.Thread(target=re_encode_all_students, daemon=True).start()
+        return {"status": "started", "message": "Re-encoding running in background. Check /api/vision/encoding-stats in ~5 min."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+# Encoding stats endpoint
+@app.get("/api/internal/encoding-stats")
+@app.get("/internal/encoding-stats")
+def encoding_stats():
+    db = SessionLocal()
+    try:
+        from sqlalchemy import text as sql_text
+        rows = db.execute(sql_text(
+            "SELECT octet_length(face_encoding) AS bytes, COUNT(*) AS cnt "
+            "FROM students GROUP BY 1 ORDER BY 1 NULLS FIRST"
+        )).fetchall()
+        result = []
+        for r in rows:
+            b, cnt = r
+            label = "no encoding" if b is None else f"{b} bytes ({b//4}-dim float32)"
+            result.append({"bytes": b, "count": cnt, "label": label})
+        return {"encoding_distribution": result}
+    finally:
+        db.close()
+
+
 # Production Seed Trigger (Internal Only)
 @app.post("/api/internal/seed")
 @app.post("/internal/seed")

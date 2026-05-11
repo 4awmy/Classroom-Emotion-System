@@ -37,10 +37,11 @@ DB = dict(
     sslmode=os.environ.get("DB_SSLMODE", "require"),
 )
 
-ROSTER_PATH = os.environ.get("ROSTER_PATH") or os.environ.get("XLSX_PATH", r"C:\Users\hp\Downloads\StudentPicsDataset.xlsx")
+ROSTER_PATH    = os.environ.get("ROSTER_PATH") or os.environ.get("XLSX_PATH", r"C:\Users\hp\Downloads\StudentPicsDataset.xlsx")
+FORCE_REENCODE = os.environ.get("FORCE_REENCODE", "0") == "1"  # set =1 after switching face models
 
 ENCODING_DTYPE = np.float32
-ENCODING_DIM = 512
+ENCODING_DIM   = 512
 
 _insight_app = None
 
@@ -170,8 +171,9 @@ def main():
                 (sid,),
             )
             existing = cur.fetchone()
-            if existing and existing[0] == ENCODING_DIM * np.dtype(ENCODING_DTYPE).itemsize:
-                print(f"  [{i + 1}/{total}] {name[:30]:30s}  (already ArcFace encoded, skip)")
+            if (not FORCE_REENCODE
+                    and existing and existing[0] == ENCODING_DIM * np.dtype(ENCODING_DTYPE).itemsize):
+                print(f"  [{i + 1}/{total}] {name[:30]:30s}  (already encoded, skip — use FORCE_REENCODE=1 to regenerate)")
                 continue
         except Exception:
             pass
