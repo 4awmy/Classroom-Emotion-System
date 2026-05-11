@@ -79,7 +79,7 @@ lecturer_server <- function(input, output, session, session_state) {
   live_attendance <- reactive({
     lid <- current_lecture_id()
     req(nchar(lid) > 0)
-    if (current_session_status() == "live") invalidateLater(3000, session)
+    if (current_session_status() == "live") invalidateLater(2000, session)
     safe_db_get(sprintf(
       "SELECT s.student_id, s.name, al.status, al.timestamp
        FROM enrollments e

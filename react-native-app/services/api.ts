@@ -110,8 +110,9 @@ export const authAPI = {
 };
 
 export const sessionAPI = {
-  getUpcoming: async () => {
-    const response = await apiClient.get("/session/upcoming");
+  getUpcoming: async (studentId?: string) => {
+    const params = studentId ? { student_id: studentId } : {};
+    const response = await apiClient.get("/session/upcoming", { params });
     return response.data;
   },
   start: async (lectureId: string) => {

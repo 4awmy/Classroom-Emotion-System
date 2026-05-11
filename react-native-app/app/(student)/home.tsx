@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -6,12 +6,12 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useStore } from "@/store/useStore";
-import { sessionAPI } from "@/services/api";
+import { sessionAPI, wsAPI } from "@/services/api";
 import { Colors, DarkColors, Radius, Shadow, Spacing } from "@/constants/theme";
 
 interface Lecture {
@@ -36,38 +36,63 @@ const ACTIVITIES_DARK = [
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { studentId, setActiveLectureId, setFocusActive, isDark, toggleDark } = useStore();
+  const { studentId, activeLectureId, setActiveLectureId, setFocusActive, isDark, toggleDark } = useStore();
   const C = isDark ? DarkColors : Colors;
   const styles = useMemo(() => makeStyles(C), [isDark]);
   const ACTIVITIES = isDark ? ACTIVITIES_DARK : ACTIVITIES_LIGHT;
 
   const [lectures, setLectures] = useState<Lecture[]>([]);
   const [loading, setLoading] = useState(true);
+  const activeLectureIdRef = useRef(useStore.getState().activeLectureId);
 
+  // Keep ref in sync so WS handler always has the latest value without re-subscribing
   useEffect(() => {
-    loadUpcomingLectures();
-  }, []);
+    activeLectureIdRef.current = activeLectureId;
+  }, [activeLectureId]);
 
-  const loadUpcomingLectures = async () => {
+  const loadUpcomingLectures = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
-      const response = await sessionAPI.getUpcoming();
+      if (!silent) setLoading(true);
+      const response = await sessionAPI.getUpcoming(studentId ?? undefined);
       setLectures(Array.isArray(response) ? response : []);
     } catch {
-      // Fallback to mock data when backend not available
-      setLectures([
-        {
-          lecture_id: "L1",
-          title: "Introduction to Algorithms",
-          subject: "CCS3002",
-          start_time: new Date().toISOString(),
-          lecturer_id: "admin",
-        },
-      ]);
+      setLectures([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [studentId]);
+
+  // Initial load
+  useEffect(() => { loadUpcomingLectures(); }, [loadUpcomingLectures]);
+
+  // WebSocket sync: react to session:start and session:end broadcasts from Shiny
+  useEffect(() => {
+    const unsubscribe = wsAPI.onMessage((data) => {
+      if (data.type === "session:start") {
+        // Refresh list so the new live lecture appears instantly
+        loadUpcomingLectures(true);
+        const lid = data.lecture_id as string | undefined;
+        Alert.alert(
+          "Session Started",
+          `A lecture has just gone live${lid ? ` (${lid})` : ""}.\nTap Join to activate focus mode.`,
+          [{ text: "OK" }]
+        );
+      }
+
+      if (data.type === "session:end") {
+        const lid = data.lecture_id as string | undefined;
+        // Deactivate focus if this was the student's active lecture
+        if (lid && lid === activeLectureIdRef.current) {
+          setActiveLectureId(null);
+          setFocusActive(false);
+          Alert.alert("Session Ended", "The lecturer has ended this session.");
+        }
+        // Refresh list to remove the now-ended lecture
+        loadUpcomingLectures(true);
+      }
+    });
+    return unsubscribe;
+  }, [loadUpcomingLectures]);
 
   const handleJoinLecture = (lectureId: string) => {
     setActiveLectureId(lectureId);
