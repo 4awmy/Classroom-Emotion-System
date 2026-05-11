@@ -51,7 +51,7 @@ query_table <- function(table_name) {
   }
   
   tryCatch({
-    con <- dbConnect(RPostgres::Postgres(), url = db_url)
+    con <- dbConnect(RPostgres::Postgres(), dbname = db_url)
     res <- dbReadTable(con, table_name)
     dbDisconnect(con)
     global_db_error("") # Clear error on success

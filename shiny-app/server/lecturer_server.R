@@ -16,7 +16,7 @@ lecturer_server <- function(input, output, session, session_state) {
       return(data.frame())
     }
     tryCatch({
-      con <- dbConnect(RPostgres::Postgres(), url = db_url)
+      con <- dbConnect(RPostgres::Postgres(), dbname = db_url)
       res <- dbGetQuery(con, query)
       dbDisconnect(con)
       global_db_error("") # Success
