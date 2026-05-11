@@ -321,51 +321,41 @@ lecturer_server <- function(input, output, session, session_state) {
             c.toDataURL('image/jpeg', 0.8), { priority: 'event' });
         }
 
-        // Draw bounding boxes on the overlay canvas
-        function drawFaceBoxes(data) {
+        // Draw bounding boxes — set canvas buffer = frame dims, CSS scales visually
+        window.drawFaceBoxes = function(data) {
           var ov = document.getElementById('liveDashOverlay');
-          var v  = document.getElementById('liveDashCam');
-          if (!ov || !v) return;
-
-          ov.width  = v.offsetWidth  || 640;
-          ov.height = v.offsetHeight || 480;
-
-          var ctx = ov.getContext('2d');
-          ctx.clearRect(0, 0, ov.width, ov.height);
-
+          if (!ov) return;
           var fw = data.frame_width  || 640;
           var fh = data.frame_height || 480;
-          var sx = ov.width  / fw;
-          var sy = ov.height / fh;
-
+          ov.width  = fw;
+          ov.height = fh;
+          var ctx = ov.getContext('2d');
+          ctx.clearRect(0, 0, fw, fh);
           (data.detected || []).forEach(function(d) {
             if (!d.bbox) return;
-            var b  = d.bbox;
-            var px = b.x * sx, py = b.y * sy;
-            var pw = b.w * sx, ph = b.h * sy;
-
-            // Green = enrolled present, Orange = not in class, Yellow = unknown
+            var b   = d.bbox;
             var col = (d.enrolled === true)  ? '#00e676' :
                       (d.enrolled === false) ? '#ff9100' : '#ffff00';
-
             ctx.strokeStyle = col;
             ctx.lineWidth   = 3;
-            ctx.strokeRect(px, py, pw, ph);
-
-            var label = d.name + (d.emotion ? ' [' + d.emotion + ']' : '');
+            ctx.strokeRect(b.x, b.y, b.w, b.h);
+            var lbl = d.name + (d.emotion ? ' [' + d.emotion + ']' : '');
             ctx.font = 'bold 13px Arial';
-            var tw = ctx.measureText(label).width;
+            var tw = ctx.measureText(lbl).width;
             ctx.fillStyle = 'rgba(0,0,0,0.65)';
-            ctx.fillRect(px, py - 22, tw + 8, 22);
+            ctx.fillRect(b.x, b.y - 22, tw + 8, 22);
             ctx.fillStyle = col;
-            ctx.fillText(label, px + 4, py - 6);
+            ctx.fillText(lbl, b.x + 4, b.y - 6);
+          });
+        };
+
+        // Guard against double-registration when renderUI re-renders
+        if (!window._faceBoxHandlerOK) {
+          window._faceBoxHandlerOK = true;
+          Shiny.addCustomMessageHandler('drawFaceBoxes', function(data) {
+            window.drawFaceBoxes(data);
           });
         }
-
-        // Listen for Shiny server push with detection results
-        Shiny.addCustomMessageHandler('drawFaceBoxes', function(data) {
-          drawFaceBoxes(data);
-        });
       "))
     )
 

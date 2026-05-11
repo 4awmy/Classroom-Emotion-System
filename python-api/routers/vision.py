@@ -131,7 +131,7 @@ async def process_frame(
     # Detect all faces in the frame
     cascade = _get_cascade()
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    faces = cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+    faces = cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=3, minSize=(20, 20))
 
     fer = _get_fer()
     detected = []
