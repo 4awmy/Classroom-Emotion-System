@@ -102,14 +102,15 @@ lecturer_server <- function(input, output, session, session_state) {
   observeEvent(input$lecturer_course_nav, {
     nav <- input$lecturer_course_nav
     df  <- lecturer_courses_data()
-    if (nav$row > nrow(df)) return()
+    if (is.null(nav) || nav$row > nrow(df)) return()
     row <- df[nav$row, ]
     selected_course_id(row$code)
     selected_class_id(row$class)
-    lec_id <- sprintf("LEC_%s_%s", row$class, format(Sys.Date(), "%Y%W"))
+    week_num <- if (!is.null(input$live_week_num)) input$live_week_num else 1
+    lec_id   <- build_lecture_id(row$class, week_num)
     current_lecture_id(lec_id)
-    updateTabItems(session, "lecturer_menu",
-                   if (nav$dest == "live") "lec_live" else "lec_reports")
+    dest_tab <- if (nav$dest == "live") "lec_live" else "lec_reports"
+    session$sendCustomMessage("setTab", dest_tab)
   })
 
   # ════════════════════════════════════════════════════════════════════════════
@@ -134,13 +135,19 @@ lecturer_server <- function(input, output, session, session_state) {
                 selected = selected_class_id())
   })
 
-  # Auto-update lecture_id when class selector changes
-  observeEvent(input$live_class_id, {
-    req(input$live_class_id)
-    lec_id <- sprintf("LEC_%s_%s", input$live_class_id, format(Sys.Date(), "%Y%W"))
-    current_lecture_id(lec_id)
-    selected_class_id(input$live_class_id)
-    # Fetch current status for this lecture id
+  output$lec_live_week_selector <- renderUI({
+    selectInput("live_week_num", "3. Academic Week",
+                choices  = setNames(1:16, paste("Week", 1:16)),
+                selected = 1)
+  })
+
+  # Build lecture ID from class + week
+  build_lecture_id <- function(class_id, week_num) {
+    sprintf("LEC_%s_WEEK%02d", class_id, as.integer(week_num))
+  }
+
+  # Reload session status for a given lecture ID
+  reload_session_status <- function(lec_id) {
     d <- api_call(paste0("/session/status/", lec_id), auth_token = session_state$token)
     if (!is.null(d) && !is.null(d$status)) {
       current_session_status(d$status)
@@ -149,6 +156,24 @@ lecturer_server <- function(input, output, session, session_state) {
       current_session_status("not_started")
       session_summary_data(NULL)
     }
+  }
+
+  # Auto-update lecture_id when class selector changes
+  observeEvent(input$live_class_id, {
+    req(input$live_class_id)
+    week_num <- if (!is.null(input$live_week_num)) input$live_week_num else 1
+    lec_id   <- build_lecture_id(input$live_class_id, week_num)
+    current_lecture_id(lec_id)
+    selected_class_id(input$live_class_id)
+    reload_session_status(lec_id)
+  })
+
+  # Auto-update lecture_id when week selector changes
+  observeEvent(input$live_week_num, {
+    req(input$live_class_id, input$live_week_num)
+    lec_id <- build_lecture_id(input$live_class_id, input$live_week_num)
+    current_lecture_id(lec_id)
+    reload_session_status(lec_id)
   })
 
   output$lec_live_session_info <- renderUI({
@@ -431,12 +456,14 @@ lecturer_server <- function(input, output, session, session_state) {
   # ── Session action handlers ───────────────────────────────────────────────
   observeEvent(input$start_session_btn, {
     req(input$live_class_id)
-    lid  <- current_lecture_id()
+    week_num <- if (!is.null(input$live_week_num)) input$live_week_num else 1
+    lid  <- build_lecture_id(input$live_class_id, week_num)
+    current_lecture_id(lid)
     body <- list(
       lecture_id  = lid,
       class_id    = input$live_class_id,
       lecturer_id = session_state$user_id,
-      title       = sprintf("Session %s", lid)
+      title       = sprintf("Week %s — %s", week_num, input$live_class_id)
     )
     res <- api_call("/session/start", method = "POST", body = body,
                     auth_token = session_state$token)
@@ -657,7 +684,27 @@ lecturer_server <- function(input, output, session, session_state) {
   })
 
   # ════════════════════════════════════════════════════════════════════════════
-  # MATERIALS TAB
+  # MATERIALS TAB — selectors
+  # ════════════════════════════════════════════════════════════════════════════
+  output$lec_mat_course_selector <- renderUI({
+    df <- lecturer_courses_data()
+    if (nrow(df) == 0) return(p("No courses assigned.", style = "color:red;"))
+    selectInput("mat_course_id", "Course",
+                choices = setNames(df$code, df$course))
+  })
+
+  output$lec_mat_class_selector <- renderUI({
+    req(input$mat_course_id)
+    df <- safe_db_get(sprintf(
+      "SELECT class_id FROM classes WHERE course_id = '%s' AND lecturer_id = '%s'",
+      input$mat_course_id, session_state$user_id
+    ))
+    if (nrow(df) == 0) return(p("No sections found.", style = "color:#888;"))
+    selectInput("mat_class_id", "Section", choices = df$class_id)
+  })
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # MATERIALS TAB — table
   # ════════════════════════════════════════════════════════════════════════════
   output$lecturer_materials_table <- DT::renderDataTable({
     uid <- session_state$user_id
@@ -677,9 +724,38 @@ lecturer_server <- function(input, output, session, session_state) {
   })
 
   observeEvent(input$lecturer_material_upload, {
-    shinyalert::shinyalert("Upload",
-      "Material upload via Drive link is managed through the Admin panel.",
-      type = "info")
+    req(input$mat_class_id, input$lecturer_material_file)
+    week_num  <- if (!is.null(input$lecturer_material_week)) input$lecturer_material_week else 1
+    lec_id    <- build_lecture_id(input$mat_class_id, week_num)
+    file_info <- input$lecturer_material_file
+
+    result <- tryCatch({
+      httr2::request(paste0(FASTAPI_BASE, "/upload/material")) |>
+        httr2::req_method("POST") |>
+        httr2::req_headers("Authorization" = paste("Bearer", session_state$token)) |>
+        httr2::req_body_multipart(
+          file        = curl::form_file(file_info$datapath, type = "application/pdf",
+                                        name = file_info$name),
+          lecture_id  = lec_id,
+          class_id    = input$mat_class_id,
+          lecturer_id = session_state$user_id,
+          title       = tools::file_path_sans_ext(file_info$name),
+          week        = as.character(week_num)
+        ) |>
+        httr2::req_timeout(60) |>
+        httr2::req_error(is_error = \(r) FALSE) |>
+        httr2::req_perform() |>
+        httr2::resp_body_json()
+    }, error = function(e) NULL)
+
+    if (!is.null(result) && is.null(result$detail)) {
+      shinyalert::shinyalert("Uploaded",
+        sprintf("'%s' uploaded for Week %s.", file_info$name, week_num),
+        type = "success")
+    } else {
+      msg <- if (!is.null(result$detail)) as.character(result$detail) else "Upload failed."
+      shinyalert::shinyalert("Upload Error", msg, type = "error")
+    }
   })
 
   # ════════════════════════════════════════════════════════════════════════════

@@ -89,7 +89,14 @@ lecturer_ui <- function() {
           .live-2-col { display: flex; gap: 20px; }
           .live-left { flex: 2; }
           .live-right { flex: 1; }
-        ")
+        "),
+        tags$script(HTML("
+          // Reliable tab navigation for dynamically rendered shinydashboard
+          Shiny.addCustomMessageHandler('setTab', function(tab) {
+            var el = document.querySelector('[data-value=\"' + tab + '\"]');
+            if (el) el.click();
+          });
+        "))
       ),
       shinydashboard::tabItems(
 
@@ -115,9 +122,10 @@ lecturer_ui <- function() {
           # Step 1: Selector Bar
           wellPanel(
             fluidRow(
-              column(4, uiOutput("lec_live_course_selector")),
-              column(4, uiOutput("lec_live_class_selector")),
-              column(4, uiOutput("lec_live_session_info"))
+              column(3, uiOutput("lec_live_course_selector")),
+              column(3, uiOutput("lec_live_class_selector")),
+              column(3, uiOutput("lec_live_week_selector")),
+              column(3, uiOutput("lec_live_session_info"))
             )
           ),
 
@@ -178,9 +186,16 @@ lecturer_ui <- function() {
           h2("LMS Content Management"),
           wellPanel(
             fluidRow(
-              column(4, selectInput("lecturer_material_week", "Academic Week", choices = paste("Week", 1:16))),
-              column(4, fileInput("lecturer_material_file", "Upload Slides (PDF)")),
-              column(4, br(), actionButton("lecturer_material_upload", "Upload & Process", class = "btn-primary btn-block"))
+              column(4, uiOutput("lec_mat_course_selector")),
+              column(4, uiOutput("lec_mat_class_selector")),
+              column(4, selectInput("lecturer_material_week", "Academic Week",
+                                    choices = setNames(1:16, paste("Week", 1:16)), selected = 1))
+            ),
+            fluidRow(
+              column(8, fileInput("lecturer_material_file", "Upload Slides (PDF)",
+                                  accept = c(".pdf"))),
+              column(4, br(), actionButton("lecturer_material_upload", "Upload & Process",
+                                           class = "btn-primary btn-block"))
             )
           ),
           shinydashboard::box(title = "Weekly Content", width = 12, status = "primary",
