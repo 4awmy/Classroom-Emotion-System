@@ -105,8 +105,8 @@ def health_check(db: Session = Depends(get_db)):
     return {
         "status": "ok" if db_ok else "error",
         "database": "connected" if db_ok else "disconnected",
-        "version": "3.6.0", 
-        "message": "Gemini Integration Live"
+        "version": "3.9.0", 
+        "message": "Gemini Integration Stable"
     }
 
 # Production Seed Trigger (Internal Only)
