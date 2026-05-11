@@ -118,7 +118,7 @@ admin_server <- function(input, output, session, session_state) {
       email = input$admin_student_email,
       department = input$admin_student_dept,
       password = input$admin_student_pwd,
-      photo_base64 = photo_base64
+      photo_b64 = photo_base64
     )
     
     api_call("/admin/students", method="POST", body=body, auth_token=session_state$token)
@@ -156,6 +156,17 @@ admin_server <- function(input, output, session, session_state) {
   output$admin_classes_table <- DT::renderDataTable({
     class_refresh()
     DT::datatable(safe_db_get("SELECT * FROM classes"))
+  })
+
+  shiny::observeEvent(input$course_submit, {
+    req(input$course_id_in, input$course_title_in)
+    body <- list(
+      course_id = input$course_id_in,
+      title = input$course_title_in
+    )
+    api_call("/courses", method="POST", body=body, auth_token=session_state$token)
+    course_refresh(course_refresh() + 1)
+    shinyalert::shinyalert("Success", "Course added.", type="success")
   })
 
   shiny::observeEvent(input$class_submit, {

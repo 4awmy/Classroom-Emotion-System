@@ -4,13 +4,29 @@ import pandas as pd
 import numpy as np
 import uuid
 
-# Vision libs only available when running locally with full requirements.txt
 try:
     import cv2
-    import face_recognition
-    _VISION_AVAILABLE = True
+    _CV2_OK = True
 except ImportError:
-    _VISION_AVAILABLE = False
+    _CV2_OK = False
+
+ENCODING_DTYPE = np.float32
+_HOG_SIZE = (64, 64)
+
+def _get_cascade():
+    if not _CV2_OK:
+        return None
+    return cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+
+def _hog_descriptor(face_bgr: np.ndarray) -> np.ndarray:
+    gray = cv2.cvtColor(cv2.resize(face_bgr, _HOG_SIZE), cv2.COLOR_BGR2GRAY)
+    hog = cv2.HOGDescriptor(
+        _winSize=(64, 64), _blockSize=(16, 16), _blockStride=(8, 8),
+        _cellSize=(8, 8), _nbins=9
+    )
+    desc = hog.compute(gray).flatten().astype(ENCODING_DTYPE)
+    norm = np.linalg.norm(desc)
+    return desc / norm if norm > 0 else desc
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy.orm import Session
 from typing import List
@@ -27,36 +43,30 @@ router = APIRouter(
 # --- Helpers ---
 
 def generate_face_encoding(photo_b64: str):
-    """Generates 128-d face encoding from base64 string."""
-    if not _VISION_AVAILABLE:
-        return None  # Vision libs not installed in cloud deployment
+    """Generate HOG face encoding from base64 photo (works on DO cloud, no compilation needed)."""
+    if not _CV2_OK:
+        return None
     try:
-        # Decode base64
-        header, encoded = photo_b64.split(",", 1) if "," in photo_b64 else (None, photo_b64)
+        _, encoded = photo_b64.split(",", 1) if "," in photo_b64 else (None, photo_b64)
         data = base64.b64decode(encoded)
-
-        # Load image into OpenCV
         nparr = np.frombuffer(data, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        if img is None:
+        img_bgr = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        if img_bgr is None:
             return None
-
-        # Convert to RGB (face_recognition requirement)
-        rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-        # Find faces and encodings
-        face_locations = face_recognition.face_locations(rgb_img)
-        if not face_locations:
+        cascade = _get_cascade()
+        if cascade is None:
             return None
-
-        encodings = face_recognition.face_encodings(rgb_img, face_locations)
-        if not encodings:
+        gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+        faces = cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+        if len(faces) == 0:
             return None
-            
-        # Return first face encoding as bytes
-        return encodings[0].tobytes()
+        x, y, w, h = max(faces, key=lambda f: f[2] * f[3])
+        face_roi = img_bgr[y:y+h, x:x+w]
+        if face_roi.size == 0:
+            return None
+        return _hog_descriptor(face_roi).tobytes()
     except Exception as e:
-        print(f"[ADMIN] Error generating encoding: {e}")
+        print(f"[ADMIN] Encoding error: {e}")
         return None
 
 # --- Admin CRUD ---

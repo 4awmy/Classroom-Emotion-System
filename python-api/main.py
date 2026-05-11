@@ -40,7 +40,9 @@ def run_migrations():
         "ALTER TABLE students  ALTER COLUMN auth_user_id DROP NOT NULL",
         # New Gemini Tables (if not created via metadata)
         "CREATE TABLE IF NOT EXISTS comprehension_checks (id SERIAL PRIMARY KEY, lecture_id VARCHAR REFERENCES lectures(lecture_id) ON DELETE CASCADE, material_id VARCHAR REFERENCES materials(material_id) ON DELETE SET NULL, question TEXT NOT NULL, options TEXT NOT NULL, correct_option INTEGER NOT NULL, topic VARCHAR, created_at TIMESTAMP WITH TIME ZONE DEFAULT now())",
-        "CREATE TABLE IF NOT EXISTS student_answers (id SERIAL PRIMARY KEY, check_id INTEGER REFERENCES comprehension_checks(id) ON DELETE CASCADE, student_id VARCHAR REFERENCES students(student_id) ON DELETE CASCADE, chosen_option INTEGER NOT NULL, is_correct BOOLEAN NOT NULL, timestamp TIMESTAMP WITH TIME ZONE DEFAULT now())"
+        "CREATE TABLE IF NOT EXISTS student_answers (id SERIAL PRIMARY KEY, check_id INTEGER REFERENCES comprehension_checks(id) ON DELETE CASCADE, student_id VARCHAR REFERENCES students(student_id) ON DELETE CASCADE, chosen_option INTEGER NOT NULL, is_correct BOOLEAN NOT NULL, timestamp TIMESTAMP WITH TIME ZONE DEFAULT now())",
+        # Lecture status column (added after session state machine implementation)
+        "ALTER TABLE lectures ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'not_started'",
     ]
     with engine.begin() as conn:
         for sql in migrations:

@@ -157,14 +157,22 @@ lecturer_server <- function(input, output, session, session_state) {
 
   output$lecturer_live_stream_ui <- renderUI({
     status <- current_session_status()
-    lecture_id <- current_lecture_id()
 
     cam_ui <- tags$div(
-      # Video preview
-      tags$video(
-        id = "liveDashCam", autoplay = NA, playsinline = NA, muted = NA,
-        style = "width:100%; border-radius:8px; background:#000; min-height:200px; display:block;"
+      # Video + overlay canvas container
+      tags$div(
+        style = "position:relative; width:100%; background:#000; border-radius:8px; overflow:hidden;",
+        tags$video(
+          id = "liveDashCam", autoplay = NA, playsinline = NA, muted = NA,
+          style = "width:100%; display:block; min-height:200px;"
+        ),
+        # Transparent canvas overlay for bounding boxes
+        tags$canvas(
+          id = "liveDashOverlay",
+          style = "position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;"
+        )
       ),
+      # Hidden capture canvas
       tags$canvas(id = "liveDashCanvas", style = "display:none;"),
       # Controls
       tags$div(
@@ -174,7 +182,7 @@ lecturer_server <- function(input, output, session, session_state) {
         tags$button(type="button", id="liveCamAutoBtn", class="btn btn-danger btn-sm",
           onclick="toggleLiveCamAuto()", icon("circle"), " Start Auto-Capture (5s)")
       ),
-      # Result display
+      # Detection result panel
       uiOutput("live_cam_result"),
       # JS
       tags$script(HTML("
@@ -184,7 +192,7 @@ lecturer_server <- function(input, output, session, session_state) {
 
         function startLiveCam() {
           if (_liveCamStream) return;
-          navigator.mediaDevices.getUserMedia({ video: true })
+          navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } })
             .then(function(s) {
               _liveCamStream = s;
               document.getElementById('liveDashCam').srcObject = s;
@@ -197,26 +205,74 @@ lecturer_server <- function(input, output, session, session_state) {
           var btn = document.getElementById('liveCamAutoBtn');
           if (_liveCamActive) {
             btn.className = 'btn btn-success btn-sm';
-            btn.innerHTML = '<i class=\"fa fa-stop\"></i> Stop Auto-Capture';
+            btn.innerHTML = '<i class=\"fa fa-stop\"></i> Stop Capture';
             captureLiveFrame();
             _liveCamTimer = setInterval(captureLiveFrame, 5000);
           } else {
             btn.className = 'btn btn-danger btn-sm';
             btn.innerHTML = '<i class=\"fa fa-circle\"></i> Start Auto-Capture (5s)';
             clearInterval(_liveCamTimer);
+            var ov = document.getElementById('liveDashOverlay');
+            if (ov) ov.getContext('2d').clearRect(0, 0, ov.width, ov.height);
           }
         }
 
         function captureLiveFrame() {
           var v = document.getElementById('liveDashCam');
-          if (!v || !v.srcObject) return;
+          if (!v || !v.srcObject || !v.videoWidth) return;
           var c = document.getElementById('liveDashCanvas');
-          c.width = v.videoWidth || 640;
-          c.height = v.videoHeight || 480;
+          c.width  = v.videoWidth;
+          c.height = v.videoHeight;
           c.getContext('2d').drawImage(v, 0, 0);
           Shiny.setInputValue('live_cam_frame',
             c.toDataURL('image/jpeg', 0.8), { priority: 'event' });
         }
+
+        // Draw bounding boxes on the overlay canvas
+        function drawFaceBoxes(data) {
+          var ov = document.getElementById('liveDashOverlay');
+          var v  = document.getElementById('liveDashCam');
+          if (!ov || !v) return;
+
+          ov.width  = v.offsetWidth  || 640;
+          ov.height = v.offsetHeight || 480;
+
+          var ctx = ov.getContext('2d');
+          ctx.clearRect(0, 0, ov.width, ov.height);
+
+          var fw = data.frame_width  || 640;
+          var fh = data.frame_height || 480;
+          var sx = ov.width  / fw;
+          var sy = ov.height / fh;
+
+          (data.detected || []).forEach(function(d) {
+            if (!d.bbox) return;
+            var b  = d.bbox;
+            var px = b.x * sx, py = b.y * sy;
+            var pw = b.w * sx, ph = b.h * sy;
+
+            // Green = enrolled present, Orange = not in class, Yellow = unknown
+            var col = (d.enrolled === true)  ? '#00e676' :
+                      (d.enrolled === false) ? '#ff9100' : '#ffff00';
+
+            ctx.strokeStyle = col;
+            ctx.lineWidth   = 3;
+            ctx.strokeRect(px, py, pw, ph);
+
+            var label = d.name + (d.emotion ? ' [' + d.emotion + ']' : '');
+            ctx.font = 'bold 13px Arial';
+            var tw = ctx.measureText(label).width;
+            ctx.fillStyle = 'rgba(0,0,0,0.65)';
+            ctx.fillRect(px, py - 22, tw + 8, 22);
+            ctx.fillStyle = col;
+            ctx.fillText(label, px + 4, py - 6);
+          });
+        }
+
+        // Listen for Shiny server push with detection results
+        Shiny.addCustomMessageHandler('drawFaceBoxes', function(data) {
+          drawFaceBoxes(data);
+        });
       "))
     )
 
@@ -235,7 +291,7 @@ lecturer_server <- function(input, output, session, session_state) {
     }
   })
 
-  # Camera frame handler — decode, POST to DO vision endpoint, update live data
+  # Camera frame handler — POST to DO vision endpoint, draw boxes, update panel
   output$live_cam_result <- renderUI({ div() })
 
   observeEvent(input$live_cam_frame, {
@@ -253,34 +309,71 @@ lecturer_server <- function(input, output, session, session_state) {
           image      = curl::form_file(tmp_jpg, type = "image/jpeg"),
           lecture_id = lecture_id
         ) |>
-        httr2::req_timeout(20) |>
+        httr2::req_timeout(25) |>
         httr2::req_error(is_error = \(r) FALSE) |>
         httr2::req_perform() |>
         httr2::resp_body_json()
     }, error = function(e) NULL)
 
-    if (is.null(result)) return()
-    if (!is.null(result$detail)) {
+    if (is.null(result)) {
       output$live_cam_result <- renderUI(
-        div(class = "alert alert-warning", style = "margin-top:8px; font-size:12px;",
-            as.character(result$detail))
+        div(class="alert alert-warning", style="margin-top:8px; font-size:12px;", "Vision API unreachable.")
       )
       return()
     }
 
-    n <- length(result$detected)
-    if (n == 0) {
+    if (!is.null(result$detail)) {
       output$live_cam_result <- renderUI(
-        div(class = "alert alert-info", style = "margin-top:8px; font-size:12px;",
-            sprintf("Frame processed — %d face(s) found, no matches.", result$faces_found))
+        div(class="alert alert-warning", style="margin-top:8px; font-size:12px;", as.character(result$detail))
       )
-    } else {
-      names_str <- paste(sapply(result$detected, `[[`, "name"), collapse = ", ")
-      output$live_cam_result <- renderUI(
-        div(class = "alert alert-success", style = "margin-top:8px; font-size:12px;",
-            strong(sprintf("%d identified: ", n)), names_str)
-      )
+      return()
     }
+
+    # Push bbox data to JS for drawing
+    session$sendCustomMessage("drawFaceBoxes", list(
+      detected     = if (length(result$detected) > 0) result$detected else list(),
+      frame_width  = if (!is.null(result$frame_width))  result$frame_width  else 640,
+      frame_height = if (!is.null(result$frame_height)) result$frame_height else 480
+    ))
+
+    # Build result summary panel
+    detected <- result$detected
+    n_total    <- if (!is.null(result$faces_found)) result$faces_found else 0
+    n_enrolled <- sum(sapply(detected, function(d) isTRUE(d$enrolled)))
+    n_not_enrolled <- sum(sapply(detected, function(d) identical(d$enrolled, FALSE)))
+    n_unknown  <- sum(sapply(detected, function(d) is.null(d$enrolled)))
+
+    header_text <- sprintf(
+      "Faces detected: %d | Present (enrolled): %d | Not in class: %d | Unknown: %d",
+      n_total, n_enrolled, n_not_enrolled, n_unknown
+    )
+
+    rows <- lapply(detected, function(d) {
+      if (isTRUE(d$enrolled)) {
+        col   <- "#00e676"
+        mark  <- "✓"
+        label <- paste0(d$name, if (!is.null(d$emotion) && !identical(d$emotion, "")) paste0(" — ", d$emotion) else "")
+      } else if (identical(d$enrolled, FALSE)) {
+        col   <- "#ff9100"
+        mark  <- "⚠"
+        label <- paste0(d$name, " — not enrolled in this class")
+      } else {
+        col   <- "#f0c040"
+        mark  <- "?"
+        label <- "Unknown face — not in database"
+      }
+      tags$div(
+        style = paste0("color:", col, "; font-size:12px; padding:2px 0;"),
+        paste(mark, label)
+      )
+    })
+
+    output$live_cam_result <- renderUI(
+      tags$div(
+        tags$div(class="alert alert-info", style="margin-top:8px; font-size:12px; padding:6px 10px;", header_text),
+        if (length(rows) > 0) tags$div(style="padding:4px 10px;", rows) else NULL
+      )
+    )
   })
 
   output$lecturer_attendance_grid <- renderUI({

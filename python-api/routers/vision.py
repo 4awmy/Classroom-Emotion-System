@@ -1,15 +1,16 @@
 """
 Vision router — cloud-side frame processing.
-Face detection: OpenCV Haar cascade (no compilation needed, pre-built wheels).
-Face matching:  HOG descriptor cosine similarity stored as BLOB per student.
-Emotion:        HSEmotion ONNX (AffectNet, pure-Python wheel).
+Face detection:  OpenCV Haar cascade (pre-built wheels, no C compilation).
+Face matching:   HOG descriptor cosine similarity stored as BLOB per student.
+Enrollment check: Only students enrolled in the lecture's class are marked present.
+Emotion:         HSEmotion ONNX (AffectNet, pure-Python wheel).
 """
 
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from database import get_db
-from models import Student, AttendanceLog, EmotionLog
+from models import Student, AttendanceLog, EmotionLog, Lecture, Enrollment
 import numpy as np
 
 try:
@@ -36,10 +37,9 @@ CONFIDENCE_MAP = {
     "Anxious": 0.35, "Frustrated": 0.25, "Disengaged": 0.00,
 }
 
-# HOG descriptor config — 64×64 face crop → ~1764-dim float32 vector
 _HOG_SIZE = (64, 64)
 ENCODING_DTYPE = np.float32
-SIMILARITY_THRESHOLD = 0.75  # cosine similarity minimum
+SIMILARITY_THRESHOLD = 0.75
 
 
 def _get_cascade():
@@ -59,7 +59,6 @@ def _get_fer():
 
 
 def _hog_descriptor(face_bgr: np.ndarray) -> np.ndarray:
-    """Return a normalised HOG feature vector for a face crop."""
     gray = cv2.cvtColor(cv2.resize(face_bgr, _HOG_SIZE), cv2.COLOR_BGR2GRAY)
     hog = cv2.HOGDescriptor(
         _winSize=(64, 64), _blockSize=(16, 16), _blockStride=(8, 8),
@@ -84,27 +83,6 @@ def _map_emotion(label: str, score: float) -> str:
     }.get(label, "Focused")
 
 
-def encode_image_bytes(image_bytes: bytes):
-    """Detect the largest face and return its HOG encoding as bytes. Returns None if no face found."""
-    if not _CV2_OK:
-        return None
-    np_arr = np.frombuffer(image_bytes, np.uint8)
-    frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-    if frame is None:
-        return None
-    cascade = _get_cascade()
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    faces = cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
-    if len(faces) == 0:
-        return None
-    # Pick largest face
-    x, y, w, h = max(faces, key=lambda f: f[2] * f[3])
-    face_roi = frame[y:y+h, x:x+w]
-    if face_roi.size == 0:
-        return None
-    return _hog_descriptor(face_roi).tobytes()
-
-
 @router.post("/process-frame")
 async def process_frame(
     image: UploadFile = File(...),
@@ -113,8 +91,11 @@ async def process_frame(
 ):
     """
     Accept a JPEG frame from the browser webcam.
-    Detects all faces, matches against enrolled HOG encodings,
-    writes AttendanceLog + EmotionLog for each matched student.
+    - Detects all faces using Haar cascade.
+    - Matches each face against enrolled HOG encodings.
+    - Checks if matched student is enrolled in the lecture's class.
+    - Writes AttendanceLog + EmotionLog only for enrolled+matched students.
+    - Returns bounding boxes for all detected faces (for overlay drawing in UI).
     """
     if not _VISION_OK:
         raise HTTPException(status_code=503, detail="OpenCV not available on this backend.")
@@ -125,19 +106,27 @@ async def process_frame(
     if frame is None:
         raise HTTPException(status_code=400, detail="Could not decode image. Send a valid JPEG.")
 
-    # Load enrolled HOG encodings
+    frame_h, frame_w = frame.shape[:2]
+
+    # Resolve the class linked to this lecture (for enrollment check)
+    lecture = db.query(Lecture).filter(Lecture.lecture_id == lecture_id).first()
+    class_id = lecture.class_id if lecture else None
+
+    if class_id:
+        enrolled_ids = set(
+            e.student_id
+            for e in db.query(Enrollment).filter(Enrollment.class_id == class_id).all()
+        )
+    else:
+        enrolled_ids = None  # No class linked — skip enrollment check
+
+    # Load all HOG encodings from DB
     students = db.query(Student).filter(Student.face_encoding.isnot(None)).all()
     known = []
     for s in students:
         enc = np.frombuffer(s.face_encoding, dtype=ENCODING_DTYPE)
-        if enc.shape[0] > 100:  # HOG vectors are ~1764-dim; skip old 128/512-dim blobs
+        if enc.shape[0] > 100:  # HOG vectors ~1764-dim; skip legacy 128/512-dim blobs
             known.append((s, enc))
-
-    if not known:
-        return {
-            "detected": [], "faces_found": 0,
-            "message": "No HOG encodings enrolled yet. Upload roster via /roster/upload.",
-        }
 
     # Detect all faces in the frame
     cascade = _get_cascade()
@@ -147,22 +136,55 @@ async def process_frame(
     fer = _get_fer()
     detected = []
 
-    for (x, y, w, h) in faces:
-        face_roi = frame[y:y+h, x:x+w]
+    for (x, y, w, h) in (faces if len(faces) > 0 else []):
+        face_roi = frame[y:y + h, x:x + w]
         if face_roi.size == 0:
             continue
 
+        bbox = {"x": int(x), "y": int(y), "w": int(w), "h": int(h)}
+
+        # No encodings enrolled yet
+        if not known:
+            detected.append({
+                "student_id": None, "name": "Unknown",
+                "emotion": None, "confidence": None,
+                "similarity": None, "enrolled": None,
+                "bbox": bbox,
+                "message": "No HOG encodings enrolled — upload roster first",
+            })
+            continue
+
+        # Match face against enrolled encodings
         query_vec = _hog_descriptor(face_roi)
         sims = [_cosine_sim(query_vec, vec) for _, vec in known]
         best_idx = int(np.argmax(sims))
         best_sim = sims[best_idx]
 
         if best_sim < SIMILARITY_THRESHOLD:
+            # Face detected but not recognised
+            detected.append({
+                "student_id": None, "name": "Unknown",
+                "emotion": None, "confidence": None,
+                "similarity": round(best_sim, 3), "enrolled": None,
+                "bbox": bbox,
+                "message": "Face not found in database",
+            })
             continue
 
         student = known[best_idx][0]
 
-        # Attendance — idempotent per lecture
+        # Recognised but not enrolled in this class
+        if enrolled_ids is not None and student.student_id not in enrolled_ids:
+            detected.append({
+                "student_id": student.student_id, "name": student.name,
+                "emotion": None, "confidence": None,
+                "similarity": round(best_sim, 3), "enrolled": False,
+                "bbox": bbox,
+                "message": f"{student.name} is not enrolled in this class",
+            })
+            continue
+
+        # Enrolled & recognised — record attendance (idempotent)
         already = db.query(AttendanceLog).filter(
             AttendanceLog.student_id == student.student_id,
             AttendanceLog.lecture_id == lecture_id,
@@ -176,7 +198,7 @@ async def process_frame(
                 method="AI",
             ))
 
-        # Emotion
+        # Detect emotion
         emotion = "Focused"
         confidence = CONFIDENCE_MAP["Focused"]
         if fer is not None and face_roi.size > 0:
@@ -201,6 +223,9 @@ async def process_frame(
             "emotion": emotion,
             "confidence": confidence,
             "similarity": round(best_sim, 3),
+            "enrolled": True,
+            "bbox": bbox,
+            "message": None,
         })
 
     try:
@@ -215,7 +240,9 @@ async def process_frame(
     return {
         "detected": detected,
         "faces_found": int(len(faces)) if len(faces) > 0 else 0,
-        "matched": len(detected),
+        "matched": sum(1 for d in detected if d.get("enrolled") is True),
+        "frame_width": frame_w,
+        "frame_height": frame_h,
     }
 
 

@@ -123,6 +123,7 @@ class Lecture(Base):
     total_frames_captured: Mapped[int] = mapped_column(Integer, server_default="0")
     expected_frames_count: Mapped[int] = mapped_column(Integer, server_default="0")
     slide_url: Mapped[Optional[str]] = mapped_column(String)
+    status: Mapped[Optional[str]] = mapped_column(String, server_default="not_started")
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     class_: Mapped["Class"] = relationship(back_populates="lectures")
