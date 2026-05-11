@@ -23,13 +23,15 @@ interface Lecture {
 }
 
 const ACTIVITIES_LIGHT = [
-  { key: "focus",    icon: "eye",      label: "Focus Mode",  color: "#EEF2FF", iconColor: "#4F46E5" },
-  { key: "notes",    icon: "book",     label: "Smart Notes", color: "#F0FDF4", iconColor: "#16A34A" },
+  { key: "focus", icon: "eye",      label: "Focus Mode",  color: "#EEF2FF", iconColor: "#4F46E5" },
+  { key: "notes", icon: "book",     label: "Smart Notes", color: "#F0FDF4", iconColor: "#16A34A" },
+  { key: "scan",  icon: "qr-code",  label: "Scan QR",     color: "#FFF7ED", iconColor: "#EA580C" },
 ];
 
 const ACTIVITIES_DARK = [
-  { key: "focus",    icon: "eye",      label: "Focus Mode",  color: "#1E2460", iconColor: "#818CF8" },
-  { key: "notes",    icon: "book",     label: "Smart Notes", color: "#052E16", iconColor: "#4ADE80" },
+  { key: "focus", icon: "eye",      label: "Focus Mode",  color: "#1E2460", iconColor: "#818CF8" },
+  { key: "notes", icon: "book",     label: "Smart Notes", color: "#052E16", iconColor: "#4ADE80" },
+  { key: "scan",  icon: "qr-code",  label: "Scan QR",     color: "#3D1A00", iconColor: "#FB923C" },
 ];
 
 export default function HomeScreen() {
@@ -76,6 +78,7 @@ export default function HomeScreen() {
   const handleActivity = (key: string) => {
     if (key === "focus") router.push("/(student)/focus");
     else if (key === "notes") router.push("/(student)/notes");
+    else if (key === "scan") router.push("/(student)/scan");
   };
 
   const handleLogout = async () => {

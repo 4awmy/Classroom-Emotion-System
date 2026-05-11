@@ -219,6 +219,7 @@ lecturer_ui <- function() {
               shinydashboard::box(title = "Class Engagement", width = 12, status = "warning", solidHeader = TRUE,
                 plotly::plotlyOutput("lecturer_d1_gauge", height = "250px")
               ),
+              uiOutput("lecturer_live_qr_panel"),
               shinydashboard::box(title = "Live Sentiment Ticker", width = 12, status = "primary",
                 uiOutput("lecturer_live_sentiment_ticker")
               ),

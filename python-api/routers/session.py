@@ -210,6 +210,49 @@ async def reset_session(request: SessionEndRequest, db: Session = Depends(get_db
     await manager.broadcast({"type": "session:reset", "lecture_id": lecture_id})
     return {"status": "not_started", "lecture_id": lecture_id}
 
+@router.get("/upcoming")
+async def get_upcoming(
+    student_id: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """Returns live and upcoming lectures. Filtered by student enrollments when student_id provided."""
+    try:
+        query = db.query(
+            models.Lecture,
+            models.Class.course_id,
+            models.Course.title.label("course_title"),
+        ).outerjoin(
+            models.Class, models.Lecture.class_id == models.Class.class_id
+        ).outerjoin(
+            models.Course, models.Class.course_id == models.Course.course_id
+        )
+
+        if student_id:
+            enrolled_class_ids = [
+                e.class_id for e in
+                db.query(models.Enrollment)
+                .filter(models.Enrollment.student_id == student_id).all()
+            ]
+            if enrolled_class_ids:
+                query = query.filter(models.Lecture.class_id.in_(enrolled_class_ids))
+
+        lectures = query.filter(
+            models.Lecture.status.in_(["live", "not_started"])
+        ).order_by(models.Lecture.created_at.desc()).limit(20).all()
+
+        return [{
+            "lecture_id": lec.lecture_id,
+            "title": lec.title or lec.lecture_id,
+            "subject": course_title or course_id or lec.class_id or "",
+            "start_time": (lec.actual_start_time or lec.scheduled_start or datetime.utcnow()).isoformat(),
+            "lecturer_id": lec.lecturer_id or "",
+            "status": lec.status or "not_started",
+        } for lec, course_id, course_title in lectures]
+    except Exception as e:
+        logger.error(f"get_upcoming error: {e}")
+        return []
+
+
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)

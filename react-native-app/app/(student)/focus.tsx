@@ -7,6 +7,8 @@ import {
   AppStateStatus,
   ScrollView,
   SafeAreaView,
+  Modal,
+  TouchableOpacity,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { wsAPI } from "@/services/api";
@@ -25,6 +27,7 @@ export default function FocusScreen() {
   const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
   const [logs, setLogs] = useState<Array<{ time: string; state: string }>>([]);
   const [showOverlay, setShowOverlay] = useState(false);
+  const [freshBrainerQ, setFreshBrainerQ] = useState<string | null>(null);
 
   useEffect(() => {
     strikesRef.current = strikes;
@@ -34,6 +37,16 @@ export default function FocusScreen() {
     const subscription = AppState.addEventListener("change", handleAppStateChange);
     return () => subscription.remove();
   }, [focusActive, activeLectureId]);
+
+  // Listen for Fresh Brainer questions broadcast by lecturer
+  useEffect(() => {
+    const unsubscribe = wsAPI.onMessage((data) => {
+      if (data.type === "freshbrainer" && data.question) {
+        setFreshBrainerQ(data.question as string);
+      }
+    });
+    return unsubscribe;
+  }, []);
 
   const handleAppStateChange = (nextAppState: AppStateStatus) => {
     const prev = appStateRef.current;
@@ -196,6 +209,34 @@ export default function FocusScreen() {
           onDismiss={() => setShowOverlay(false)}
         />
       )}
+
+      {/* ── Fresh Brainer modal (question from lecturer) ── */}
+      <Modal
+        visible={!!freshBrainerQ}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setFreshBrainerQ(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: C.white }]}>
+            <View style={styles.modalHeader}>
+              <Ionicons name="bulb" size={22} color={C.gold} />
+              <Text style={[styles.modalTitle, { color: C.navy }]}>
+                Question from Lecturer
+              </Text>
+            </View>
+            <Text style={[styles.modalQuestion, { color: C.textPrimary }]}>
+              {freshBrainerQ}
+            </Text>
+            <TouchableOpacity
+              style={[styles.modalBtn, { backgroundColor: C.navy }]}
+              onPress={() => setFreshBrainerQ(null)}
+            >
+              <Text style={styles.modalBtnText}>Got it</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -343,5 +384,44 @@ const makeStyles = (C: typeof Colors) => StyleSheet.create({
     textAlign: "center",
     paddingVertical: 16,
     fontStyle: "italic",
+  },
+
+  /* Fresh Brainer modal */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "flex-end",
+  },
+  modalCard: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    paddingBottom: 40,
+    gap: 16,
+    ...Shadow.card,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  modalQuestion: {
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  modalBtn: {
+    borderRadius: Radius.xl,
+    paddingVertical: 13,
+    alignItems: "center",
+    marginTop: 4,
+  },
+  modalBtnText: {
+    color: Colors.white,
+    fontWeight: "700",
+    fontSize: 15,
   },
 });

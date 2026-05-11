@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Alert } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
-import { attendanceAPI } from '../../services/api';
-import { useAuthStore } from '../../store/authStore';
+import { attendanceAPI } from '@/services/api';
+import { useStore } from '@/store/useStore';
 
 export default function QRScannerScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { studentId } = useStore();
 
   if (!permission) {
     return <View />;
@@ -34,7 +34,7 @@ export default function QRScannerScreen() {
     if (data.startsWith('checkin:')) {
       const lectureId = data.split(':')[1];
       try {
-        await attendanceAPI.scanCheckIn(lectureId, user?.student_id || '');
+        await attendanceAPI.scanCheckIn(lectureId, studentId || '');
         Alert.alert('Success', 'Attendance marked for ' + lectureId, [
           { text: 'OK', onPress: () => router.back() }
         ]);

@@ -294,6 +294,40 @@ lecturer_server <- function(input, output, session, session_state) {
     )
   })
 
+  # ── QR Code panel — shown when session is live ───────────────────────────
+  output$lecturer_live_qr_panel <- renderUI({
+    status <- current_session_status()
+    lid    <- current_lecture_id()
+    if (status != "live" || nchar(lid) == 0) return(NULL)
+
+    qr_data <- tryCatch({
+      httr2::request(paste0(FASTAPI_BASE, "/attendance/qr/", lid)) |>
+        httr2::req_headers("Authorization" = paste("Bearer", session_state$token)) |>
+        httr2::req_timeout(10) |>
+        httr2::req_error(is_error = \(r) FALSE) |>
+        httr2::req_perform() |>
+        httr2::resp_body_json()
+    }, error = function(e) NULL)
+
+    if (is.null(qr_data) || is.null(qr_data$qr_image_base64)) return(NULL)
+
+    shinydashboard::box(
+      title = tagList(icon("qrcode"), " Attendance QR Code"),
+      width = 12, status = "success", solidHeader = TRUE,
+      div(style = "text-align:center; padding:8px;",
+        tags$img(
+          src   = paste0("data:image/png;base64,", qr_data$qr_image_base64),
+          style = "width:180px; height:180px; border:3px solid #28a745; border-radius:8px;"
+        ),
+        tags$p(
+          "Students scan this with the mobile app",
+          style = "font-size:0.78em; color:#666; margin-top:6px; margin-bottom:2px;"
+        ),
+        tags$code(lid, style = "font-size:0.75em; color:#888;")
+      )
+    )
+  })
+
   # ── Camera frame handler ──────────────────────────────────────────────────
   output$live_cam_result <- renderUI({ div() })
 
