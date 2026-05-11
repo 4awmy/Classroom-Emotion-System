@@ -40,6 +40,12 @@ global_db_error <- shiny::reactiveVal("")
 # --- Database Connection Management ---
 get_db_url <- function() {
   url <- Sys.getenv("DATABASE_URL", "")
+  
+  # Diagnostic: Check if .Renviron exists
+  if (file.exists("/srv/shiny-server/.Renviron")) {
+     message("[DEBUG] .Renviron exists at /srv/shiny-server/.Renviron")
+  }
+
   # Clean the URL (remove any accidental whitespace or newlines)
   url <- gsub("\\s+", "", url)
   return(url)

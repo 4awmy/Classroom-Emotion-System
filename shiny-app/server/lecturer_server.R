@@ -308,7 +308,8 @@ lecturer_server <- function(input, output, session, session_state) {
     err <- global_db_error()
     
     paste0(
-      "--- System Diagnostic (v3.9.0) ---\n",
+      "--- System Diagnostic (v3.9.1) ---\n",
+      "Build Time: ", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n",
       "Login User: ", if(!is.null(session_state$user_id)) session_state$user_id else "NONE", "\n",
       "Login Role: ", if(!is.null(session_state$role)) session_state$role else "NONE", "\n",
       "Env Keys: ", paste(names(Sys.getenv()), collapse=", "), "\n",
