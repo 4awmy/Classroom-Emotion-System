@@ -101,34 +101,6 @@ lecturer_ui <- function() {
             uiOutput("lecturer_course_table"),
             hr(),
 
-            # --- ROSTER UPLOAD (Submodule A) ---
-            shinydashboard::box(
-              title = "Roster & Face Encoding Upload", width = 12,
-              status = "primary", solidHeader = TRUE, collapsible = TRUE,
-              fluidRow(
-                column(6,
-                  h4("Bulk Upload via XLSX"),
-                  p("Upload your StudentPicsDataset.xlsx. The system will download each student photo from Google Drive and generate face encodings automatically."),
-                  fileInput("roster_xlsx_file", "Select XLSX or CSV File",
-                            accept = c(".xlsx", ".xls", ".csv"),
-                            buttonLabel = "Browse...",
-                            placeholder = "StudentPicsDataset.xlsx / .csv"),
-                  actionButton("roster_upload_btn", "Upload & Encode Roster",
-                               class = "btn-primary btn-block", icon = icon("upload")),
-                  br(),
-                  uiOutput("roster_upload_result")
-                ),
-                column(6,
-                  h4("Encoding Status"),
-                  p("Students with a face encoding can be identified by the camera."),
-                  actionButton("roster_check_btn", "Check Encoding Status",
-                               class = "btn-info btn-block", icon = icon("refresh")),
-                  br(),
-                  uiOutput("roster_status_panel")
-                )
-              )
-            ),
-
             # DEBUG PANEL
             shinydashboard::box(title = "System Debug Info", width = 12, collapsible = TRUE, collapsed = TRUE, status = "danger",
               verbatimTextOutput("lecturer_debug_out")
@@ -139,7 +111,7 @@ lecturer_ui <- function() {
         # --- LIVE LECTURE DASHBOARD (2-COLUMN) ---
         shinydashboard::tabItem(tabName = "lec_live",
           h2("Live Session Command Center"),
-          
+
           # Step 1: Selector Bar
           wellPanel(
             fluidRow(
@@ -160,7 +132,7 @@ lecturer_ui <- function() {
                 uiOutput("lecturer_attendance_grid")
               )
             ),
-            
+
             # Column 2: Analytics & Ticker
             div(class = "live-right",
               shinydashboard::box(title = "Class Engagement", width = 12, status = "warning", solidHeader = TRUE,
@@ -189,7 +161,7 @@ lecturer_ui <- function() {
               column(4, uiOutput("lec_report_session_selector"))
             )
           ),
-          
+
           fluidRow(
             column(6, shinydashboard::box(title = "Emotion Frequency", width = 12, status = "primary", solidHeader = TRUE, plotly::plotlyOutput("lec_report_emotion_pie"))),
             column(6, shinydashboard::box(title = "Engagement Timeline", width = 12, status = "info", solidHeader = TRUE, plotly::plotlyOutput("lec_report_engagement_line")))
