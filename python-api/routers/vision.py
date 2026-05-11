@@ -1,7 +1,8 @@
 """
 Vision router — cloud-side frame processing.
-Uses insightface (ONNX-based, no dlib/C compilation) for face recognition.
-Uses HSEmotion for emotion detection.
+Face detection: OpenCV Haar cascade (no compilation needed, pre-built wheels).
+Face matching:  HOG descriptor cosine similarity stored as BLOB per student.
+Emotion:        HSEmotion ONNX (AffectNet, pure-Python wheel).
 """
 
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
@@ -18,41 +19,36 @@ except ImportError:
     _CV2_OK = False
 
 try:
-    from insightface.app import FaceAnalysis
-    _INSIGHT_OK = True
-except ImportError:
-    _INSIGHT_OK = False
-
-try:
     from hsemotion_onnx.facial_emotions import HSEmotionRecognizer
     _HSEMOTION_OK = True
 except ImportError:
     _HSEMOTION_OK = False
 
-_VISION_OK = _CV2_OK and _INSIGHT_OK
+_VISION_OK = _CV2_OK
 
 router = APIRouter()
 
-_face_app = None
 _fer = None
+_face_cascade = None
 
 CONFIDENCE_MAP = {
     "Focused": 1.00, "Engaged": 0.85, "Confused": 0.55,
     "Anxious": 0.35, "Frustrated": 0.25, "Disengaged": 0.00,
 }
 
-# Insightface embeddings are 512-dim float32; stored as such in face_encoding BLOB
-ENCODING_DIM = 512
+# HOG descriptor config — 64×64 face crop → ~1764-dim float32 vector
+_HOG_SIZE = (64, 64)
 ENCODING_DTYPE = np.float32
-SIMILARITY_THRESHOLD = 0.4  # cosine similarity minimum for a match
+SIMILARITY_THRESHOLD = 0.75  # cosine similarity minimum
 
 
-def _get_face_app():
-    global _face_app
-    if _face_app is None and _INSIGHT_OK:
-        _face_app = FaceAnalysis(providers=["CPUExecutionProvider"])
-        _face_app.prepare(ctx_id=0, det_size=(640, 640))
-    return _face_app
+def _get_cascade():
+    global _face_cascade
+    if _face_cascade is None and _CV2_OK:
+        _face_cascade = cv2.CascadeClassifier(
+            cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+        )
+    return _face_cascade
 
 
 def _get_fer():
@@ -60,6 +56,18 @@ def _get_fer():
     if _fer is None and _HSEMOTION_OK:
         _fer = HSEmotionRecognizer(model_name="enet_b0_8_best_afew")
     return _fer
+
+
+def _hog_descriptor(face_bgr: np.ndarray) -> np.ndarray:
+    """Return a normalised HOG feature vector for a face crop."""
+    gray = cv2.cvtColor(cv2.resize(face_bgr, _HOG_SIZE), cv2.COLOR_BGR2GRAY)
+    hog = cv2.HOGDescriptor(
+        _winSize=(64, 64), _blockSize=(16, 16), _blockStride=(8, 8),
+        _cellSize=(8, 8), _nbins=9
+    )
+    desc = hog.compute(gray).flatten().astype(ENCODING_DTYPE)
+    norm = np.linalg.norm(desc)
+    return desc / norm if norm > 0 else desc
 
 
 def _cosine_sim(a: np.ndarray, b: np.ndarray) -> float:
@@ -76,6 +84,27 @@ def _map_emotion(label: str, score: float) -> str:
     }.get(label, "Focused")
 
 
+def encode_image_bytes(image_bytes: bytes):
+    """Detect the largest face and return its HOG encoding as bytes. Returns None if no face found."""
+    if not _CV2_OK:
+        return None
+    np_arr = np.frombuffer(image_bytes, np.uint8)
+    frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+    if frame is None:
+        return None
+    cascade = _get_cascade()
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    faces = cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+    if len(faces) == 0:
+        return None
+    # Pick largest face
+    x, y, w, h = max(faces, key=lambda f: f[2] * f[3])
+    face_roi = frame[y:y+h, x:x+w]
+    if face_roi.size == 0:
+        return None
+    return _hog_descriptor(face_roi).tobytes()
+
+
 @router.post("/process-frame")
 async def process_frame(
     image: UploadFile = File(...),
@@ -84,15 +113,11 @@ async def process_frame(
 ):
     """
     Accept a JPEG frame from the browser webcam.
-    Returns list of identified students with their detected emotion.
-    Writes AttendanceLog + EmotionLog rows for each matched face.
-    The lecture must exist (created via POST /session/start).
+    Detects all faces, matches against enrolled HOG encodings,
+    writes AttendanceLog + EmotionLog for each matched student.
     """
     if not _VISION_OK:
-        raise HTTPException(
-            status_code=503,
-            detail="Vision libraries (insightface, opencv) not available on this backend.",
-        )
+        raise HTTPException(status_code=503, detail="OpenCV not available on this backend.")
 
     img_bytes = await image.read()
     np_arr = np.frombuffer(img_bytes, np.uint8)
@@ -100,32 +125,35 @@ async def process_frame(
     if frame is None:
         raise HTTPException(status_code=400, detail="Could not decode image. Send a valid JPEG.")
 
-    # Load enrolled insightface encodings (512-dim float32)
+    # Load enrolled HOG encodings
     students = db.query(Student).filter(Student.face_encoding.isnot(None)).all()
     known = []
     for s in students:
         enc = np.frombuffer(s.face_encoding, dtype=ENCODING_DTYPE)
-        if enc.shape[0] == ENCODING_DIM:
+        if enc.shape[0] > 100:  # HOG vectors are ~1764-dim; skip old 128/512-dim blobs
             known.append((s, enc))
 
     if not known:
         return {
             "detected": [], "faces_found": 0,
-            "message": "No insightface encodings enrolled yet. Upload roster via /roster/upload.",
+            "message": "No HOG encodings enrolled yet. Upload roster via /roster/upload.",
         }
 
-    # Detect faces
-    face_app = _get_face_app()
-    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    faces = face_app.get(rgb)
+    # Detect all faces in the frame
+    cascade = _get_cascade()
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    faces = cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
 
     fer = _get_fer()
     detected = []
 
-    for face in faces:
-        embedding = face.embedding.astype(ENCODING_DTYPE)
+    for (x, y, w, h) in faces:
+        face_roi = frame[y:y+h, x:x+w]
+        if face_roi.size == 0:
+            continue
 
-        sims = [_cosine_sim(embedding, vec) for _, vec in known]
+        query_vec = _hog_descriptor(face_roi)
+        sims = [_cosine_sim(query_vec, vec) for _, vec in known]
         best_idx = int(np.argmax(sims))
         best_sim = sims[best_idx]
 
@@ -133,16 +161,14 @@ async def process_frame(
             continue
 
         student = known[best_idx][0]
-        bbox = face.bbox.astype(int)
-        x1, y1, x2, y2 = bbox[0], bbox[1], bbox[2], bbox[3]
 
         # Attendance — idempotent per lecture
-        already_present = db.query(AttendanceLog).filter(
+        already = db.query(AttendanceLog).filter(
             AttendanceLog.student_id == student.student_id,
             AttendanceLog.lecture_id == lecture_id,
             AttendanceLog.status == "Present",
         ).first()
-        if not already_present:
+        if not already:
             db.add(AttendanceLog(
                 student_id=student.student_id,
                 lecture_id=lecture_id,
@@ -153,15 +179,13 @@ async def process_frame(
         # Emotion
         emotion = "Focused"
         confidence = CONFIDENCE_MAP["Focused"]
-        if fer is not None:
-            face_roi = frame[y1:y2, x1:x2]
-            if face_roi.size > 0:
-                try:
-                    label, scores = fer.predict_emotions(face_roi, logits=False)
-                    emotion = _map_emotion(label, float(max(scores)))
-                    confidence = CONFIDENCE_MAP[emotion]
-                except Exception:
-                    pass
+        if fer is not None and face_roi.size > 0:
+            try:
+                label, scores = fer.predict_emotions(face_roi, logits=False)
+                emotion = _map_emotion(label, float(max(scores)))
+                confidence = CONFIDENCE_MAP[emotion]
+            except Exception:
+                pass
 
         db.add(EmotionLog(
             student_id=student.student_id,
@@ -190,7 +214,7 @@ async def process_frame(
 
     return {
         "detected": detected,
-        "faces_found": len(faces),
+        "faces_found": int(len(faces)) if len(faces) > 0 else 0,
         "matched": len(detected),
     }
 
@@ -201,13 +225,11 @@ def vision_status():
         "vision_available": _VISION_OK,
         "packages": {
             "opencv": _CV2_OK,
-            "insightface": _INSIGHT_OK,
             "hsemotion_onnx": _HSEMOTION_OK,
         },
         "models_loaded": {
-            "face_app": _face_app is not None,
+            "face_cascade": _face_cascade is not None,
             "emotion_recognizer": _fer is not None,
         },
-        "encoding_dim": ENCODING_DIM,
-        "encoding_dtype": str(ENCODING_DTYPE),
+        "method": "HOG descriptors + Haar cascade (OpenCV built-in)",
     }

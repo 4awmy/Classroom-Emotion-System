@@ -33,6 +33,9 @@ apscheduler
 google-generativeai
 pdfplumber
 
-# Vision libs intentionally omitted — all require native compilation on Linux.
-# The /vision/* endpoints return HTTP 503 gracefully when these are absent.
-# Install locally only for development (see vision/requirements.txt).
+# Vision — pure OpenCV (pre-built wheels, zero C compilation) + HSEmotion ONNX
+# opencv-python-headless: face detection via Haar cascade, HOG descriptors
+# hsemotion-onnx: AffectNet emotion model (pure Python wheel)
+opencv-python-headless
+hsemotion-onnx
+onnxruntime

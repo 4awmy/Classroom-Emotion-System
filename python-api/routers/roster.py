@@ -12,26 +12,31 @@ import re
 
 try:
     import cv2
-    from insightface.app import FaceAnalysis
     _VISION_AVAILABLE = True
 except ImportError:
     _VISION_AVAILABLE = False
 
 router = APIRouter()
 
-# Lazy-loaded insightface model
-_face_app = None
-
-ENCODING_DIM = 512
 ENCODING_DTYPE = np.float32
+_HOG_SIZE = (64, 64)
 
 
-def _get_face_app():
-    global _face_app
-    if _face_app is None and _VISION_AVAILABLE:
-        _face_app = FaceAnalysis(providers=["CPUExecutionProvider"])
-        _face_app.prepare(ctx_id=0, det_size=(640, 640))
-    return _face_app
+def _get_cascade():
+    if not _VISION_AVAILABLE:
+        return None
+    return cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+
+
+def _hog_descriptor(face_bgr: np.ndarray) -> np.ndarray:
+    gray = cv2.cvtColor(cv2.resize(face_bgr, _HOG_SIZE), cv2.COLOR_BGR2GRAY)
+    hog = cv2.HOGDescriptor(
+        _winSize=(64, 64), _blockSize=(16, 16), _blockStride=(8, 8),
+        _cellSize=(8, 8), _nbins=9
+    )
+    desc = hog.compute(gray).flatten().astype(ENCODING_DTYPE)
+    norm = np.linalg.norm(desc)
+    return desc / norm if norm > 0 else desc
 
 
 def extract_drive_id(url: str) -> Optional[str]:
@@ -48,24 +53,26 @@ def extract_drive_id(url: str) -> Optional[str]:
 
 
 def get_face_encoding(image_bytes: bytes) -> Optional[bytes]:
-    """Detect the largest face in image and return its 512-dim insightface embedding as bytes."""
+    """Detect the largest face and return its HOG descriptor as bytes."""
     if not _VISION_AVAILABLE:
         return None
     try:
-        app = _get_face_app()
-        if app is None:
-            return None
         np_arr = np.frombuffer(image_bytes, np.uint8)
         img_bgr = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
         if img_bgr is None:
             return None
-        rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-        faces = app.get(rgb)
-        if not faces:
+        cascade = _get_cascade()
+        if cascade is None:
             return None
-        # Use the face with the largest bounding box
-        best = max(faces, key=lambda f: (f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1]))
-        return best.embedding.astype(ENCODING_DTYPE).tobytes()
+        gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+        faces = cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+        if len(faces) == 0:
+            return None
+        x, y, w, h = max(faces, key=lambda f: f[2] * f[3])
+        face_roi = img_bgr[y:y+h, x:x+w]
+        if face_roi.size == 0:
+            return None
+        return _hog_descriptor(face_roi).tobytes()
     except Exception as e:
         print(f"[ROSTER] Face encoding error: {e}")
     return None
@@ -193,12 +200,12 @@ def proxy_student_photo(student_id: str, db: Session = Depends(get_db)):
 
 @router.get("/students/encodings")
 def get_student_encodings(db: Session = Depends(get_db)):
-    """Return all insightface encodings as JSON lists (used by local vision node)."""
+    """Return all HOG encodings as JSON lists (used by local vision node)."""
     students = db.query(Student).filter(Student.face_encoding.isnot(None)).all()
     result = []
     for s in students:
         enc = np.frombuffer(s.face_encoding, dtype=ENCODING_DTYPE)
-        if enc.shape[0] == ENCODING_DIM:
+        if enc.shape[0] > 100:  # HOG vectors are large; skip old 128-dim blobs
             result.append({
                 "student_id": s.student_id,
                 "name": s.name,

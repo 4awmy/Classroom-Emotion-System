@@ -157,25 +157,129 @@ lecturer_server <- function(input, output, session, session_state) {
 
   output$lecturer_live_stream_ui <- renderUI({
     status <- current_session_status()
-    if (status == "live") {
-      tags$img(src = sprintf("%s/api/session/video_feed/%s", Sys.getenv("FASTAPI_BASE_URL", ""), current_lecture_id()), 
-               style="width: 100%; border-radius: 8px;")
-    } else if (status == "ended") {
-      # Show Summary Box
+    lecture_id <- current_lecture_id()
+
+    cam_ui <- tags$div(
+      # Video preview
+      tags$video(
+        id = "liveDashCam", autoplay = NA, playsinline = NA, muted = NA,
+        style = "width:100%; border-radius:8px; background:#000; min-height:200px; display:block;"
+      ),
+      tags$canvas(id = "liveDashCanvas", style = "display:none;"),
+      # Controls
+      tags$div(
+        style = "display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;",
+        tags$button(type="button", class="btn btn-info btn-sm",
+          onclick="startLiveCam()", icon("video"), " Start Camera"),
+        tags$button(type="button", id="liveCamAutoBtn", class="btn btn-danger btn-sm",
+          onclick="toggleLiveCamAuto()", icon("circle"), " Start Auto-Capture (5s)")
+      ),
+      # Result display
+      uiOutput("live_cam_result"),
+      # JS
+      tags$script(HTML("
+        var _liveCamStream = null;
+        var _liveCamTimer  = null;
+        var _liveCamActive = false;
+
+        function startLiveCam() {
+          if (_liveCamStream) return;
+          navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function(s) {
+              _liveCamStream = s;
+              document.getElementById('liveDashCam').srcObject = s;
+            })
+            .catch(function(e) { alert('Camera error: ' + e.message); });
+        }
+
+        function toggleLiveCamAuto() {
+          _liveCamActive = !_liveCamActive;
+          var btn = document.getElementById('liveCamAutoBtn');
+          if (_liveCamActive) {
+            btn.className = 'btn btn-success btn-sm';
+            btn.innerHTML = '<i class=\"fa fa-stop\"></i> Stop Auto-Capture';
+            captureLiveFrame();
+            _liveCamTimer = setInterval(captureLiveFrame, 5000);
+          } else {
+            btn.className = 'btn btn-danger btn-sm';
+            btn.innerHTML = '<i class=\"fa fa-circle\"></i> Start Auto-Capture (5s)';
+            clearInterval(_liveCamTimer);
+          }
+        }
+
+        function captureLiveFrame() {
+          var v = document.getElementById('liveDashCam');
+          if (!v || !v.srcObject) return;
+          var c = document.getElementById('liveDashCanvas');
+          c.width = v.videoWidth || 640;
+          c.height = v.videoHeight || 480;
+          c.getContext('2d').drawImage(v, 0, 0);
+          Shiny.setInputValue('live_cam_frame',
+            c.toDataURL('image/jpeg', 0.8), { priority: 'event' });
+        }
+      "))
+    )
+
+    if (status == "ended") {
       summary <- session_summary_data()
-      tags$div(style="padding: 40px; color: white; text-align: left;",
-        h3("Session Summary"),
-        hr(),
-        p(strong("Total Attendance: "), summary$attendance_count),
-        p(strong("Emotion Data Points: "), summary$emotion_count),
-        p(strong("AI Checks Performed: "), summary$check_count),
-        p(strong("Frames Captured: "), summary$frames_captured),
+      tags$div(style = "padding:20px; color:white;",
+        h3("Session Summary"), hr(),
+        p(strong("Attendance: "), if (!is.null(summary)) summary$attendance_count else "N/A"),
+        p(strong("Emotion readings: "), if (!is.null(summary)) summary$emotion_count else "N/A"),
         br(),
-        actionButton("view_attendance_review", "ATTENDANCE REVIEW", class="btn-primary"),
-        actionButton("hard_reset_session", "HARD RESET SESSION", class="btn-warning")
+        actionButton("view_attendance_review", "ATTENDANCE REVIEW", class = "btn-primary"),
+        actionButton("hard_reset_session", "HARD RESET", class = "btn-warning")
       )
     } else {
-      tags$div(style="padding: 100px; color: #888;", icon("video-slash", class="fa-4x"), br(), "Camera Offline")
+      cam_ui
+    }
+  })
+
+  # Camera frame handler — decode, POST to DO vision endpoint, update live data
+  output$live_cam_result <- renderUI({ div() })
+
+  observeEvent(input$live_cam_frame, {
+    lecture_id <- current_lecture_id()
+    if (nchar(lecture_id) == 0) return()
+
+    b64     <- sub("^data:image/[^;]+;base64,", "", input$live_cam_frame)
+    tmp_jpg <- tempfile(fileext = ".jpg")
+    writeBin(base64enc::base64decode(b64), tmp_jpg)
+    on.exit(unlink(tmp_jpg), add = TRUE)
+
+    result <- tryCatch({
+      httr2::request(paste0(FASTAPI_BASE, "/vision/process-frame")) |>
+        httr2::req_body_multipart(
+          image      = curl::form_file(tmp_jpg, type = "image/jpeg"),
+          lecture_id = lecture_id
+        ) |>
+        httr2::req_timeout(20) |>
+        httr2::req_error(is_error = \(r) FALSE) |>
+        httr2::req_perform() |>
+        httr2::resp_body_json()
+    }, error = function(e) NULL)
+
+    if (is.null(result)) return()
+    if (!is.null(result$detail)) {
+      output$live_cam_result <- renderUI(
+        div(class = "alert alert-warning", style = "margin-top:8px; font-size:12px;",
+            as.character(result$detail))
+      )
+      return()
+    }
+
+    n <- length(result$detected)
+    if (n == 0) {
+      output$live_cam_result <- renderUI(
+        div(class = "alert alert-info", style = "margin-top:8px; font-size:12px;",
+            sprintf("Frame processed — %d face(s) found, no matches.", result$faces_found))
+      )
+    } else {
+      names_str <- paste(sapply(result$detected, `[[`, "name"), collapse = ", ")
+      output$live_cam_result <- renderUI(
+        div(class = "alert alert-success", style = "margin-top:8px; font-size:12px;",
+            strong(sprintf("%d identified: ", n)), names_str)
+      )
     }
   })
 
