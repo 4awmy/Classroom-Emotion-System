@@ -5,6 +5,8 @@ from typing import List, Optional
 from datetime import datetime
 import logging
 import threading
+import shutil
+from pathlib import Path
 from sqlalchemy.orm import Session
 from services.websocket import manager
 from database import get_db, SessionLocal
@@ -63,6 +65,7 @@ async def video_feed(lecture_id: str):
 class SessionStartRequest(BaseModel):
     lecture_id: str
     lecturer_id: str
+    class_id: Optional[str] = None
     title: Optional[str] = None
     subject: Optional[str] = None
     slide_url: Optional[str] = None
@@ -72,6 +75,49 @@ class SessionStartRequest(BaseModel):
 
 class SessionEndRequest(BaseModel):
     lecture_id: str
+
+def get_session_status(lecture: Optional[models.Lecture]) -> str:
+    if not lecture or not lecture.start_time:
+        return "not_started"
+    if lecture.end_time:
+        return "ended"
+    return "live"
+
+def stop_active_task(lecture_id: str):
+    if lecture_id in active_lecture_tasks:
+        tasks = active_lecture_tasks.pop(lecture_id)
+        tasks["stop_event"].set()
+
+def remove_snapshot_dir(lecture_id: str):
+    snapshots_root = Path("data/snapshots").resolve()
+    target = (snapshots_root / lecture_id).resolve()
+    if snapshots_root in target.parents and target.exists():
+        shutil.rmtree(target)
+
+@router.get("/status/{lecture_id}")
+async def session_status(lecture_id: str, db: Session = Depends(get_db)):
+    lecture = db.query(models.Lecture).filter(models.Lecture.lecture_id == lecture_id).first()
+    status = get_session_status(lecture)
+    attendance_count = db.query(models.AttendanceLog).filter(
+        models.AttendanceLog.lecture_id == lecture_id
+    ).count()
+    emotion_count = db.query(models.EmotionLog).filter(
+        models.EmotionLog.lecture_id == lecture_id
+    ).count()
+    check_count = db.query(models.ComprehensionCheck).filter(
+        models.ComprehensionCheck.lecture_id == lecture_id
+    ).count()
+
+    return {
+        "lecture_id": lecture_id,
+        "exists": lecture is not None,
+        "status": status,
+        "start_time": lecture.start_time.isoformat() if lecture and lecture.start_time else None,
+        "end_time": lecture.end_time.isoformat() if lecture and lecture.end_time else None,
+        "attendance_count": attendance_count,
+        "emotion_count": emotion_count,
+        "check_count": check_count,
+    }
 
 @router.post("/start")
 async def start_session(request: SessionStartRequest, db: Session = Depends(get_db)):
@@ -83,6 +129,7 @@ async def start_session(request: SessionStartRequest, db: Session = Depends(get_
         if not lecture:
             lecture = models.Lecture(
                 lecture_id=request.lecture_id,
+                class_id=request.class_id,
                 lecturer_id=request.lecturer_id,
                 title=request.title or f"Lecture {request.lecture_id}",
                 slide_url=request.slide_url,
@@ -137,9 +184,7 @@ async def end_session(request: SessionEndRequest, db: Session = Depends(get_db))
         lecture.end_time = datetime.utcnow()
         db.commit()
 
-    if request.lecture_id in active_lecture_tasks:
-        tasks = active_lecture_tasks.pop(request.lecture_id)
-        tasks["stop_event"].set()
+    stop_active_task(request.lecture_id)
 
     await manager.broadcast({
         "type": "session:end",
@@ -147,6 +192,64 @@ async def end_session(request: SessionEndRequest, db: Session = Depends(get_db))
         "timestamp": datetime.utcnow().isoformat() + "Z"
     })
     return {"status": "ended", "lecture_id": request.lecture_id}
+
+@router.post("/reset")
+async def reset_session(request: SessionEndRequest, db: Session = Depends(get_db)):
+    lecture_id = request.lecture_id
+    lecture = db.query(models.Lecture).filter(models.Lecture.lecture_id == lecture_id).first()
+    if not lecture:
+        return {"status": "not_started", "lecture_id": lecture_id, "deleted": {}}
+
+    stop_active_task(lecture_id)
+
+    check_ids = [
+        row[0]
+        for row in db.query(models.ComprehensionCheck.id)
+        .filter(models.ComprehensionCheck.lecture_id == lecture_id)
+        .all()
+    ]
+
+    deleted = {}
+    if check_ids:
+        deleted["student_answers"] = db.query(models.StudentAnswer).filter(
+            models.StudentAnswer.check_id.in_(check_ids)
+        ).delete(synchronize_session=False)
+    else:
+        deleted["student_answers"] = 0
+
+    deleted["comprehension_checks"] = db.query(models.ComprehensionCheck).filter(
+        models.ComprehensionCheck.lecture_id == lecture_id
+    ).delete(synchronize_session=False)
+    deleted["attendance_logs"] = db.query(models.AttendanceLog).filter(
+        models.AttendanceLog.lecture_id == lecture_id
+    ).delete(synchronize_session=False)
+    deleted["emotion_logs"] = db.query(models.EmotionLog).filter(
+        models.EmotionLog.lecture_id == lecture_id
+    ).delete(synchronize_session=False)
+    deleted["focus_strikes"] = db.query(models.FocusStrike).filter(
+        models.FocusStrike.lecture_id == lecture_id
+    ).delete(synchronize_session=False)
+    deleted["notifications"] = db.query(models.Notification).filter(
+        models.Notification.lecture_id_fk == lecture_id
+    ).delete(synchronize_session=False)
+
+    lecture.start_time = None
+    lecture.end_time = None
+    lecture.actual_start_time = None
+    lecture.actual_end_time = None
+    lecture.total_frames_captured = 0
+    lecture.expected_frames_count = 0
+
+    db.commit()
+    remove_snapshot_dir(lecture_id)
+    latest_frames.pop(lecture_id, None)
+
+    await manager.broadcast({
+        "type": "session:reset",
+        "lecture_id": lecture_id,
+        "timestamp": datetime.utcnow().isoformat() + "Z"
+    })
+    return {"status": "not_started", "lecture_id": lecture_id, "deleted": deleted}
 
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):

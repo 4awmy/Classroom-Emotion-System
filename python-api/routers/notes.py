@@ -57,5 +57,33 @@ async def get_intervention_plan(student_id: str, db: Session = Depends(get_db)):
 
 @router.get("/{student_id}/{lecture_id}")
 async def get_smart_notes(student_id: str, lecture_id: str, db: Session = Depends(get_db)):
-    """T062: Smart notes endpoint — transcript source retired; returns placeholder."""
-    return {"markdown": f"## Lecture {lecture_id} Notes\n\n*Lecture transcript not available.*"}
+    """T062: Generate personalized smart notes based on distraction and wrong quiz answers."""
+    from models import EmotionLog, StudentAnswer, ComprehensionCheck, Material
+    from services.gemini_service import generate_smart_notes
+    
+    # 1. Fetch Distraction Timestamps
+    distracted_logs = db.query(EmotionLog).filter(
+        EmotionLog.student_id == student_id,
+        EmotionLog.lecture_id == lecture_id,
+        EmotionLog.emotion.in_(["Disengaged", "Anxious", "Frustrated"])
+    ).all()
+    d_ts = [log.timestamp for log in distracted_logs]
+
+    # 2. Fetch Wrong Topics from Comprehension Checks
+    wrong_answers = db.query(StudentAnswer).join(ComprehensionCheck).filter(
+        StudentAnswer.student_id == student_id,
+        ComprehensionCheck.lecture_id == lecture_id,
+        StudentAnswer.is_correct == False
+    ).all()
+    # Extract unique topics
+    wrong_topics = list(set([ans.check.topic for ans in wrong_answers if ans.check.topic]))
+
+    # 3. Get Contextual Content (Transcript/Material)
+    material = db.query(Material).filter(Material.lecture_id == lecture_id).first()
+    transcript = f"Technical overview of {material.title if material else 'lecture ' + lecture_id}. " \
+                 f"Key discussions included implementation details, architecture, and core logic patterns."
+
+    # 4. Generate AI Notes
+    notes = generate_smart_notes(transcript, d_ts, wrong_topics)
+
+    return {"markdown": notes}

@@ -202,6 +202,17 @@ lecturer_ui <- function() {
                   selected = "All",
                   width = "100%"
                 )
+              ),
+              div(
+                class = "department-filter",
+                tags$label("Week"),
+                selectInput(
+                  "lecturer_attendance_week",
+                  NULL,
+                  choices = stats::setNames(1:16, paste("Week", 1:16)),
+                  selected = 1,
+                  width = "100%"
+                )
               )
             ),
             div(
@@ -256,15 +267,24 @@ lecturer_ui <- function() {
         # ====================================================================
         shinydashboard::tabItem(
           tabName = "lec_live",
-          h2("Live Class Monitoring"),
+          h2("Lecture"),
           fluidRow(
             column(3,
               wellPanel(
                 h4(icon("gear"), "Session Config"),
-                textInput("lecturer_live_lecture", "Lecture ID", placeholder = "e.g. L1"),
-                actionButton("lecturer_live_start", "Start Session", class = "btn-success btn-block", icon = icon("play")),
+                uiOutput("lecturer_live_class_ui"),
+                selectInput(
+                  "lecturer_live_week",
+                  "Week",
+                  choices = stats::setNames(1:16, paste("Week", 1:16)),
+                  selected = 1
+                ),
+                tags$small(textOutput("lecturer_live_lecture_id", inline = TRUE)),
                 br(),
-                actionButton("lecturer_live_end", "End Session", class = "btn-danger btn-block", icon = icon("stop"))
+                tags$small(textOutput("lecturer_live_status_text", inline = TRUE)),
+                br(),
+                br(),
+                uiOutput("lecturer_live_session_actions")
               )
             ),
             column(5,
@@ -285,9 +305,16 @@ lecturer_ui <- function() {
                 h4(icon("link"), "Cloud Status"),
                 uiOutput("lecturer_cloud_health_ui"),
                 br(),
-                p("Status: ", strong(textOutput("lecturer_vision_status_text", inline = TRUE)))
+                p("Status: ", strong(textOutput("lecturer_vision_status_text", inline = TRUE))),
+                hr(),
+                h4(icon("bolt"), "AI Quick Actions"),
+                actionButton("lecturer_trigger_refresher", "Push Refresher", class = "btn-info btn-block", icon = icon("rotate-left")),
+                actionButton("lecturer_trigger_check", "Push Quiz", class = "btn-warning btn-block", icon = icon("question-circle"))
               )
             )
+          ),
+          fluidRow(
+            column(12, uiOutput("lecturer_confusion_alert_ui"))
           ),
           br(),
 

@@ -132,11 +132,24 @@ lecturer_server <- function(input, output, session, session_state) {
     slots = "9 => 10"
   ))
 
-  # Helper: resolve lecture_id from the selected Moodle-style course row.
+  format_week_lecture_id <- function(week, class_key) {
+    week_num <- suppressWarnings(as.integer(week))
+    if (is.na(week_num) || week_num < 1) week_num <- 1
+    safe_class_key <- gsub("[^A-Za-z0-9_-]+", "-", trimws(as.character(class_key)))
+    paste0(sprintf("W%02d", week_num), "-", safe_class_key)
+  }
+
+  course_class_key <- function(row) {
+    if (is.null(row$code) || is.null(row$class)) return("")
+    paste(row$code, row$class, sep = "-")
+  }
+
+  # Helper: resolve lecture_id from selected course/class and academic week.
   get_attendance_lecture_id <- function() {
     selected <- selected_attendance_course()
-    if (is.null(selected$code) || is.null(selected$class)) return("")
-    paste(selected$code, selected$class, sep = "-")
+    class_key <- course_class_key(selected)
+    if (nchar(class_key) == 0) return("")
+    format_week_lecture_id(input$lecturer_attendance_week %||% 1, class_key)
   }
 
   output$lecturer_selected_course_title <- shiny::renderUI({
@@ -145,7 +158,11 @@ lecturer_server <- function(input, output, session, session_state) {
       class = "selected-course-title",
       shiny::span(class = "selected-course-kicker", "Selected Session"),
       shiny::strong(sprintf("%s | %s | Class %s", selected$course, selected$code, selected$class)),
-      shiny::span(sprintf("%s, %s", selected$day, selected$slots))
+      shiny::span(sprintf("Week %s | %s, %s | %s",
+                          input$lecturer_attendance_week %||% 1,
+                          selected$day,
+                          selected$slots,
+                          get_attendance_lecture_id()))
     )
   })
 
@@ -393,6 +410,11 @@ lecturer_server <- function(input, output, session, session_state) {
     refresh_attendance()
   })
 
+  shiny::observeEvent(input$lecturer_attendance_week, {
+    attendance_qr_base64(NULL)
+    refresh_attendance()
+  }, ignoreInit = TRUE)
+
   shiny::observeEvent(input$lecturer_attendance_refresh, {
     refresh_attendance()
   })
@@ -564,10 +586,11 @@ lecturer_server <- function(input, output, session, session_state) {
 
   # ========================================================================
   # Submodule D: Live Dashboard (D1-D7)
-  # Uses input$lecturer_live_lecture for lecture_id
+  # Uses selected class + week to generate lecture_id.
   # ========================================================================
 
   live_reactive <- shiny::reactiveTimer(2000)
+  live_session_status <- shiny::reactiveVal(list(status = "not_started", exists = FALSE))
 
   # Cloud Health & Vision Status
   output$lecturer_cloud_health_ui <- shiny::renderUI({
@@ -637,11 +660,97 @@ lecturer_server <- function(input, output, session, session_state) {
     }
   )
 
+  output$lecturer_live_class_ui <- shiny::renderUI({
+    courses_df <- lecturer_courses_data()
+    if (is.null(courses_df) || nrow(courses_df) == 0) {
+      return(shiny::selectInput("lecturer_live_class", "Class", choices = c("No classes available" = "")))
+    }
+
+    values <- apply(courses_df, 1, function(row) paste(row[["code"]], row[["class"]], sep = "-"))
+    labels <- apply(courses_df, 1, function(row) {
+      sprintf("%s | %s | Class %s", row[["course"]], row[["code"]], row[["class"]])
+    })
+    shiny::selectInput("lecturer_live_class", "Class", choices = stats::setNames(values, labels))
+  })
+
   get_live_lecture_id <- function() {
-    lid <- input$lecturer_live_lecture
-    if (is.null(lid) || nchar(trimws(lid)) == 0) return(NULL)
-    trimws(lid)
+    class_key <- input$lecturer_live_class
+    if (is.null(class_key) || nchar(trimws(class_key)) == 0) return(NULL)
+    format_week_lecture_id(input$lecturer_live_week %||% 1, class_key)
   }
+
+  get_live_class_id <- function() {
+    class_key <- input$lecturer_live_class
+    if (is.null(class_key) || nchar(trimws(class_key)) == 0) return(NULL)
+    sub("^[^-]+-", "", trimws(class_key))
+  }
+
+  get_live_course_row <- function() {
+    class_key <- input$lecturer_live_class
+    courses_df <- lecturer_courses_data()
+    if (is.null(class_key) || nchar(trimws(class_key)) == 0 || nrow(courses_df) == 0) return(NULL)
+    values <- apply(courses_df, 1, function(row) paste(row[["code"]], row[["class"]], sep = "-"))
+    match_idx <- which(values == class_key)
+    if (length(match_idx) == 0) return(NULL)
+    as.list(courses_df[match_idx[1], ])
+  }
+
+  refresh_live_session_status <- function() {
+    lecture_id <- get_live_lecture_id()
+    if (is.null(lecture_id)) {
+      live_session_status(list(status = "not_started", exists = FALSE))
+      return(invisible(NULL))
+    }
+    res <- tryCatch({
+      httr2::request(paste0(FASTAPI_BASE, "/session/status/", lecture_id)) |>
+        httr2::req_error(is_error = \(resp) FALSE) |>
+        httr2::req_timeout(5) |>
+        httr2::req_perform() |>
+        httr2::resp_body_json()
+    }, error = function(e) NULL)
+    if (!is.null(res)) live_session_status(res)
+    invisible(res)
+  }
+
+  shiny::observe({
+    live_reactive()
+    refresh_live_session_status()
+  })
+
+  output$lecturer_live_lecture_id <- shiny::renderText({
+    lecture_id <- get_live_lecture_id()
+    if (is.null(lecture_id)) "Lecture ID: select a class"
+    else paste("Lecture ID:", lecture_id)
+  })
+
+  output$lecturer_live_status_text <- shiny::renderText({
+    status <- live_session_status()$status %||% "not_started"
+    label <- switch(status,
+      live = "Status: Live",
+      ended = "Status: Ended",
+      "Status: Not started"
+    )
+    label
+  })
+
+  output$lecturer_live_session_actions <- shiny::renderUI({
+    status <- live_session_status()$status %||% "not_started"
+    if (identical(status, "live")) {
+      return(shiny::tagList(
+        actionButton("lecturer_live_end", "End Session", class = "btn-danger btn-block", icon = icon("stop"))
+      ))
+    }
+    if (identical(status, "ended")) {
+      return(shiny::tagList(
+        actionButton("lecturer_live_attendance_review", "Attendance Review", class = "btn-info btn-block", icon = icon("clipboard-list")),
+        br(),
+        actionButton("lecturer_live_reset", "Reset Lecture", class = "btn-warning btn-block", icon = icon("rotate-left"))
+      ))
+    }
+    shiny::tagList(
+      actionButton("lecturer_live_start", "Start Session", class = "btn-success btn-block", icon = icon("play"))
+    )
+  })
 
   output$lecturer_live_custom_cam_ui <- shiny::renderUI({
     if (input$lecturer_live_camera == "custom") {
@@ -652,10 +761,24 @@ lecturer_server <- function(input, output, session, session_state) {
   output$lecturer_live_stream_ui <- shiny::renderUI({
     # Static render of stream URL - browser handles the MJPEG flow
     lecture_id <- get_live_lecture_id()
+    status <- live_session_status()$status %||% "not_started"
     if (is.null(lecture_id)) {
       return(shiny::div(
         style = "color:#fff;padding:170px 20px;",
-        "Enter a Lecture ID and start the lecture."
+        "Select a class and week, then start the lecture."
+      ))
+    }
+
+    if (identical(status, "ended")) {
+      return(shiny::div(
+        style = "color:#fff;padding:150px 20px;",
+        shiny::h4("Lecture ended"),
+        shiny::p(sprintf(
+          "Final records: %s attendance, %s emotion logs, %s AI checks.",
+          live_session_status()$attendance_count %||% 0,
+          live_session_status()$emotion_count %||% 0,
+          live_session_status()$check_count %||% 0
+        ))
       ))
     }
 
@@ -697,7 +820,7 @@ lecturer_server <- function(input, output, session, session_state) {
   shiny::observeEvent(input$lecturer_live_start, {
     lecture_id <- get_live_lecture_id()
     if (is.null(lecture_id)) {
-      shinyalert::shinyalert("Error", "Enter a Lecture ID first.", type = "error")
+      shinyalert::shinyalert("Error", "Select a class first.", type = "error")
       return()
     }
 
@@ -712,10 +835,13 @@ lecturer_server <- function(input, output, session, session_state) {
     result <- api_call("/session/start", method = "POST", body = list(
       lecture_id  = lecture_id,
       lecturer_id = "LECTURER_1",
+      class_id    = get_live_class_id(),
+      title       = paste("Week", input$lecturer_live_week %||% 1, "Lecture", input$lecturer_live_class),
       camera_url  = trimws(cam_url)
     ))
 
     if (!is.null(result)) {
+      refresh_live_session_status()
       shinyalert::shinyalert("Lecture Started",
                              paste("Lecture", lecture_id, "is now live using camera:", cam_url), type = "success")
     }
@@ -729,7 +855,43 @@ lecturer_server <- function(input, output, session, session_state) {
         httr2::req_body_json(list(lecture_id = lecture_id)) |>
         httr2::req_perform()
     }, error = function(e) NULL)
+    refresh_live_session_status()
     shinyalert::shinyalert("Lecture Ended", "", type = "info")
+  })
+
+  shiny::observeEvent(input$lecturer_live_attendance_review, {
+    selected <- get_live_course_row()
+    if (is.null(selected)) {
+      shinyalert::shinyalert("No Class", "Select a class first.", type = "warning")
+      return()
+    }
+    selected_attendance_course(selected)
+    shiny::updateSelectInput(session, "lecturer_attendance_week", selected = input$lecturer_live_week %||% 1)
+    refresh_attendance()
+    shinydashboard::updateTabItems(session, "lecturer_menu", selected = "lec_attendance_students")
+  })
+
+  shiny::observeEvent(input$lecturer_live_reset, {
+    lecture_id <- get_live_lecture_id()
+    if (is.null(lecture_id)) return()
+
+    shinyalert::shinyalert(
+      title = "Reset Lecture?",
+      text = paste("This deletes attendance, emotion analytics, snapshots, and AI checks for", lecture_id, "only."),
+      type = "warning",
+      showCancelButton = TRUE,
+      confirmButtonText = "Reset",
+      callbackR = function(confirmed) {
+        if (!isTRUE(confirmed)) return()
+        res <- api_call("/session/reset", method = "POST", body = list(lecture_id = lecture_id))
+        if (!is.null(res)) {
+          live_session_status(res)
+          attendance_qr_base64(NULL)
+          refresh_attendance()
+          shinyalert::shinyalert("Lecture Reset", paste(lecture_id, "is ready to start again."), type = "success")
+        }
+      }
+    )
   })
 
   # D1: Engagement Gauge
@@ -928,6 +1090,90 @@ lecturer_server <- function(input, output, session, session_state) {
     )
   })
 
+  # --- AI Intervention Handlers ---
+
+  # 1. Refresher Logic
+  shiny::observeEvent(input$lecturer_trigger_refresher, {
+    lecture_id <- get_live_lecture_id()
+    if (is.null(lecture_id)) return()
+    
+    shiny::showNotification("AI is generating refresher...", type = "message")
+    
+    res <- tryCatch({
+      httr2::request(paste0(FASTAPI_BASE, "/gemini/refresher")) |>
+        httr2::req_url_query(lecture_id = lecture_id) |>
+        httr2::req_perform() |>
+        httr2::resp_body_json()
+    }, error = function(e) NULL)
+    
+    if (is.null(res)) {
+       shinyalert::shinyalert("Error", "Could not generate refresher.", type="error")
+       return()
+    }
+    
+    shinyalert::shinyalert(
+      title = "Accept AI Refresher?",
+      text = res$summary,
+      type = "info",
+      showCancelButton = TRUE,
+      confirmButtonText = "Push to Students",
+      callbackR = function(confirmed) {
+        if (!isTRUE(confirmed)) return()
+        tryCatch({
+          httr2::request(paste0(FASTAPI_BASE, "/gemini/intervention/push")) |>
+            httr2::req_url_query(lecture_id = lecture_id, content = res$summary) |>
+            httr2::req_method("POST") |>
+            httr2::req_perform()
+          shiny::showNotification("Refresher pushed!", type = "message")
+        }, error = function(e) NULL)
+      }
+    )
+  })
+
+  # 2. Comprehension Check Logic
+  shiny::observeEvent(input$lecturer_trigger_check, {
+    lecture_id <- get_live_lecture_id()
+    if (is.null(lecture_id)) return()
+    
+    shiny::showNotification("AI is generating quiz...", type = "message")
+    
+    res <- tryCatch({
+      httr2::request(paste0(FASTAPI_BASE, "/gemini/check/generate")) |>
+        httr2::req_url_query(lecture_id = lecture_id) |>
+        httr2::req_method("POST") |>
+        httr2::req_perform() |>
+        httr2::resp_body_json()
+    }, error = function(e) NULL)
+    
+    if (is.null(res)) {
+       shinyalert::shinyalert("Error", "Could not generate quiz.", type="error")
+       return()
+    }
+    
+    shinyalert::shinyalert(
+      title = "Accept AI Quiz?",
+      text = paste0("Q: ", res$question, "\n\nOptions: ", paste(res$options, collapse=", ")),
+      type = "info",
+      showCancelButton = TRUE,
+      confirmButtonText = "Push Quiz",
+      callbackR = function(confirmed) {
+        if (!isTRUE(confirmed)) return()
+        tryCatch({
+          httr2::request(paste0(FASTAPI_BASE, "/session/broadcast")) |>
+            httr2::req_body_json(list(
+              type = "comprehension_check",
+              check_id = res$id,
+              question = res$question,
+              options = res$options,
+              lecture_id = lecture_id
+            )) |>
+            httr2::req_perform()
+          shiny::showNotification("Quiz pushed!", type = "message")
+        }, error = function(e) NULL)
+      }
+    )
+  })
+
   # Confusion Spike Observer — Gemini alert
   confusion_alerted <- shiny::reactiveVal(FALSE)
 
@@ -964,21 +1210,19 @@ lecturer_server <- function(input, output, session, session_state) {
 
     shinyalert::shinyalert(
       title    = sprintf("\u26a0 Class Confused (%.0f%%)", confusion_rate * 100),
-      text     = paste0("Suggested question:\n\n", question),
+      text     = paste0("Suggested 'Fresh Brainer':\n\n", question),
       type     = "warning",
       showCancelButton  = TRUE,
-      confirmButtonText = "Ask It",
+      confirmButtonText = "Push to Students",
       cancelButtonText  = "Dismiss",
       callbackR = function(confirmed) {
         if (!isTRUE(confirmed)) return()
         tryCatch({
-          httr2::request(paste0(FASTAPI_BASE, "/session/broadcast")) |>
-            httr2::req_body_json(list(
-              type       = "freshbrainer",
-              question   = question,
-              lecture_id = lecture_id
-            )) |>
+          httr2::request(paste0(FASTAPI_BASE, "/gemini/intervention/push")) |>
+            httr2::req_url_query(lecture_id = lecture_id, content = question) |>
+            httr2::req_method("POST") |>
             httr2::req_perform()
+          shiny::showNotification("Fresh Brainer pushed!", type = "message")
         }, error = function(e) NULL)
       }
     )

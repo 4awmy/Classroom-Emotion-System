@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "C:\Users\omarh\projects\Classroom-Emotion-System\vision\main.py", line 201, in <module>
+    node = VisionNode()
+  File "C:\Users\omarh\projects\Classroom-Emotion-System\vision\main.py", line 46, in __init__
+    self.fer_model = HSEmotionRecognize(model_name='enet_b0_8_best_vga', device='cpu')
+                     ^^^^^^^^^^^^^^^^^^
+NameError: name 'HSEmotionRecognize' is not defined

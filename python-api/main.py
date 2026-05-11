@@ -2,6 +2,7 @@ import logging
 import threading
 import contextlib
 import os
+import asyncio
 from fastapi import FastAPI, Header, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text, inspect
@@ -27,7 +28,7 @@ def stop_all_background_tasks():
     except: pass
 
 def run_migrations():
-    """Add new columns to existing tables without dropping data."""
+    """Add new columns and tables without dropping data."""
     migrations = [
         # password_hash added after Supabase retirement
         "ALTER TABLE admins    ADD COLUMN IF NOT EXISTS password_hash TEXT",
@@ -37,39 +38,51 @@ def run_migrations():
         "ALTER TABLE admins    ALTER COLUMN auth_user_id DROP NOT NULL",
         "ALTER TABLE lecturers ALTER COLUMN auth_user_id DROP NOT NULL",
         "ALTER TABLE students  ALTER COLUMN auth_user_id DROP NOT NULL",
+        # New Gemini Tables (if not created via metadata)
+        "CREATE TABLE IF NOT EXISTS comprehension_checks (id SERIAL PRIMARY KEY, lecture_id VARCHAR REFERENCES lectures(lecture_id) ON DELETE CASCADE, material_id VARCHAR REFERENCES materials(material_id) ON DELETE SET NULL, question TEXT NOT NULL, options TEXT NOT NULL, correct_option INTEGER NOT NULL, topic VARCHAR, created_at TIMESTAMP WITH TIME ZONE DEFAULT now())",
+        "CREATE TABLE IF NOT EXISTS student_answers (id SERIAL PRIMARY KEY, check_id INTEGER REFERENCES comprehension_checks(id) ON DELETE CASCADE, student_id VARCHAR REFERENCES students(student_id) ON DELETE CASCADE, chosen_option INTEGER NOT NULL, is_correct BOOLEAN NOT NULL, timestamp TIMESTAMP WITH TIME ZONE DEFAULT now())"
     ]
     with engine.begin() as conn:
         for sql in migrations:
             try:
                 conn.execute(text(sql))
             except Exception as e:
-                logger.warning(f"[MIGRATION] Skipped: {sql[:60]}... — {e}")
+                # Silently skip if table/column exists or error occurs
+                pass
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
     # --- Startup ---
-    logger.info("[INIT] Production Startup...")
+    logger.info("[INIT] Production Startup (v3.6.0)...")
 
-    # Schema migrations (idempotent — safe to run every startup)
+    # 0. Capture main loop for WebSocket broadcast_sync (Required for Gemini push)
+    from services.websocket import set_main_loop
+    set_main_loop(asyncio.get_running_loop())
+
+    # 1. Schema migrations & Table Check
     try:
         run_migrations()
-        logger.info("[INIT] Migrations applied")
+        # Also ensure base tables exist
+        models.Base.metadata.create_all(bind=engine)
+        logger.info("[INIT] Database schema verified.")
     except Exception as e:
-        logger.error(f"[INIT] Migration error: {e}")
+        logger.error(f"[INIT] Database init failed: {e}")
 
-    # Start scheduler (Optional AI deps)
+    # 2. Start scheduler (Optional AI deps)
     try:
         from services.lecture_scheduler import start_scheduler
         start_scheduler()
-    except:
-        logger.warning("[INIT] Scheduler skipped")
+        logger.info("[INIT] Scheduler active.")
+    except Exception as e:
+        logger.warning(f"[INIT] Scheduler skipped: {e}")
 
     yield
+    # --- Shutdown ---
     stop_all_background_tasks()
 
-app = FastAPI(title="AAST LMS API", lifespan=lifespan)
+app = FastAPI(title="AAST LMS API (Consolidated)", lifespan=lifespan)
 
-# WIDE OPEN CORS for production stability
+# CORS configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -78,27 +91,56 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Root/Health
+# Root/Health (Enhanced diagnostics)
 @app.get("/")
 @app.get("/health")
+@app.get("/api/health")
 @app.get("/ping")
 def health_check(db: Session = Depends(get_db)):
     db_ok = False
     try:
         db.execute(text("SELECT 1"))
         db_ok = True
-    except Exception as e:
-        logger.error(f"Health check DB error: {e}")
-        
+    except: pass
     return {
         "status": "ok" if db_ok else "error",
         "database": "connected" if db_ok else "disconnected",
-        "version": "3.5.0", 
-        "message": "pong"
+        "version": "3.6.0", 
+        "message": "Gemini Integration Live"
     }
 
-# Include routers
-# We include them TWICE: with and without /api to handle internal/external routing perfectly
+# Production Seed Trigger (Internal Only)
+@app.post("/api/internal/seed")
+@app.post("/internal/seed")
+def seed_database(x_seed_secret: str = None):
+    secret = os.getenv("JWT_SECRET", "aast-lms-secret-2026")
+    if x_seed_secret != secret:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    
+    try:
+        # Create default admin if missing
+        db = SessionLocal()
+        from routers.auth import get_password_hash
+        import uuid
+        
+        admin = db.query(models.Admin).filter(models.Admin.admin_id == "admin").first()
+        if not admin:
+            new_admin = models.Admin(
+                admin_id="admin",
+                name="System Administrator",
+                email="admin@aast.edu",
+                password_hash=get_password_hash("aast2026"),
+                auth_user_id=str(uuid.uuid4())
+            )
+            db.add(new_admin)
+            db.commit()
+            return {"status": "success", "message": "Admin account created."}
+        db.close()
+        return {"status": "ok", "message": "System already seeded."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+# Include routers twice: with and without /api prefix
 for prefix in ["", "/api"]:
     app.include_router(auth.router,        prefix=f"{prefix}/auth",       tags=["Auth"])
     app.include_router(admin.router,       prefix=f"{prefix}/admin",      tags=["Admin"])

@@ -10,7 +10,7 @@ import base64
 import os
 from datetime import datetime
 from services.websocket import manager
-from schemas import AttendanceLogResponse, AttendanceLogCreate
+from schemas import AttendanceLogResponse, AttendanceLogCreate, AttendanceScanRequest
 
 router = APIRouter()
 
@@ -165,6 +165,51 @@ def notify_lecturer(
     )
     db.add(new_notif)
     db.commit()
-    
     # WebSocket broadcast would happen here in a real system
     return {"status": "notified"}
+
+@router.post("/scan", response_model=AttendanceLogResponse)
+def checkin_via_qr(
+    request: AttendanceScanRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Student self-check-in via mobile QR scanning.
+    """
+    # 1. Verify student exists
+    student = db.query(Student).filter(Student.student_id == request.student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    # 2. Check if already present for this lecture
+    existing = db.query(AttendanceLog).filter(
+        AttendanceLog.student_id == request.student_id,
+        AttendanceLog.lecture_id == request.lecture_id
+    ).first()
+    
+    if existing:
+        return existing
+
+    # 3. Mark as Present
+    new_log = AttendanceLog(
+        student_id=request.student_id,
+        lecture_id=request.lecture_id,
+        status="Present",
+        method="QR",
+        timestamp=datetime.utcnow()
+    )
+    db.add(new_log)
+    db.commit()
+    db.refresh(new_log)
+    
+    # 4. Notify Portal via WebSocket
+    manager.broadcast_sync({
+        "type": "attendance_update",
+        "lecture_id": request.lecture_id,
+        "student_id": request.student_id,
+        "status": "Present",
+        "method": "QR",
+        "timestamp": new_log.timestamp.isoformat()
+    })
+    
+    return new_log
