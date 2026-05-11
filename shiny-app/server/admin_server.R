@@ -22,8 +22,21 @@ admin_server <- function(input, output, session, session_state) {
       global_db_error("DATABASE_URL MISSING in Admin Portal")
       return(data.frame())
     }
+    
+    params <- parse_postgres_url(db_url)
+
     tryCatch({
-      con <- dbConnect(RPostgres::Postgres(), dbname = db_url)
+      if (is.null(params)) {
+        con <- dbConnect(RPostgres::Postgres(), dbname = db_url)
+      } else {
+        con <- dbConnect(RPostgres::Postgres(), 
+                         host = params$host,
+                         port = params$port,
+                         user = params$user,
+                         password = params$password,
+                         dbname = params$dbname,
+                         sslmode = "require")
+      }
       res <- dbGetQuery(con, query)
       dbDisconnect(con)
       global_db_error("") # Clear error

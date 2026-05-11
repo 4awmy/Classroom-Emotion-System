@@ -325,7 +325,8 @@ lecturer_server <- function(input, output, session, session_state) {
     clean_keys <- all_keys[!grepl("SUPABASE|PASSWORD|SECRET|KEY|TOKEN", all_keys, ignore.case = TRUE)]
     
     paste0(
-      "--- System Diagnostic (v3.9.9) ---\n",
+      "--- System Diagnostic (v4.0.0) ---\n",
+
       "Login User: ", if(!is.null(session_state$user_id)) session_state$user_id else "NONE", "\n",
       "Login Role: ", if(!is.null(session_state$role)) session_state$role else "NONE", "\n",
       "Env Status: ", db_status, "\n",
