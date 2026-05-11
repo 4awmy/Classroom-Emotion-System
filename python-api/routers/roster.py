@@ -102,12 +102,13 @@ async def upload_roster(
             # 1. UPSERT Student record
             student = db.query(Student).filter(Student.student_id == sid).first()
             if not student:
-                student = Student(student_id=sid, name=name, email=email)
+                student = Student(student_id=sid, name=name, email=email, photo_url=url)
                 db.add(student)
                 created += 1
             else:
                 student.name = name
                 student.email = email
+                student.photo_url = url
             
             # 2. Process Encoding if link exists
             file_id = extract_drive_id(url)
@@ -181,7 +182,10 @@ def list_students(db: Session = Depends(get_db)):
             "student_id": s.student_id,
             "name": s.name,
             "email": s.email,
-            "has_encoding": s.face_encoding is not None
+            "department": s.department,
+            "year": s.year,
+            "photo_url": s.photo_url,
+            "has_encoding": _has_arcface_encoding(s.face_encoding),
         })
     return results
 
@@ -208,3 +212,10 @@ def get_student_encodings(db: Session = Depends(get_db)):
                 "encoding": enc.tolist(),
             })
     return result
+
+
+def _has_arcface_encoding(face_encoding: Optional[bytes]) -> bool:
+    if not face_encoding:
+        return False
+    enc = np.frombuffer(face_encoding, dtype=ENCODING_DTYPE)
+    return enc.shape[0] == ENCODING_DIM
