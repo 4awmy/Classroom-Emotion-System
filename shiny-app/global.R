@@ -40,6 +40,8 @@ global_db_error <- shiny::reactiveVal("")
 # --- Database Connection Management ---
 get_db_url <- function() {
   url <- Sys.getenv("DATABASE_URL", "")
+  # Clean the URL (remove any accidental whitespace or newlines)
+  url <- gsub("\\s+", "", url)
   return(url)
 }
 
