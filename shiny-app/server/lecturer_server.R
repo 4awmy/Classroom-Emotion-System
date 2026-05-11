@@ -112,12 +112,17 @@ lecturer_server <- function(input, output, session, session_state) {
           icon("spinner"), " Uploading and encoding... this may take several minutes (downloading photos from Google Drive).")
     )
 
+    orig_name <- input$roster_xlsx_file$name
+    mime_type <- if (grepl("\\.csv$", tolower(orig_name))) "text/csv" else
+                   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
     result <- tryCatch({
       httr2::request(paste0(FASTAPI_BASE, "/roster/upload")) |>
         httr2::req_body_multipart(
           roster_xlsx = curl::form_file(
             input$roster_xlsx_file$datapath,
-            type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            type = mime_type,
+            name = orig_name
           )
         ) |>
         httr2::req_timeout(300) |>
