@@ -36,7 +36,10 @@ FASTAPI_BASE <- "https://classroomx-lkbxf.ondigitalocean.app/api"
 # --- Database Query Helper ---
 query_table <- function(table_name) {
   db_url <- Sys.getenv("DATABASE_URL", "")
-  if (db_url == "") return(data.frame())
+  if (db_url == "") {
+    message("[DB] ERROR: DATABASE_URL not set in environment.")
+    return(data.frame())
+  }
   
   tryCatch({
     con <- dbConnect(RPostgres::Postgres(), url = db_url)
@@ -44,7 +47,7 @@ query_table <- function(table_name) {
     dbDisconnect(con)
     return(res)
   }, error = function(e) {
-    message(paste("[DB] Query failed:", e$message))
+    message(paste("[DB] Query failed for", table_name, ":", e$message))
     return(data.frame())
   })
 }
