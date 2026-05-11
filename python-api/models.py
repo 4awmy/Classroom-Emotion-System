@@ -181,6 +181,7 @@ class AttendanceLog(Base):
     timestamp: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     status: Mapped[str] = mapped_column(String, nullable=False)
     method: Mapped[str] = mapped_column(String, nullable=False)
+    snapshot_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     student: Mapped["Student"] = relationship(back_populates="attendance_logs")
     lecture: Mapped["Lecture"] = relationship(back_populates="attendance_logs")
