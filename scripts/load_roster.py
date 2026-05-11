@@ -37,7 +37,7 @@ DB = dict(
     sslmode=os.environ.get("DB_SSLMODE", "require"),
 )
 
-XLSX_PATH = os.environ.get("XLSX_PATH", r"C:\Users\hp\Downloads\StudentPicsDataset.xlsx")
+ROSTER_PATH = os.environ.get("ROSTER_PATH") or os.environ.get("XLSX_PATH", r"C:\Users\hp\Downloads\StudentPicsDataset.xlsx")
 
 ENCODING_DTYPE = np.float32
 ENCODING_DIM = 512
@@ -73,6 +73,13 @@ def extract_drive_id(url: str):
         if match:
             return match.group(1)
     return None
+
+
+def normalize_student_id(value) -> str:
+    sid = str(value).strip()
+    if sid.endswith(".0"):
+        sid = sid[:-2]
+    return sid
 
 
 def get_face_encoding(image_bytes: bytes):
@@ -118,8 +125,11 @@ def db_exec(conn, query, params=()):
 
 
 def main():
-    print(f"Reading XLSX: {XLSX_PATH}")
-    df = pd.read_excel(XLSX_PATH)
+    print(f"Reading roster: {ROSTER_PATH}")
+    if ROSTER_PATH.lower().endswith(".csv"):
+        df = pd.read_csv(ROSTER_PATH)
+    else:
+        df = pd.read_excel(ROSTER_PATH)
     df.columns = [c.strip() for c in df.columns]
     aliases = {"Student ID": "student_id", "Student Name": "name", "Photo Link": "photo_link"}
     df.rename(columns=aliases, inplace=True)
@@ -132,7 +142,7 @@ def main():
     total = len(df)
 
     for i, row in df.iterrows():
-        sid = str(row.get("student_id", "")).strip()
+        sid = normalize_student_id(row.get("student_id", ""))
         name = str(row.get("name", "")).strip()
         url = str(row.get("photo_link", "")).strip()
 
@@ -142,10 +152,10 @@ def main():
         try:
             cur, conn = db_exec(
                 conn,
-                "INSERT INTO students (student_id, name, needs_password_reset) VALUES (%s, %s, TRUE) "
-                "ON CONFLICT (student_id) DO UPDATE SET name = EXCLUDED.name "
+                "INSERT INTO students (student_id, name, photo_url, needs_password_reset) VALUES (%s, %s, %s, TRUE) "
+                "ON CONFLICT (student_id) DO UPDATE SET name = EXCLUDED.name, photo_url = EXCLUDED.photo_url "
                 "RETURNING (xmax = 0) AS inserted",
-                (sid, name),
+                (sid, name, url),
             )
             row_result = cur.fetchone()
             if row_result and row_result[0]:

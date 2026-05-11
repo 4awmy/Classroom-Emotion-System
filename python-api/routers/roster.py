@@ -32,6 +32,13 @@ def extract_drive_id(url: str) -> Optional[str]:
     return None
 
 
+def normalize_student_id(value) -> str:
+    sid = str(value).strip()
+    if sid.endswith(".0"):
+        sid = sid[:-2]
+    return sid
+
+
 def get_face_encoding(image_bytes: bytes) -> Optional[bytes]:
     """Detect the largest face and return its ArcFace embedding as bytes."""
     if not embeddings_available():
@@ -94,7 +101,7 @@ async def upload_roster(
         encoded = 0
         
         for _, row in df.iterrows():
-            sid = str(row["student_id"]).strip()
+            sid = normalize_student_id(row["student_id"])
             name = str(row["name"]).strip()
             email = str(row["email"]).strip()
             url = str(row["photo_link"]).strip()
@@ -141,6 +148,8 @@ async def add_single_student(
     """
     Add single student with photo upload.
     """
+    student_id = normalize_student_id(student_id)
+
     if not re.match(r'^\d{9}$', student_id):
         raise HTTPException(status_code=400, detail="Student ID must be 9 digits.")
     
