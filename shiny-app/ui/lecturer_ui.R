@@ -100,6 +100,35 @@ lecturer_ui <- function() {
             h2("My Active Courses"),
             uiOutput("lecturer_course_table"),
             hr(),
+
+            # --- ROSTER UPLOAD (Submodule A) ---
+            shinydashboard::box(
+              title = "Roster & Face Encoding Upload", width = 12,
+              status = "primary", solidHeader = TRUE, collapsible = TRUE,
+              fluidRow(
+                column(6,
+                  h4("Bulk Upload via XLSX"),
+                  p("Upload your StudentPicsDataset.xlsx. The system will download each student photo from Google Drive and generate face encodings automatically."),
+                  fileInput("roster_xlsx_file", "Select XLSX File",
+                            accept = c(".xlsx", ".xls"),
+                            buttonLabel = "Browse...",
+                            placeholder = "StudentPicsDataset.xlsx"),
+                  actionButton("roster_upload_btn", "Upload & Encode Roster",
+                               class = "btn-primary btn-block", icon = icon("upload")),
+                  br(),
+                  uiOutput("roster_upload_result")
+                ),
+                column(6,
+                  h4("Encoding Status"),
+                  p("Students with a face encoding can be identified by the camera."),
+                  actionButton("roster_check_btn", "Check Encoding Status",
+                               class = "btn-info btn-block", icon = icon("refresh")),
+                  br(),
+                  uiOutput("roster_status_panel")
+                )
+              )
+            ),
+
             # DEBUG PANEL
             shinydashboard::box(title = "System Debug Info", width = 12, collapsible = TRUE, collapsed = TRUE, status = "danger",
               verbatimTextOutput("lecturer_debug_out")
