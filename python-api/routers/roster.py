@@ -83,16 +83,24 @@ async def upload_roster(
     db: Session = Depends(get_db)
 ):
     """
-    Bulk roster upload via XLSX.
+    Bulk roster upload via XLSX or CSV.
     Expected columns: student_id, name, email, photo_link
     """
     try:
         contents = await roster_xlsx.read()
-        df = pd.read_excel(io.BytesIO(contents))
-        
+        filename = (roster_xlsx.filename or "").lower()
+
+        if filename.endswith(".csv"):
+            df = pd.read_csv(io.BytesIO(contents))
+        else:
+            df = pd.read_excel(io.BytesIO(contents))
+
+        # Normalise column names (strip whitespace, lowercase for matching)
+        df.columns = [c.strip() for c in df.columns]
+
         required_cols = ["student_id", "name", "email", "photo_link"]
         if not all(col in df.columns for col in required_cols):
-            raise HTTPException(status_code=400, detail=f"XLSX must contain: {required_cols}")
+            raise HTTPException(status_code=400, detail=f"File must contain columns: {required_cols}. Found: {list(df.columns)}")
 
         created = 0
         encoded = 0
