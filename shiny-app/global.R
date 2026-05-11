@@ -34,11 +34,19 @@ FASTAPI_BASE <- Sys.getenv("API_URL", "https://classroomx-lkbxf.ondigitalocean.a
 # Ensure it includes /api
 if (!grepl("/api$", FASTAPI_BASE)) FASTAPI_BASE <- paste0(FASTAPI_BASE, "/api")
 
-# --- Database Query Helper ---
+# Global Error State for UI Reporting
+global_db_error <- shiny::reactiveVal("")
+
+# --- Database Connection Management ---
+get_db_url <- function() {
+  url <- Sys.getenv("DATABASE_URL", "")
+  return(url)
+}
+
 query_table <- function(table_name) {
-  db_url <- Sys.getenv("DATABASE_URL", "")
+  db_url <- get_db_url()
   if (db_url == "") {
-    message("[DB] ERROR: DATABASE_URL not set in environment.")
+    global_db_error("DATABASE_URL is empty in environment.")
     return(data.frame())
   }
   
@@ -46,9 +54,12 @@ query_table <- function(table_name) {
     con <- dbConnect(RPostgres::Postgres(), url = db_url)
     res <- dbReadTable(con, table_name)
     dbDisconnect(con)
+    global_db_error("") # Clear error on success
     return(res)
   }, error = function(e) {
-    message(paste("[DB] Query failed for", table_name, ":", e$message))
+    err_msg <- paste("[DB] Query failed for", table_name, ":", e$message)
+    message(err_msg)
+    global_db_error(err_msg)
     return(data.frame())
   })
 }

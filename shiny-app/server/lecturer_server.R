@@ -8,16 +8,24 @@ lecturer_server <- function(input, output, session, session_state) {
   # ========================================================================
   # STATE & REACTIVES
   # ========================================================================
-  db_url <- Sys.getenv("DATABASE_URL", "")
   
   safe_db_get <- function(query) {
-    if (db_url == "") return(data.frame())
+    db_url <- get_db_url()
+    if (db_url == "") {
+      global_db_error("DATABASE_URL MISSING in safe_db_get")
+      return(data.frame())
+    }
     tryCatch({
       con <- dbConnect(RPostgres::Postgres(), url = db_url)
       res <- dbGetQuery(con, query)
       dbDisconnect(con)
+      global_db_error("") # Success
       return(res)
-    }, error = function(e) { message(e); data.frame() })
+    }, error = function(e) { 
+      err_msg <- paste("[DB] Query failed:", e$message)
+      global_db_error(err_msg)
+      return(data.frame()) 
+    })
   }
 
   # Navigation State
@@ -295,17 +303,19 @@ lecturer_server <- function(input, output, session, session_state) {
   # DEBUG INFO
   # ========================================================================
   output$lecturer_debug_out <- renderText({
-    db_status <- if(db_url != "") "DATABASE_URL Present" else "DATABASE_URL MISSING"
-    courses_count <- if(!is.null(lecturer_courses_data())) nrow(lecturer_courses_data()) else "NULL"
-
+    url <- get_db_url()
+    db_status <- if(!is.null(url) && nchar(url) > 0) "DATABASE_URL Present" else "DATABASE_URL MISSING"
+    err <- global_db_error()
+    
     paste0(
-      "--- Lecturer Debug ---\n",
-      "User ID: ", session_state$user_id, "\n",
-      "Role: ", session_state$role, "\n",
-      "DB Status: ", db_status, "\n",
-      "Classes Found: ", courses_count, "\n",
-      "Lecture ID: ", current_lecture_id(), "\n",
-      "Session Status: ", current_session_status()
+      "--- System Diagnostic (v3.7.0) ---\n",
+      "Login User: ", if(!is.null(session_state$user_id)) session_state$user_id else "NONE", "\n",
+      "Login Role: ", if(!is.null(session_state$role)) session_state$role else "NONE", "\n",
+      "Env Status: ", db_status, "\n",
+      "Last DB Error: ", if(nchar(err) > 0) err else "None", "\n",
+      "Target API: ", FASTAPI_BASE, "\n",
+      "Active Lec: ", current_lecture_id(), "\n",
+      "State: ", current_session_status()
     )
   })
 }
