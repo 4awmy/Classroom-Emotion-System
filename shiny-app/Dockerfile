@@ -25,4 +25,6 @@ RUN chown -R shiny:shiny /srv/shiny-server/
 
 EXPOSE 3838
 
-CMD ["/usr/bin/shiny-server"]
+# CAPTURE ENV VARS FOR R
+# This script runs at startup and saves all env vars to .Renviron
+CMD ["/bin/bash", "-c", "env | grep -E 'DATABASE_URL|API_URL|JWT_SECRET|GEMINI_API_KEY' >> /srv/shiny-server/.Renviron && chown shiny:shiny /srv/shiny-server/.Renviron && exec /usr/bin/shiny-server"]
