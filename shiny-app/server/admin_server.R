@@ -15,16 +15,24 @@ admin_server <- function(input, output, session, session_state) {
   # ========================================================================
   # DATA FETCHERS (DB Direct)
   # ========================================================================
-  db_url <- Sys.getenv("DATABASE_URL", "")
   
   safe_db_get <- function(query) {
-    if (db_url == "") return(data.frame())
+    db_url <- get_db_url()
+    if (db_url == "") {
+      global_db_error("DATABASE_URL MISSING in Admin Portal")
+      return(data.frame())
+    }
     tryCatch({
-      con <- dbConnect(RPostgres::Postgres(), url = db_url)
+      con <- dbConnect(RPostgres::Postgres(), dbname = db_url)
       res <- dbGetQuery(con, query)
       dbDisconnect(con)
+      global_db_error("") # Clear error
       return(res)
-    }, error = function(e) { message(e); data.frame() })
+    }, error = function(e) { 
+      err_msg <- paste("[DB] Admin Query failed:", e$message)
+      global_db_error(err_msg)
+      return(data.frame()) 
+    })
   }
 
   # ========================================================================
