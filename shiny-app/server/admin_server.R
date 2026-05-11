@@ -412,6 +412,93 @@ admin_server <- function(input, output, session, session_state) {
             cex.names = 0.9)
   })
 
+  # ── EMOTION ANALYSIS ─────────────────────────────────────────────────────
+  output$admin_emotion_pie <- plotly::renderPlotly({
+    df <- safe_db_get("
+      SELECT emotion, COUNT(*) AS cnt
+      FROM emotion_log
+      GROUP BY emotion
+      ORDER BY cnt DESC
+    ")
+    if (nrow(df) == 0) {
+      return(plotly::plot_ly() |>
+        plotly::layout(title = "No emotion data yet"))
+    }
+    colors <- c(
+      "Focused" = "#1B5E20", "Engaged" = "#4CAF50",
+      "Confused" = "#FFC107", "Frustrated" = "#FF9800",
+      "Anxious" = "#9C27B0", "Disengaged" = "#F44336"
+    )
+    plotly::plot_ly(
+      df, labels = ~emotion, values = ~cnt, type = "pie",
+      marker = list(colors = unname(colors[df$emotion]))
+    ) |>
+      plotly::layout(
+        title  = paste("Total:", sum(df$cnt), "readings"),
+        legend = list(orientation = "v")
+      )
+  })
+
+  output$admin_emotion_trend <- plotly::renderPlotly({
+    df <- safe_db_get("
+      SELECT DATE_TRUNC('hour', timestamp) AS hour,
+             AVG(engagement_score) AS avg_score,
+             COUNT(*) AS n
+      FROM emotion_log
+      GROUP BY 1
+      ORDER BY 1
+    ")
+    if (nrow(df) == 0) {
+      return(plotly::plot_ly() |>
+        plotly::layout(title = "No data yet"))
+    }
+    plotly::plot_ly(df, x = ~hour, y = ~avg_score,
+                    type = "scatter", mode = "lines+markers",
+                    line = list(color = "#002147"),
+                    marker = list(size = 5, color = "#C9A84C")) |>
+      plotly::layout(
+        title  = "Hourly Average Engagement Score",
+        xaxis  = list(title = "Time"),
+        yaxis  = list(title = "Avg Score", range = c(0, 1))
+      )
+  })
+
+  output$admin_emotion_by_lecture <- DT::renderDataTable({
+    df <- safe_db_get("
+      SELECT
+        el.lecture_id,
+        l.title AS lecture_title,
+        COUNT(*) AS total_readings,
+        ROUND(AVG(el.engagement_score)::numeric, 3) AS avg_engagement,
+        SUM(CASE WHEN el.emotion = 'Focused'     THEN 1 ELSE 0 END) AS focused,
+        SUM(CASE WHEN el.emotion = 'Engaged'     THEN 1 ELSE 0 END) AS engaged,
+        SUM(CASE WHEN el.emotion = 'Confused'    THEN 1 ELSE 0 END) AS confused,
+        SUM(CASE WHEN el.emotion = 'Frustrated'  THEN 1 ELSE 0 END) AS frustrated,
+        SUM(CASE WHEN el.emotion = 'Anxious'     THEN 1 ELSE 0 END) AS anxious,
+        SUM(CASE WHEN el.emotion = 'Disengaged'  THEN 1 ELSE 0 END) AS disengaged
+      FROM emotion_log el
+      LEFT JOIN lectures l ON el.lecture_id = l.lecture_id
+      GROUP BY el.lecture_id, l.title
+      ORDER BY total_readings DESC
+    ")
+    if (nrow(df) == 0) {
+      return(DT::datatable(data.frame(Message = "No emotion data yet"),
+                           rownames = FALSE))
+    }
+    DT::datatable(
+      df,
+      options = list(pageLength = 15, scrollX = TRUE),
+      rownames = FALSE
+    ) |>
+      DT::formatStyle(
+        "avg_engagement",
+        background = DT::styleColorBar(c(0, 1), "#4CAF50"),
+        backgroundSize = "100% 90%",
+        backgroundRepeat = "no-repeat",
+        backgroundPosition = "center"
+      )
+  })
+
   output$admin_incidents_table <- DT::renderDataTable({
     df <- safe_db_get("
       SELECT i.timestamp, s.name AS student, i.flag_type, i.severity, i.exam_id

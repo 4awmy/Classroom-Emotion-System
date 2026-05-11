@@ -365,8 +365,26 @@ admin_ui <- function() {
         # ── EMOTION ANALYSIS ──────────────────────────────────────────────────
         shinydashboard::tabItem(
           tabName = "admin_emotions",
-          h2("System-wide Emotion Mix"),
-          plotOutput("admin_emotion_dist")
+          h2("Emotion Analysis"),
+          fluidRow(
+            shinydashboard::box(
+              title = "Overall Emotion Distribution", width = 6,
+              status = "primary", solidHeader = TRUE,
+              plotly::plotlyOutput("admin_emotion_pie", height = "320px")
+            ),
+            shinydashboard::box(
+              title = "Engagement Score Timeline", width = 6,
+              status = "info", solidHeader = TRUE,
+              plotly::plotlyOutput("admin_emotion_trend", height = "320px")
+            )
+          ),
+          fluidRow(
+            shinydashboard::box(
+              title = "Emotion Counts by Lecture", width = 12,
+              status = "success", solidHeader = TRUE,
+              DT::dataTableOutput("admin_emotion_by_lecture")
+            )
+          )
         ),
 
         # ── INCIDENT AUDIT ────────────────────────────────────────────────────
