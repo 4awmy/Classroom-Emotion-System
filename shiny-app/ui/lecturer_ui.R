@@ -251,6 +251,29 @@ lecturer_ui <- function() {
           fluidRow(
             column(6, shinydashboard::box(title = "Attendance Summary", width = 12, status = "success", solidHeader = TRUE, DT::dataTableOutput("lec_report_attendance_table"))),
             column(6, shinydashboard::box(title = "Student Performance Clusters", width = 12, status = "warning", solidHeader = TRUE, plotly::plotlyOutput("lec_report_student_clusters")))
+          ),
+
+          tags$hr(),
+          h4("Cross-Session Analytics (All Sessions for Selected Class)"),
+
+          fluidRow(
+            shinydashboard::box(
+              title = "Engagement Trend Across Sessions", width = 12,
+              status = "primary", solidHeader = TRUE,
+              plotly::plotlyOutput("lec_report_cross_session_trend", height = "280px")
+            )
+          ),
+          fluidRow(
+            column(6, shinydashboard::box(
+              title = "Emotion Variation Across Sessions", width = 12,
+              status = "warning", solidHeader = TRUE,
+              plotly::plotlyOutput("lec_report_emotion_variation_sessions", height = "300px")
+            )),
+            column(6, shinydashboard::box(
+              title = "Per-Student Summary (All Sessions)", width = 12,
+              status = "success", solidHeader = TRUE,
+              DT::dataTableOutput("lec_report_student_summary")
+            ))
           )
         ),
 

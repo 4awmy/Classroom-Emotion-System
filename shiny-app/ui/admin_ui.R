@@ -359,7 +359,25 @@ admin_ui <- function() {
         shinydashboard::tabItem(
           tabName = "admin_engagement",
           h2("Global Engagement Trends"),
-          plotly::plotlyOutput("admin_confidence_trend")
+          fluidRow(
+            shinydashboard::box(
+              title = "Engagement Score Over Time", width = 12,
+              status = "primary", solidHeader = TRUE,
+              plotly::plotlyOutput("admin_confidence_trend", height = "280px")
+            )
+          ),
+          fluidRow(
+            shinydashboard::box(
+              title = "Avg Engagement Score per Lecture", width = 6,
+              status = "info", solidHeader = TRUE,
+              plotly::plotlyOutput("admin_engagement_by_lecture", height = "320px")
+            ),
+            shinydashboard::box(
+              title = "Emotion Variation Across Lectures", width = 6,
+              status = "warning", solidHeader = TRUE,
+              plotly::plotlyOutput("admin_emotion_variation", height = "320px")
+            )
+          )
         ),
 
         # ── EMOTION ANALYSIS ──────────────────────────────────────────────────
@@ -383,6 +401,18 @@ admin_ui <- function() {
               title = "Emotion Counts by Lecture", width = 12,
               status = "success", solidHeader = TRUE,
               DT::dataTableOutput("admin_emotion_by_lecture")
+            )
+          ),
+          fluidRow(
+            shinydashboard::box(
+              title = "Lecturer Engagement Clusters (K-Means)", width = 6,
+              status = "danger", solidHeader = TRUE,
+              plotly::plotlyOutput("admin_lecturer_clusters", height = "360px")
+            ),
+            shinydashboard::box(
+              title = "Student–Subject Engagement Clusters (K-Means)", width = 6,
+              status = "warning", solidHeader = TRUE,
+              plotly::plotlyOutput("admin_student_subject_clusters", height = "360px")
             )
           )
         ),

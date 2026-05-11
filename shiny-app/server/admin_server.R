@@ -499,6 +499,183 @@ admin_server <- function(input, output, session, session_state) {
       )
   })
 
+  # ── ENGAGEMENT BY LECTURE ─────────────────────────────────────────────────
+  output$admin_engagement_by_lecture <- plotly::renderPlotly({
+    df <- safe_db_get("
+      SELECT el.lecture_id,
+             COALESCE(l.title, el.lecture_id) AS label,
+             ROUND(AVG(el.engagement_score)::numeric, 3) AS avg_score,
+             COUNT(*) AS n
+      FROM emotion_log el
+      LEFT JOIN lectures l ON el.lecture_id = l.lecture_id
+      GROUP BY el.lecture_id, l.title
+      HAVING COUNT(*) >= 3
+      ORDER BY MIN(el.timestamp)
+    ")
+    if (nrow(df) == 0) {
+      return(plotly::plot_ly() |>
+        plotly::layout(title = "No lecture data yet — run sessions first"))
+    }
+    df$label <- substr(df$label, 1, 20)
+    bar_colors <- ifelse(df$avg_score >= 0.75, "#1B5E20",
+                  ifelse(df$avg_score >= 0.45, "#FFC107", "#F44336"))
+    plotly::plot_ly(df, x = ~label, y = ~avg_score, type = "bar",
+                    marker = list(color = bar_colors),
+                    text = ~paste0("n=", n, "<br>Score=", avg_score),
+                    hoverinfo = "text") |>
+      plotly::layout(
+        title  = "Avg Engagement per Lecture",
+        xaxis  = list(title = "", tickangle = -40),
+        yaxis  = list(title = "Avg Score", range = c(0, 1)),
+        shapes = list(
+          list(type="line", x0=0, x1=1, xref="paper", y0=0.75, y1=0.75,
+               line=list(color="#1B5E20", dash="dot", width=1)),
+          list(type="line", x0=0, x1=1, xref="paper", y0=0.45, y1=0.45,
+               line=list(color="#F44336", dash="dot", width=1))
+        )
+      )
+  })
+
+  # ── EMOTION VARIATION ACROSS LECTURES ────────────────────────────────────
+  output$admin_emotion_variation <- plotly::renderPlotly({
+    df <- safe_db_get("
+      SELECT el.lecture_id,
+             COALESCE(l.title, el.lecture_id) AS label,
+             el.emotion,
+             COUNT(*) AS cnt
+      FROM emotion_log el
+      LEFT JOIN lectures l ON el.lecture_id = l.lecture_id
+      GROUP BY el.lecture_id, l.title, el.emotion
+      ORDER BY MIN(el.timestamp), el.emotion
+    ")
+    if (nrow(df) == 0) {
+      return(plotly::plot_ly() |>
+        plotly::layout(title = "No lecture data yet"))
+    }
+    df$label <- substr(df$label, 1, 18)
+    emo_colors <- c(
+      "Focused"    = "#1B5E20", "Engaged"    = "#4CAF50",
+      "Confused"   = "#FFC107", "Frustrated" = "#FF9800",
+      "Anxious"    = "#9C27B0", "Disengaged" = "#F44336"
+    )
+    emotions <- unique(df$emotion)
+    traces <- lapply(emotions, function(em) {
+      sub_df <- df[df$emotion == em, ]
+      col <- if (!is.null(emo_colors[[em]])) emo_colors[[em]] else "#999"
+      plotly::plot_ly(sub_df, x = ~label, y = ~cnt, type = "bar",
+                      name = em, marker = list(color = col))
+    })
+    do.call(plotly::subplot, c(traces, list(nrows = 1, shareX = TRUE, shareY = FALSE))) |>
+      plotly::layout(barmode = "stack",
+                     title   = "Emotion Mix per Lecture",
+                     xaxis   = list(title = "", tickangle = -40),
+                     yaxis   = list(title = "Count"),
+                     legend  = list(orientation = "h", y = -0.25))
+  })
+
+  # ── LECTURER CLUSTERS (K-MEANS) ───────────────────────────────────────────
+  output$admin_lecturer_clusters <- plotly::renderPlotly({
+    df <- safe_db_get("
+      SELECT l.lecturer_id,
+             lec.name AS lecturer_name,
+             ROUND(AVG(el.engagement_score)::numeric, 3) AS avg_engagement,
+             ROUND(AVG(CASE WHEN el.emotion IN ('Confused','Frustrated') THEN 1.0 ELSE 0.0 END)::numeric, 3) AS confusion_rate,
+             COUNT(DISTINCT el.lecture_id) AS lectures_count,
+             COUNT(*) AS total_readings
+      FROM emotion_log el
+      JOIN lectures l  ON el.lecture_id  = l.lecture_id
+      JOIN lecturers lec ON l.lecturer_id = lec.lecturer_id
+      GROUP BY l.lecturer_id, lec.name
+      HAVING COUNT(*) >= 5
+    ")
+    if (nrow(df) == 0) {
+      return(plotly::plot_ly() |>
+        plotly::layout(title = "Need at least one completed session per lecturer"))
+    }
+    k  <- min(3, nrow(df))
+    km <- tryCatch(
+      kmeans(scale(df[, c("avg_engagement", "confusion_rate")]), centers = k,
+             nstart = 10, iter.max = 50),
+      error = function(e) NULL
+    )
+    if (is.null(km)) {
+      return(plotly::plot_ly() |> plotly::layout(title = "Not enough variance to cluster"))
+    }
+    cluster_labels <- c("High Engagement", "Moderate", "Needs Support")
+    df$cluster <- factor(cluster_labels[km$cluster], levels = cluster_labels[1:k])
+    cluster_colors <- c("High Engagement" = "#1B5E20", "Moderate" = "#FFC107",
+                        "Needs Support"   = "#F44336")
+    plotly::plot_ly(df,
+      x    = ~avg_engagement, y = ~confusion_rate,
+      type = "scatter", mode = "markers+text",
+      color = ~cluster, colors = cluster_colors,
+      text  = ~lecturer_name, textposition = "top center",
+      marker = list(size = 14),
+      hovertext = ~paste0(lecturer_name, "<br>Engagement: ", avg_engagement,
+                          "<br>Confusion: ", confusion_rate,
+                          "<br>Lectures: ", lectures_count)) |>
+      plotly::layout(
+        title  = "Lecturer Clusters",
+        xaxis  = list(title = "Avg Engagement Score", range = c(0, 1)),
+        yaxis  = list(title = "Confusion Rate",       range = c(0, 1)),
+        legend = list(title = list(text = "Cluster"))
+      )
+  })
+
+  # ── STUDENT–SUBJECT CLUSTERS (K-MEANS) ────────────────────────────────────
+  output$admin_student_subject_clusters <- plotly::renderPlotly({
+    df <- safe_db_get("
+      SELECT s.student_id,
+             s.name   AS student_name,
+             co.title AS subject,
+             ROUND(AVG(el.engagement_score)::numeric, 3) AS avg_engagement,
+             ROUND(AVG(CASE WHEN el.emotion IN ('Confused','Frustrated') THEN 1.0 ELSE 0.0 END)::numeric, 3) AS confusion_rate,
+             COUNT(*) AS n
+      FROM emotion_log el
+      JOIN lectures l  ON el.lecture_id  = l.lecture_id
+      JOIN classes  cl ON l.class_id     = cl.class_id
+      JOIN courses  co ON cl.course_id   = co.course_id
+      JOIN students s  ON el.student_id  = s.student_id
+      GROUP BY s.student_id, s.name, co.title
+      HAVING COUNT(*) >= 3
+      ORDER BY avg_engagement DESC
+    ")
+    if (nrow(df) == 0) {
+      return(plotly::plot_ly() |>
+        plotly::layout(title = "Need engagement data for students across subjects"))
+    }
+    k  <- min(3, nrow(df))
+    km <- tryCatch(
+      kmeans(scale(df[, c("avg_engagement", "confusion_rate")]), centers = k,
+             nstart = 10, iter.max = 50),
+      error = function(e) NULL
+    )
+    if (is.null(km)) {
+      return(plotly::plot_ly() |> plotly::layout(title = "Not enough variance to cluster"))
+    }
+    cluster_labels <- c("High Engagement", "Moderate", "Struggling")
+    df$cluster <- factor(cluster_labels[km$cluster], levels = cluster_labels[1:k])
+    cluster_colors <- c("High Engagement" = "#1B5E20", "Moderate" = "#FFC107",
+                        "Struggling"      = "#F44336")
+    plotly::plot_ly(df,
+      x    = ~avg_engagement, y = ~confusion_rate,
+      type = "scatter", mode = "markers",
+      color = ~cluster, colors = cluster_colors,
+      symbol = ~subject,
+      marker = list(size = 10, opacity = 0.75),
+      hovertext = ~paste0(student_name, "<br>Subject: ", subject,
+                          "<br>Engagement: ", avg_engagement,
+                          "<br>Confusion: ", confusion_rate,
+                          "<br>Readings: ", n),
+      hoverinfo = "text") |>
+      plotly::layout(
+        title  = "Student–Subject Clusters",
+        xaxis  = list(title = "Avg Engagement Score", range = c(0, 1)),
+        yaxis  = list(title = "Confusion Rate",       range = c(0, 1)),
+        legend = list(title = list(text = "Cluster"))
+      )
+  })
+
   output$admin_incidents_table <- DT::renderDataTable({
     df <- safe_db_get("
       SELECT i.timestamp, s.name AS student, i.flag_type, i.severity, i.exam_id

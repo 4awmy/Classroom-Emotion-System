@@ -633,6 +633,140 @@ lecturer_server <- function(input, output, session, session_state) {
                      yaxis  = list(title = "Avg Score", range = c(0, 1)))
   })
 
+  # ── CROSS-SESSION: engagement trend across all sessions for selected class ──
+  output$lec_report_cross_session_trend <- plotly::renderPlotly({
+    req(input$rep_class_id)
+    df <- safe_db_get(sprintf(
+      "SELECT l.lecture_id,
+              COALESCE(l.title, l.lecture_id) AS label,
+              ROUND(AVG(el.engagement_score)::numeric, 3) AS avg_score,
+              COUNT(DISTINCT el.student_id) AS students,
+              l.created_at
+       FROM emotion_log el
+       JOIN lectures l ON el.lecture_id = l.lecture_id
+       WHERE l.class_id = '%s'
+       GROUP BY l.lecture_id, l.title, l.created_at
+       HAVING COUNT(*) >= 3
+       ORDER BY l.created_at",
+      input$rep_class_id
+    ))
+    if (nrow(df) == 0) {
+      return(plotly::plot_ly() |>
+        plotly::layout(title = "No cross-session data yet — run and end at least one session"))
+    }
+    df$color <- ifelse(df$avg_score >= 0.75, "#1B5E20",
+                       ifelse(df$avg_score >= 0.45, "#FFC107", "#F44336"))
+    plotly::plot_ly(df,
+      x    = ~label, y = ~avg_score, type = "scatter", mode = "lines+markers",
+      line   = list(color = "#002147", width = 2),
+      marker = list(color = ~color, size = 10),
+      hovertext = ~paste0(label, "<br>Avg Engagement: ", avg_score,
+                          "<br>Students: ", students),
+      hoverinfo = "text") |>
+      plotly::layout(
+        title = "Session Engagement Trend",
+        xaxis = list(title = "Session", tickangle = -30),
+        yaxis = list(title = "Avg Engagement Score", range = c(0, 1)),
+        shapes = list(
+          list(type = "line", x0 = 0, x1 = 1, xref = "paper",
+               y0 = 0.75, y1 = 0.75, line = list(color = "#4CAF50", dash = "dot")),
+          list(type = "line", x0 = 0, x1 = 1, xref = "paper",
+               y0 = 0.45, y1 = 0.45, line = list(color = "#FF9800", dash = "dot"))
+        )
+      )
+  })
+
+  # ── CROSS-SESSION: emotion variation (stacked bar per session) ─────────────
+  output$lec_report_emotion_variation_sessions <- plotly::renderPlotly({
+    req(input$rep_class_id)
+    df <- safe_db_get(sprintf(
+      "SELECT COALESCE(l.title, el.lecture_id) AS session_label,
+              el.emotion,
+              COUNT(*) AS cnt
+       FROM emotion_log el
+       JOIN lectures l ON el.lecture_id = l.lecture_id
+       WHERE l.class_id = '%s'
+       GROUP BY l.lecture_id, l.title, el.emotion
+       ORDER BY l.created_at",
+      input$rep_class_id
+    ))
+    if (nrow(df) == 0) {
+      return(plotly::plot_ly() |>
+        plotly::layout(title = "No emotion data across sessions yet"))
+    }
+    emotion_colors <- c(
+      Focused     = "#1B5E20",
+      Engaged     = "#4CAF50",
+      Confused    = "#FFC107",
+      Frustrated  = "#FF9800",
+      Anxious     = "#9C27B0",
+      Disengaged  = "#F44336"
+    )
+    emotions_order <- c("Focused", "Engaged", "Confused", "Frustrated", "Anxious", "Disengaged")
+    traces <- lapply(emotions_order, function(em) {
+      sub_df <- df[df$emotion == em, ]
+      if (nrow(sub_df) == 0) return(NULL)
+      plotly::add_trace(
+        plotly::plot_ly(),
+        x    = sub_df$session_label,
+        y    = sub_df$cnt,
+        type = "bar",
+        name = em,
+        marker = list(color = emotion_colors[[em]])
+      )
+    })
+    p <- plotly::plot_ly()
+    for (em in emotions_order) {
+      sub_df <- df[df$emotion == em, ]
+      if (nrow(sub_df) == 0) next
+      p <- plotly::add_trace(p,
+        x      = sub_df$session_label, y = sub_df$cnt,
+        type   = "bar", name = em,
+        marker = list(color = emotion_colors[[em]])
+      )
+    }
+    p |> plotly::layout(
+      barmode = "stack",
+      title   = "Emotion Mix per Session",
+      xaxis   = list(title = "Session", tickangle = -30),
+      yaxis   = list(title = "Count"),
+      legend  = list(traceorder = "normal")
+    )
+  })
+
+  # ── CROSS-SESSION: per-student summary table across all sessions ────────────
+  output$lec_report_student_summary <- DT::renderDataTable({
+    req(input$rep_class_id)
+    df <- safe_db_get(sprintf(
+      "SELECT s.name                                                        AS Student,
+              COUNT(DISTINCT el.lecture_id)                                AS Sessions,
+              ROUND(AVG(el.engagement_score)::numeric, 3)                  AS Avg_Engagement,
+              MODE() WITHIN GROUP (ORDER BY el.emotion)                    AS Top_Emotion,
+              ROUND(AVG(CASE WHEN el.emotion IN ('Confused','Frustrated')
+                             THEN 1.0 ELSE 0.0 END)::numeric, 3)           AS Confusion_Rate,
+              ROUND(AVG(CASE WHEN el.emotion = 'Disengaged'
+                             THEN 1.0 ELSE 0.0 END)::numeric, 3)           AS Disengaged_Rate
+       FROM emotion_log el
+       JOIN lectures l  ON el.lecture_id  = l.lecture_id
+       JOIN students s  ON el.student_id  = s.student_id
+       WHERE l.class_id = '%s'
+       GROUP BY s.student_id, s.name
+       ORDER BY Avg_Engagement DESC",
+      input$rep_class_id
+    ))
+    if (nrow(df) == 0) return(data.frame(Message = "No cross-session data yet."))
+    DT::datatable(df,
+      options  = list(pageLength = 15, scrollX = TRUE, order = list(list(2, "desc"))),
+      rownames = FALSE
+    ) |>
+      DT::formatStyle("Avg_Engagement",
+        background = DT::styleInterval(c(0.45, 0.75),
+                                        c("#FFCDD2", "#FFF9C4", "#C8E6C9"))) |>
+      DT::formatStyle("Confusion_Rate",
+        background = DT::styleInterval(c(0.3, 0.5),
+                                        c("#C8E6C9", "#FFF9C4", "#FFCDD2")))
+  })
+
   # ════════════════════════════════════════════════════════════════════════════
   # MATERIALS TAB — selectors
   # ════════════════════════════════════════════════════════════════════════════
