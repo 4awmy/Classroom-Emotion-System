@@ -8,14 +8,14 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install all required R packages (binary builds via Posit Package Manager — much faster)
+# Install all required R packages
 RUN R -e "install.packages(c( \
     'shiny', 'shinydashboard', 'shinyalert', 'shinyjs', 'shinyWidgets', \
     'DT', 'plotly', 'ggplot2', 'dplyr', 'lubridate', \
     'httr2', 'curl', 'base64enc', 'openxlsx', 'rmarkdown', \
     'bslib', 'config', 'DBI', 'RPostgres', \
     'promises', 'future' \
-  ), repos='https://packagemanager.posit.co/cran/__linux__/jammy/latest')"
+  ), repos='https://cloud.r-project.org/')"
 
 # Copy app code
 COPY . /srv/shiny-server/
