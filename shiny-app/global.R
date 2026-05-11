@@ -40,15 +40,37 @@ global_db_error <- shiny::reactiveVal("")
 # --- Database Connection Management ---
 get_db_url <- function() {
   url <- Sys.getenv("DATABASE_URL", "")
-  
-  # Diagnostic: Check if .Renviron exists
-  if (file.exists("/srv/shiny-server/.Renviron")) {
-     message("[DEBUG] .Renviron exists at /srv/shiny-server/.Renviron")
-  }
-
   # Clean the URL (remove any accidental whitespace or newlines)
   url <- gsub("\\s+", "", url)
   return(url)
+}
+
+# NUCLEAR OPTION: Manual URL Parser for RPostgres stability
+parse_postgres_url <- function(url_str) {
+  # Format: postgresql://user:pass@host:port/dbname?sslmode=require
+  tryCatch({
+    # Strip prefix
+    clean_url <- sub("^postgresql?://", "", url_str)
+    # Split auth and host
+    parts <- strsplit(clean_url, "@")[[1]]
+    auth <- strsplit(parts[1], ":")[[1]]
+    # Split host and db
+    host_db <- strsplit(parts[2], "/")[[1]]
+    host_port <- strsplit(host_db[1], ":")[[1]]
+    # Extract db and params
+    db_params <- strsplit(host_db[2], "\\?")[[1]]
+    
+    return(list(
+      user = auth[1],
+      password = auth[2],
+      host = host_port[1],
+      port = as.integer(host_port[2]),
+      dbname = db_params[1],
+      sslmode = "require"
+    ))
+  }, error = function(e) {
+    return(NULL)
+  })
 }
 
 query_table <- function(table_name) {
@@ -58,8 +80,22 @@ query_table <- function(table_name) {
     return(data.frame())
   }
   
+  params <- parse_postgres_url(db_url)
+  
   tryCatch({
-    con <- dbConnect(RPostgres::Postgres(), dbname = db_url)
+    if (is.null(params)) {
+      # Fallback to simple string if parsing failed
+      con <- dbConnect(RPostgres::Postgres(), dbname = db_url)
+    } else {
+      # Use parsed parameters (Reliable)
+      con <- dbConnect(RPostgres::Postgres(), 
+                       host = params$host,
+                       port = params$port,
+                       user = params$user,
+                       password = params$password,
+                       dbname = params$dbname,
+                       sslmode = "require")
+    }
     res <- dbReadTable(con, table_name)
     dbDisconnect(con)
     global_db_error("") # Clear error on success
