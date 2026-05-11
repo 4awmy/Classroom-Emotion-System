@@ -320,17 +320,20 @@ lecturer_server <- function(input, output, session, session_state) {
     db_status <- if(!is.null(url) && nchar(url) > 0) "DATABASE_URL Present" else "DATABASE_URL MISSING"
     err <- global_db_error()
     
+    # Filter out sensitive or irrelevant keys
+    all_keys <- names(Sys.getenv())
+    clean_keys <- all_keys[!grepl("SUPABASE|PASSWORD|SECRET|KEY|TOKEN", all_keys, ignore.case = TRUE)]
+    
     paste0(
-      "--- System Diagnostic (v3.9.1) ---\n",
-      "Build Time: ", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n",
+      "--- System Diagnostic (v3.9.9) ---\n",
       "Login User: ", if(!is.null(session_state$user_id)) session_state$user_id else "NONE", "\n",
       "Login Role: ", if(!is.null(session_state$role)) session_state$role else "NONE", "\n",
-      "Env Keys: ", paste(names(Sys.getenv()), collapse=", "), "\n",
       "Env Status: ", db_status, "\n",
       "Last DB Error: ", if(nchar(err) > 0) err else "None", "\n",
-      "Target API: ", FASTAPI_BASE, "\n",
+      "Classes Found: ", if(!is.null(lecturer_courses_data())) nrow(lecturer_courses_data()) else "0", "\n",
       "Active Lec: ", current_lecture_id(), "\n",
-      "State: ", current_session_status()
+      "State: ", current_session_status(), "\n",
+      "Env Keys (Public): ", paste(clean_keys, collapse=", ")
     )
   })
 }
