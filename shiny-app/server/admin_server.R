@@ -172,4 +172,11 @@ admin_server <- function(input, output, session, session_state) {
     df <- safe_db_get("SELECT * FROM incidents ORDER BY timestamp DESC")
     DT::datatable(df)
   })
+
+  # ========================================================================
+  # BRANDING
+  # ========================================================================
+  output$dashboard_logo <- renderUI({
+    tags$img(src = "logo.png", style = "height: 35px; margin-right: 10px; margin-top: -5px;")
+  })
 }

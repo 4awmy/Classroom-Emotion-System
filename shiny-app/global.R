@@ -29,9 +29,10 @@ library(RPostgres)
 # Configuration
 # ============================================================================
 
-# We use the Public URL for maximum reliability
-# DigitalOcean's internal networking is bypassable via the public ingress
-FASTAPI_BASE <- "https://classroomx-lkbxf.ondigitalocean.app/api"
+# Use internal service discovery if available (API_URL set by app.yaml)
+FASTAPI_BASE <- Sys.getenv("API_URL", "https://classroomx-lkbxf.ondigitalocean.app")
+# Ensure it includes /api
+if (!grepl("/api$", FASTAPI_BASE)) FASTAPI_BASE <- paste0(FASTAPI_BASE, "/api")
 
 # --- Database Query Helper ---
 query_table <- function(table_name) {

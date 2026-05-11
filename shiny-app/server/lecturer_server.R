@@ -95,7 +95,6 @@ lecturer_server <- function(input, output, session, session_state) {
     selected_class_id(row$class)
     
     # Auto-generate Lecture ID for this week/class
-    # We use a placeholder logic: W[CurrentWeek]-[ClassID]
     lec_id <- sprintf("LEC_%s_%s", row$class, format(Sys.Date(), "%Y%W"))
     current_lecture_id(lec_id)
     
@@ -166,9 +165,8 @@ lecturer_server <- function(input, output, session, session_state) {
     tags$div(class = "student-card-grid",
       lapply(seq_len(nrow(data)), function(i) {
         row <- data[i, ]
-        is_present <- !is.na(row$status) && row$status == "PRESENT"
+        is_present <- !is.na(row$status) && (toupper(row$status) == "PRESENT")
         
-        # Snapshot replacement logic
         img_src <- if (!is.na(row$snapshot_url) && nchar(row$snapshot_url) > 0) {
             sprintf("%s/api/attendance/snapshot/%s/%s", Sys.getenv("FASTAPI_BASE_URL", ""), current_lecture_id(), row$student_id)
         } else {
@@ -191,13 +189,11 @@ lecturer_server <- function(input, output, session, session_state) {
     } else if (status == "live") {
       actionButton("stop_session_btn", "END SESSION", class="btn-danger btn-lg btn-block")
     } else {
-      # Buttons moved to summary box
       NULL
     }
   })
 
   # --- ACTION HANDLERS ---
-  
   shiny::observeEvent(input$start_session_btn, {
     req(input$live_class_id)
     body <- list(
@@ -208,9 +204,6 @@ lecturer_server <- function(input, output, session, session_state) {
     )
     api_call("/session/start", method="POST", body=body, auth_token=session_state$token)
     current_session_status("live")
-    
-    # Gemini Integration Check on Session Start
-    api_call(paste0("/gemini/refresher?lecture_id=", current_lecture_id()), auth_token = session_state$token)
   })
 
   shiny::observeEvent(input$stop_session_btn, {
@@ -219,44 +212,100 @@ lecturer_server <- function(input, output, session, session_state) {
   })
 
   shiny::observeEvent(input$hard_reset_session, {
-    shinyalert::shinyconfirm("Hard Reset?", "This will wipe all session data permanently. Are you sure?", type="warning", callbackR = function(val) {
-      if (val) {
-        api_call("/session/reset", method="POST", body=list(lecture_id = current_lecture_id()), auth_token=session_state$token)
-        current_session_status("not_started")
-        session_summary_data(NULL)
-      }
+    api_call("/session/reset", method="POST", body=list(lecture_id = current_lecture_id()), auth_token=session_state$token)
+    current_session_status("not_started")
+    session_summary_data(NULL)
+  })
+
+  # ========================================================================
+  # ANALYTICS & REPORTS (2X2 GRID)
+  # ========================================================================
+  output$lec_report_course_selector <- renderUI({
+    df <- lecturer_courses_data()
+    selectInput("rep_course_id", "Select Course", choices = setNames(df$code, df$course), selected = selected_course_id())
+  })
+
+  output$lec_report_class_selector <- renderUI({
+    req(input$rep_course_id)
+    df <- safe_db_get(sprintf("SELECT class_id FROM classes WHERE course_id = '%s'", input$rep_course_id))
+    selectInput("rep_class_id", "Select Class", choices = df$class_id, selected = selected_class_id())
+  })
+
+  output$lec_report_session_selector <- renderUI({
+    req(input$rep_class_id)
+    df <- safe_db_get(sprintf("SELECT lecture_id, title FROM lectures WHERE class_id = '%s' ORDER BY created_at DESC", input$rep_class_id))
+    selectInput("rep_lecture_id", "Select Session", choices = setNames(df$lecture_id, df$title))
+  })
+
+  output$lec_report_emotion_pie <- plotly::renderPlotly({
+    req(input$rep_lecture_id)
+    df <- safe_db_get(sprintf("SELECT emotion, count(*) as count FROM emotion_log WHERE lecture_id = '%s' GROUP BY emotion", input$rep_lecture_id))
+    if (nrow(df) == 0) return(NULL)
+    plotly::plot_ly(df, labels = ~emotion, values = ~count, type = 'pie')
+  })
+
+  output$lec_report_engagement_line <- plotly::renderPlotly({
+    req(input$rep_lecture_id)
+    df <- safe_db_get(sprintf("SELECT timestamp, engagement_score FROM emotion_log WHERE lecture_id = '%s' ORDER BY timestamp", input$rep_lecture_id))
+    if (nrow(df) == 0) return(NULL)
+    plotly::plot_ly(df, x = ~timestamp, y = ~engagement_score, type = 'scatter', mode = 'lines')
+  })
+
+  output$lec_report_attendance_table <- DT::renderDataTable({
+    req(input$rep_lecture_id)
+    df <- safe_db_get(sprintf("SELECT s.name, al.status, al.timestamp FROM students s JOIN attendance_log al ON s.student_id = al.student_id WHERE al.lecture_id = '%s'", input$rep_lecture_id))
+    DT::datatable(df)
+  })
+
+  output$lec_report_student_clusters <- plotly::renderPlotly({
+    req(input$rep_lecture_id)
+    df <- safe_db_get(sprintf("SELECT student_id, avg(engagement_score) as avg_score FROM emotion_log WHERE lecture_id = '%s' GROUP BY student_id", input$rep_lecture_id))
+    if (nrow(df) == 0) return(NULL)
+    plotly::plot_ly(df, x = ~student_id, y = ~avg_score, type = 'bar')
+  })
+
+  # --- LIVE GAUGE ---
+  output$lecturer_d1_gauge <- plotly::renderPlotly({
+    df <- live_emotions()
+    val <- if (nrow(df) > 0) mean(df$engagement_score, na.rm=TRUE) else 0
+    plotly::plot_ly(type = "indicator", mode = "gauge+number", value = val,
+                   gauge = list(axis = list(range = list(0, 1)), bar = list(color = "#002147")))
+  })
+
+  output$lecturer_live_sentiment_ticker <- renderUI({
+    df <- live_emotions()
+    if (nrow(df) == 0) return(p("No data yet..."))
+    latest <- head(df, 5)
+    lapply(seq_len(nrow(latest)), function(i) {
+      p(tags$span(style="color:#28a745", "[Live] "), 
+        sprintf("Student detected with %s emotion.", latest$emotion[i]))
     })
   })
 
   # ========================================================================
-  # LMS MATERIALS (WEEKLY)
+  # LMS MATERIALS
   # ========================================================================
   output$lecturer_materials_table <- DT::renderDataTable({
-    week <- input$lecturer_material_week
     req(selected_course_id())
-    
-    # Fetch materials for this course and week
-    df <- safe_db_get(sprintf("SELECT title, uploaded_at, drive_link FROM materials WHERE lecture_id LIKE 'LEC_%%'"))
-    # (In a real app, we'd filter by course and week properly in SQL)
-    DT::datatable(df, options = list(pageLength = 10))
-  })
-
-  shiny::observeEvent(input$lecturer_material_upload, {
-    req(input$lecturer_material_file, selected_class_id())
-    
-    # Logic to upload file and trigger Gemini parsing
-    shinyalert::shinyalert("Processing", "Gemini is analyzing your slides...", type="info")
-    # (API call to /upload/material would go here)
+    df <- safe_db_get(sprintf("SELECT title, uploaded_at, drive_link FROM materials WHERE material_id LIKE 'MAT_%s%%'", selected_course_id()))
+    DT::datatable(df)
   })
 
   # ========================================================================
-  # BRANDING & LOGOS
+  # DEBUG INFO
   # ========================================================================
-  # Placeholder for logos (User should place them in www/ folder)
-  # C:\Users\omarh\OneDrive\Desktop\Temp\logos -> shiny-app/www/
-  output$dashboard_logo <- renderUI({
-    tags$img(src = "logo.png", style = "height: 50px; margin: 10px;")
-  })
+  output$lecturer_debug_out <- renderText({
+    db_status <- if(db_url != "") "DATABASE_URL Present" else "DATABASE_URL MISSING"
+    courses_count <- if(!is.null(lecturer_courses_data())) nrow(lecturer_courses_data()) else "NULL"
 
-  # ... other analytics outputs matching the 2x2 grid ...
+    paste0(
+      "--- Lecturer Debug ---\n",
+      "User ID: ", session_state$user_id, "\n",
+      "Role: ", session_state$role, "\n",
+      "DB Status: ", db_status, "\n",
+      "Classes Found: ", courses_count, "\n",
+      "Lecture ID: ", current_lecture_id(), "\n",
+      "Session Status: ", current_session_status()
+    )
+  })
 }

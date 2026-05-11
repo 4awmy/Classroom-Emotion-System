@@ -5,8 +5,8 @@ admin_ui <- function() {
     skin = "blue",
     shinydashboard::dashboardHeader(
       title = tags$span(
-        tags$strong("AAST LMS"),
-        tags$small(" | Admin Portal", style = "font-size:0.8em; margin-right:4px;")
+        uiOutput("dashboard_logo", inline = TRUE),
+        tags$strong("AAST LMS")
       ),
       titleWidth = 280,
       tags$li(

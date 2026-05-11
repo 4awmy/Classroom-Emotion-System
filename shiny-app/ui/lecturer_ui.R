@@ -52,8 +52,8 @@ lecturer_ui <- function() {
     skin = "blue",
     shinydashboard::dashboardHeader(
       title = tags$span(
-        tags$strong("AAST LMS"),
-        tags$small(" | Lecturer Console", style = "font-size:0.8em; margin-right:4px;")
+        uiOutput("dashboard_logo", inline = TRUE),
+        tags$strong("AAST LMS")
       ),
       titleWidth = 280,
       tags$li(
@@ -98,7 +98,12 @@ lecturer_ui <- function() {
           div(
             class = "reference-page-card",
             h2("My Active Courses"),
-            uiOutput("lecturer_course_table")
+            uiOutput("lecturer_course_table"),
+            hr(),
+            # DEBUG PANEL
+            shinydashboard::box(title = "System Debug Info", width = 12, collapsible = TRUE, collapsed = TRUE, status = "danger",
+              verbatimTextOutput("lecturer_debug_out")
+            )
           )
         ),
 
