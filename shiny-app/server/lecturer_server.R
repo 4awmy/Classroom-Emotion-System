@@ -48,14 +48,21 @@ lecturer_server <- function(input, output, session, session_state) {
   })
 
   # ── Poll session status every 3 s ────────────────────────────────────────
+  # IMPORTANT: only write to current_session_status when the value actually changes.
+  # reactiveVal always invalidates dependents on every write (even same value),
+  # so writing "live" every 3s would destroy+recreate action buttons, losing clicks.
   observe({
     lid <- current_lecture_id()
     req(nchar(lid) > 0)
     invalidateLater(3000, session)
     d <- api_call(paste0("/session/status/", lid), auth_token = session_state$token)
     if (!is.null(d) && !is.null(d$status)) {
-      current_session_status(d$status)
-      if (d$status == "ended") session_summary_data(d)
+      new_status <- d$status
+      old_status <- isolate(current_session_status())
+      if (!identical(new_status, old_status)) {
+        current_session_status(new_status)
+        if (new_status == "ended") session_summary_data(d)
+      }
     }
   })
 
@@ -263,6 +270,9 @@ lecturer_server <- function(input, output, session, session_state) {
     }
 
     # ── STATE 3: live — camera is active ────────────────────────────────────
+    # JS (startLiveCam, toggleLiveCamAuto, captureLiveFrame, drawFaceBoxes)
+    # is defined once in the static UI (lecturer_ui.R tags$script) so it
+    # never re-initialises on renderUI refresh.
     tagList(
       div(
         style = "position:relative; width:100%; background:#000; border-radius:8px; overflow:hidden;",
@@ -280,85 +290,7 @@ lecturer_server <- function(input, output, session, session_state) {
                       onclick = "toggleLiveCamAuto()",
                       tagList(icon("circle"), " Auto-Capture (every 5s)"))
       ),
-      uiOutput("live_cam_result"),
-      tags$script(HTML("
-        var _liveCamStream = null;
-        var _liveCamTimer  = null;
-        var _liveCamActive = false;
-
-        function startLiveCam() {
-          if (_liveCamStream) return;
-          navigator.mediaDevices.getUserMedia({ video: { width:640, height:480 } })
-            .then(function(s) {
-              _liveCamStream = s;
-              var v = document.getElementById('liveDashCam');
-              v.srcObject = s;
-            })
-            .catch(function(e) { alert('Camera error: ' + e.message); });
-        }
-
-        function toggleLiveCamAuto() {
-          _liveCamActive = !_liveCamActive;
-          var btn = document.getElementById('liveCamAutoBtn');
-          if (_liveCamActive) {
-            btn.className = 'btn btn-success btn-sm';
-            btn.innerHTML = '<i class=\"fa fa-stop\"></i> Stop Capture';
-            captureLiveFrame();
-            _liveCamTimer = setInterval(captureLiveFrame, 5000);
-          } else {
-            btn.className = 'btn btn-danger btn-sm';
-            btn.innerHTML = '<i class=\"fa fa-circle\"></i> Auto-Capture (every 5s)';
-            clearInterval(_liveCamTimer);
-            var ov = document.getElementById('liveDashOverlay');
-            if (ov) ov.getContext('2d').clearRect(0, 0, ov.width, ov.height);
-          }
-        }
-
-        function captureLiveFrame() {
-          var v = document.getElementById('liveDashCam');
-          if (!v || !v.srcObject || !v.videoWidth) return;
-          var c = document.getElementById('liveDashCanvas');
-          c.width  = v.videoWidth;
-          c.height = v.videoHeight;
-          c.getContext('2d').drawImage(v, 0, 0);
-          Shiny.setInputValue('live_cam_frame',
-            c.toDataURL('image/jpeg', 0.85), { priority:'event' });
-        }
-
-        window.drawFaceBoxes = function(data) {
-          var ov = document.getElementById('liveDashOverlay');
-          if (!ov) return;
-          var fw = data.frame_width  || 640;
-          var fh = data.frame_height || 480;
-          ov.width  = fw;
-          ov.height = fh;
-          var ctx = ov.getContext('2d');
-          ctx.clearRect(0, 0, fw, fh);
-          (data.detected || []).forEach(function(d) {
-            if (!d.bbox) return;
-            var b   = d.bbox;
-            var col = d.enrolled === true  ? '#00e676' :
-                      d.enrolled === false ? '#ff9100' : '#ffff00';
-            ctx.strokeStyle = col;
-            ctx.lineWidth   = 3;
-            ctx.strokeRect(b.x, b.y, b.w, b.h);
-            var lbl = (d.name || 'Unknown') + (d.emotion ? ' [' + d.emotion + ']' : '');
-            ctx.font = 'bold 13px Arial';
-            var tw = ctx.measureText(lbl).width;
-            ctx.fillStyle = 'rgba(0,0,0,0.65)';
-            ctx.fillRect(b.x, b.y - 22, tw + 8, 22);
-            ctx.fillStyle = col;
-            ctx.fillText(lbl, b.x + 4, b.y - 6);
-          });
-        };
-
-        if (!window._faceBoxHandlerOK) {
-          window._faceBoxHandlerOK = true;
-          Shiny.addCustomMessageHandler('drawFaceBoxes', function(data) {
-            window.drawFaceBoxes(data);
-          });
-        }
-      "))
+      uiOutput("live_cam_result")
     )
   })
 
@@ -545,13 +477,31 @@ lecturer_server <- function(input, output, session, session_state) {
 
   # ── AI intervention button ────────────────────────────────────────────────
   observeEvent(input$lecturer_trigger_refresher, {
+    # Determine the best lecture_id to use:
+    # prefer the live session; fall back to any lecture for the selected class.
     lid <- current_lecture_id()
-    if (nchar(lid) == 0 || current_session_status() != "live") {
-      shinyalert::shinyalert("Not Active",
-        "Start a session first before triggering an AI intervention.",
+
+    if (nchar(lid) == 0) {
+      # Try to derive from the live-tab class selector
+      if (!is.null(input$live_class_id) && nchar(input$live_class_id) > 0) {
+        week_num <- if (!is.null(input$live_week_num)) input$live_week_num else 1
+        lid <- build_lecture_id(input$live_class_id, week_num)
+      }
+    }
+
+    if (nchar(lid) == 0) {
+      shinyalert::shinyalert("No Class Selected",
+        "Please select a course and section in the Live Dashboard first.",
         type = "warning")
       return()
     }
+
+    shinyalert::shinyalert(
+      title = "Generating...",
+      text  = "Asking Gemini AI — this may take up to 15 seconds.",
+      type  = "info", showConfirmButton = FALSE, timer = 15000
+    )
+
     result <- tryCatch({
       httr2::request(paste0(FASTAPI_BASE, "/gemini/question")) |>
         httr2::req_url_query(lecture_id = lid) |>
@@ -568,16 +518,16 @@ lecturer_server <- function(input, output, session, session_state) {
                paste0("<small>Source: <em>", result$material_title, "</em></small><br><br>")
              else ""
       shinyalert::shinyalert(
-        title           = "AI Clarifying Question",
-        text            = paste0(mat, "<strong>", result$question, "</strong>"),
-        html            = TRUE,
-        type            = "info",
+        title             = "AI Clarifying Question",
+        text              = paste0(mat, "<strong>", result$question, "</strong>"),
+        html              = TRUE,
+        type              = "info",
         confirmButtonText = "Got it"
       )
     } else {
-      shinyalert::shinyalert("AI Unavailable",
-        "Could not generate question. Ensure materials are uploaded for this course.",
-        type = "warning")
+      detail <- if (!is.null(result$detail)) as.character(result$detail) else
+                "Could not generate question. Ensure materials are uploaded for this course."
+      shinyalert::shinyalert("AI Unavailable", detail, type = "warning")
     }
   })
 
@@ -694,12 +644,20 @@ lecturer_server <- function(input, output, session, session_state) {
   })
 
   output$lec_mat_class_selector <- renderUI({
-    req(input$mat_course_id)
+    # Use selected course or fall back to the first course so the selector
+    # renders immediately without waiting for a user interaction.
+    course_id <- if (!is.null(input$mat_course_id) && nchar(input$mat_course_id) > 0) {
+      input$mat_course_id
+    } else {
+      all_courses <- lecturer_courses_data()
+      if (nrow(all_courses) == 0) return(p("No sections found.", style = "color:#888;"))
+      all_courses$code[1]
+    }
     df <- safe_db_get(sprintf(
       "SELECT class_id FROM classes WHERE course_id = '%s' AND lecturer_id = '%s'",
-      input$mat_course_id, session_state$user_id
+      course_id, session_state$user_id
     ))
-    if (nrow(df) == 0) return(p("No sections found.", style = "color:#888;"))
+    if (nrow(df) == 0) return(p("No sections found for this course.", style = "color:#888;"))
     selectInput("mat_class_id", "Section", choices = df$class_id)
   })
 
@@ -724,10 +682,21 @@ lecturer_server <- function(input, output, session, session_state) {
   })
 
   observeEvent(input$lecturer_material_upload, {
-    req(input$mat_class_id, input$lecturer_material_file)
+    if (is.null(input$mat_class_id) || nchar(input$mat_class_id) == 0) {
+      shinyalert::shinyalert("No Section",
+        "Please select a course and section before uploading.", type = "warning")
+      return()
+    }
+    if (is.null(input$lecturer_material_file)) {
+      shinyalert::shinyalert("No File",
+        "Please choose a PDF file to upload.", type = "warning")
+      return()
+    }
+
     week_num  <- if (!is.null(input$lecturer_material_week)) input$lecturer_material_week else 1
     lec_id    <- build_lecture_id(input$mat_class_id, week_num)
     file_info <- input$lecturer_material_file
+    title_str <- sub("\\.[^.]+$", "", file_info$name)  # strip extension
 
     result <- tryCatch({
       httr2::request(paste0(FASTAPI_BASE, "/upload/material")) |>
@@ -739,21 +708,22 @@ lecturer_server <- function(input, output, session, session_state) {
           lecture_id  = lec_id,
           class_id    = input$mat_class_id,
           lecturer_id = session_state$user_id,
-          title       = tools::file_path_sans_ext(file_info$name),
+          title       = title_str,
           week        = as.character(week_num)
         ) |>
         httr2::req_timeout(60) |>
         httr2::req_error(is_error = \(r) FALSE) |>
         httr2::req_perform() |>
         httr2::resp_body_json()
-    }, error = function(e) NULL)
+    }, error = function(e) list(detail = e$message))
 
-    if (!is.null(result) && is.null(result$detail)) {
+    if (!is.null(result$material_id) || identical(result$status, "uploaded")) {
       shinyalert::shinyalert("Uploaded",
-        sprintf("'%s' uploaded for Week %s.", file_info$name, week_num),
+        sprintf("'%s' saved for Week %s — AI can now use this material.", file_info$name, week_num),
         type = "success")
     } else {
-      msg <- if (!is.null(result$detail)) as.character(result$detail) else "Upload failed."
+      msg <- if (!is.null(result$detail)) as.character(result$detail) else
+               "Upload failed — check the file and try again."
       shinyalert::shinyalert("Upload Error", msg, type = "error")
     }
   })

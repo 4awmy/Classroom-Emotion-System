@@ -91,11 +91,84 @@ lecturer_ui <- function() {
           .live-right { flex: 1; }
         "),
         tags$script(HTML("
-          // Reliable tab navigation for dynamically rendered shinydashboard
+          // Tab navigation for dynamically rendered shinydashboard
           Shiny.addCustomMessageHandler('setTab', function(tab) {
             var el = document.querySelector('[data-value=\"' + tab + '\"]');
             if (el) el.click();
           });
+
+          // Camera state — defined once at page load, never re-initialised by renderUI
+          var _liveCamStream = null;
+          var _liveCamTimer  = null;
+          var _liveCamActive = false;
+
+          function startLiveCam() {
+            if (_liveCamStream) return;
+            navigator.mediaDevices.getUserMedia({ video: { width:640, height:480 } })
+              .then(function(s) {
+                _liveCamStream = s;
+                var v = document.getElementById('liveDashCam');
+                if (v) v.srcObject = s;
+              })
+              .catch(function(e) { alert('Camera error: ' + e.message); });
+          }
+
+          function toggleLiveCamAuto() {
+            _liveCamActive = !_liveCamActive;
+            var btn = document.getElementById('liveCamAutoBtn');
+            if (_liveCamActive) {
+              if (btn) { btn.className = 'btn btn-success btn-sm'; btn.innerHTML = '<i class=\"fa fa-stop\"></i> Stop Capture'; }
+              captureLiveFrame();
+              _liveCamTimer = setInterval(captureLiveFrame, 5000);
+            } else {
+              if (btn) { btn.className = 'btn btn-danger btn-sm'; btn.innerHTML = '<i class=\"fa fa-circle\"></i> Auto-Capture (every 5s)'; }
+              clearInterval(_liveCamTimer);
+              var ov = document.getElementById('liveDashOverlay');
+              if (ov) ov.getContext('2d').clearRect(0, 0, ov.width, ov.height);
+            }
+          }
+
+          function captureLiveFrame() {
+            var v = document.getElementById('liveDashCam');
+            if (!v || !v.srcObject || !v.videoWidth) return;
+            var c = document.getElementById('liveDashCanvas');
+            if (!c) return;
+            c.width  = v.videoWidth;
+            c.height = v.videoHeight;
+            c.getContext('2d').drawImage(v, 0, 0);
+            Shiny.setInputValue('live_cam_frame', c.toDataURL('image/jpeg', 0.85), { priority:'event' });
+          }
+
+          window.drawFaceBoxes = function(data) {
+            var ov = document.getElementById('liveDashOverlay');
+            if (!ov) return;
+            var fw = data.frame_width  || 640;
+            var fh = data.frame_height || 480;
+            ov.width  = fw; ov.height = fh;
+            var ctx = ov.getContext('2d');
+            ctx.clearRect(0, 0, fw, fh);
+            (data.detected || []).forEach(function(d) {
+              if (!d.bbox) return;
+              var b = d.bbox;
+              var col = d.enrolled === true ? '#00e676' : d.enrolled === false ? '#ff9100' : '#ffff00';
+              ctx.strokeStyle = col; ctx.lineWidth = 3;
+              ctx.strokeRect(b.x, b.y, b.w, b.h);
+              var lbl = (d.name || 'Unknown') + (d.emotion ? ' [' + d.emotion + ']' : '');
+              ctx.font = 'bold 13px Arial';
+              var tw = ctx.measureText(lbl).width;
+              ctx.fillStyle = 'rgba(0,0,0,0.65)';
+              ctx.fillRect(b.x, b.y - 22, tw + 8, 22);
+              ctx.fillStyle = col;
+              ctx.fillText(lbl, b.x + 4, b.y - 6);
+            });
+          };
+
+          if (!window._faceBoxHandlerOK) {
+            window._faceBoxHandlerOK = true;
+            Shiny.addCustomMessageHandler('drawFaceBoxes', function(data) {
+              window.drawFaceBoxes(data);
+            });
+          }
         "))
       ),
       shinydashboard::tabItems(
