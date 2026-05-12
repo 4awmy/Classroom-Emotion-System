@@ -128,7 +128,7 @@ a:hover { color: var(--gold); }
 .skin-blue .sidebar-menu > li > a {
     border-radius: 8px !important;
     min-height: 44px;
-    color: rgba(255,255,255,0.75) !important;
+    color: #ffffff !important;
     background: transparent !important;
     border-left: none !important;
     padding: 11px 16px 11px 16px !important;

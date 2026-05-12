@@ -30,10 +30,8 @@ login_ui_static <- shiny::fluidPage(
 
       body {
         background:
-          radial-gradient(ellipse at 15% 85%, rgba(201,168,76,0.13) 0%, transparent 45%),
-          radial-gradient(ellipse at 85% 15%, rgba(13,47,106,0.90) 0%, transparent 55%),
-          radial-gradient(ellipse at 50% 50%, rgba(10,36,84,0.60) 0%, transparent 70%),
-          linear-gradient(145deg, #04122c 0%, #06193c 40%, #081f4a 100%);
+          linear-gradient(rgba(4,18,44,0.62), rgba(4,18,44,0.62)),
+          url('campus.jpg') center / cover no-repeat fixed;
         min-height: 100vh;
         display: flex;
         align-items: center;
