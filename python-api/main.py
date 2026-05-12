@@ -211,5 +211,12 @@ if os.path.isdir(_mobile_dir):
         app.mount("/assets", StaticFiles(directory=_assets_dir), name="mobile-assets")
     logger.info("[MOBILE] Expo web app mounted at /mobile, /_expo, /assets")
 
+@app.get("/api/debug/mobile-files")
+def debug_mobile_files():
+    """Temporary: list files in static/mobile to debug deployment."""
+    import glob
+    files = glob.glob(f"{_mobile_dir}/**", recursive=True)[:20]
+    return {"dir": _mobile_dir, "exists": os.path.isdir(_mobile_dir), "files": files}
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)
