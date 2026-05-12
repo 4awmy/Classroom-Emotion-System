@@ -6,9 +6,13 @@ admin_ui <- function() {
 
     # ── HEADER ────────────────────────────────────────────────────────────────
     shinydashboard::dashboardHeader(
-      title = tags$span(
-        uiOutput("dashboard_logo", inline = TRUE),
-        tags$strong("AAST LMS")
+      title = tags$a(
+        href = "#",
+        tags$img(
+          src    = "aast-logo-wide.png",
+          height = "38px",
+          style  = "margin-top: -2px; filter: brightness(0) invert(1);"
+        )
       ),
       titleWidth = 280,
       tags$li(
@@ -16,7 +20,7 @@ admin_ui <- function() {
         actionLink(
           "logout_btn",
           label = tagList(icon("sign-out-alt"), " Logout"),
-          style = "color: #C9A84C; padding: 15px 20px; font-weight: 600;"
+          style = "color: #C9A84C; padding: 15px 20px; font-weight: 500;"
         )
       )
     ),

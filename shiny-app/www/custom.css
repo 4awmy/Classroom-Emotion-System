@@ -1,696 +1,297 @@
-/* AAST Navy and Gold palette */
+/* =============================================================================
+   AAST LMS — Official Dark Navy Theme
+   Palette: Navy #06193c / #081a3a | Gold #C9A84C | White #ffffff
+   Font: Roboto (Google Fonts)
+   ============================================================================= */
+
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Roboto+Condensed:wght@700&display=swap");
+
+/* ── CSS Variables ─────────────────────────────────────────────────────────── */
 :root {
-    --aast-navy: #002147;
-    --aast-gold: #C9A84C;
-    --aast-gold-light: #FFF3CD;
-    --aast-white: #FFFFFF;
-    --aast-gray: #F5F5F5;
-}
-
-/* Global Styles */
-body {
-    background-color: var(--aast-gray);
-}
-
-.navbar {
-    background-color: var(--aast-navy) !important;
-}
-
-.navbar-brand, .nav-link {
-    color: var(--aast-white) !important;
-}
-
-.nav-link.active {
-    border-bottom: 3px solid var(--aast-gold);
-}
-
-/* Attendance Grid & Cards */
-.attendance-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 20px;
-    padding: 20px 0;
-}
-
-.student-card {
-    background: var(--aast-white);
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    text-align: center;
-    border: 1px solid #e0e0e0;
-    border-top: 6px solid var(--aast-navy);
-    transition: all 0.3s ease;
-    position: relative;
-}
-
-.student-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-}
-
-.student-card.present {
-    border-top-color: #28a745;
-}
-
-.student-card.absent {
-    border-top-color: #dc3545;
-}
-
-.student-photo {
-    width: 110px;
-    height: 110px;
-    object-fit: cover;
-    border-radius: 50%;
-    margin-bottom: 15px;
-    border: 3px solid var(--aast-gold);
-}
-
-.student-id {
-    font-size: 0.85em;
-    color: #777;
-    margin-bottom: 4px;
-}
-
-.student-name {
-    font-weight: 700;
-    font-size: 1.15em;
-    margin-bottom: 12px;
-    color: var(--aast-navy);
-}
-
-.card-actions {
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px solid #eee;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.reason-input {
-    font-size: 0.85em;
-    width: 100%;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-    padding: 4px 8px;
-}
-
-/* Confidence Rate formatting */
-.confidence-rate-label {
-    font-size: 0.8em;
-    color: #666;
-    margin-top: 5px;
-}
-
-.confidence-high { color: #28a745; font-weight: bold; }
-.confidence-med { color: #ffc107; font-weight: bold; }
-.confidence-low { color: #dc3545; font-weight: bold; }
-
-/* =========================================================
-   shinydashboard AAST Theme Overrides
-   ========================================================= */
-
-/* Sidebar & header — AAST navy */
-.skin-blue .main-header .logo,
-.skin-blue .main-header .logo:hover {
-    background-color: #002147;
-    color: #C9A84C;
-    font-family: 'Cairo', 'Roboto', sans-serif;
-    font-weight: 700;
-}
-
-.skin-blue .main-header .navbar {
-    background-color: #002147;
-}
-
-.skin-blue .main-header .navbar .nav > li > a {
-    color: #C9A84C;
-}
-
-.skin-blue .main-sidebar,
-.skin-blue .left-side {
-    background-color: #002147;
-}
-
-/* Sidebar menu items */
-.skin-blue .sidebar-menu > li > a {
-    color: #cdd3d9;
-    font-family: 'Cairo', 'Roboto', sans-serif;
-    border-left: 3px solid transparent;
-    transition: all 0.2s;
-}
-
-.skin-blue .sidebar-menu > li > a:hover,
-.skin-blue .sidebar-menu > li.active > a {
-    color: #C9A84C;
-    border-left-color: #C9A84C;
-    background-color: rgba(255,255,255,0.07);
-}
-
-.skin-blue .sidebar-menu > li > a .fa {
-    color: #C9A84C;
-}
-
-/* Dashboard boxes */
-.box.box-primary {
-    border-top-color: #002147;
-}
-
-.box-header.with-border {
-    border-bottom-color: #e0e0e0;
-}
-
-/* Body background */
-.content-wrapper,
-.right-side {
-    background-color: #f4f6f9;
-}
-
-/* Content padding */
-.content {
-    padding: 20px;
-}
-
-/* Arabic / bilingual font support */
-body, .sidebar-menu, h1, h2, h3, h4, p, label {
-    font-family: 'Cairo', 'Roboto', sans-serif;
-}
-
-/* RTL text support for Arabic labels */
-.rtl-label {
-    direction: rtl;
-    text-align: right;
-}
-
-/* Responsive collapse for mobile */
-@media (max-width: 768px) {
-    .login-split {
-        flex-direction: column;
-    }
-    .login-left, .login-right {
-        flex: none;
-        width: 100%;
-        height: auto;
-    }
-    .login-left {
-        padding: 30px 20px;
-        min-height: 200px;
-    }
-}
-
-/* =========================================================
-   Moodle / Moove-inspired theme layer
-   Keeps existing Shiny UI structure and only changes styling.
-   ========================================================= */
-
-body,
-.wrapper,
-.content-wrapper,
-.right-side {
-    background: #f8f9fa !important;
-    color: #1d2125;
-    font-family: Roboto, Arial, Helvetica, sans-serif;
-}
-
-.skin-blue .main-header {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
-}
-
-.skin-blue .main-header .logo,
-.skin-blue .main-header .logo:hover {
-    background: #ffffff !important;
-    color: #1d2125 !important;
-    border-right: 1px solid #dee2e6;
-    font-family: Roboto, Arial, Helvetica, sans-serif;
-    font-weight: 700;
-}
-
-.skin-blue .main-header .navbar {
-    background: #ffffff !important;
-    border-bottom: 1px solid #dee2e6;
-}
-
-.skin-blue .main-header .navbar .sidebar-toggle,
-.skin-blue .main-header .navbar .nav > li > a,
-.skin-blue .main-header .navbar .nav > li > a:visited {
-    color: #1d2125 !important;
-}
-
-.skin-blue .main-header .navbar .sidebar-toggle:hover,
-.skin-blue .main-header .navbar .nav > li > a:hover {
-    background: #f1f3f5 !important;
-    color: #0f47ad !important;
-}
-
-.skin-blue .main-sidebar,
-.skin-blue .left-side {
-    background: #ffffff !important;
-    border-right: 1px solid #dee2e6;
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
-}
-
-.skin-blue .sidebar-menu {
-    padding-top: 12px;
-}
-
-.skin-blue .sidebar-menu > li > a {
-    color: #343a40 !important;
-    border-left: 4px solid transparent;
-    font-family: Roboto, Arial, Helvetica, sans-serif;
-    padding: 12px 16px 12px 18px;
-}
-
-.skin-blue .sidebar-menu > li > a .fa,
-.skin-blue .sidebar-menu > li > a .glyphicon,
-.skin-blue .sidebar-menu > li > a .ion {
-    color: #6a737b !important;
-    width: 20px;
-}
-
-.skin-blue .sidebar-menu > li:hover > a,
-.skin-blue .sidebar-menu > li.active > a,
-.skin-blue .sidebar-menu > li.menu-open > a {
-    background: #edf4ff !important;
-    color: #0f47ad !important;
-    border-left-color: #0f47ad !important;
-}
-
-.skin-blue .sidebar-menu > li:hover > a .fa,
-.skin-blue .sidebar-menu > li.active > a .fa,
-.skin-blue .sidebar-menu > li.menu-open > a .fa {
-    color: #0f47ad !important;
-}
-
-.content {
-    padding: 24px;
-}
-
-.content-header > h1,
-.tab-pane > h2,
-.content h2 {
-    color: #1d2125;
-    font-size: 1.75rem;
-    font-weight: 700;
-    margin: 0 0 16px;
-}
-
-.content p {
-    color: #5c636a;
-}
-
-.box,
-.well,
-.wellPanel,
-.dataTables_wrapper,
-.nav-tabs-custom,
-.tabBox,
-.tabbable {
-    border-radius: 8px !important;
-}
-
-.box {
-    border-top: 0 !important;
-    border: 1px solid #dee2e6 !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
-}
-
-.box-header.with-border,
-.box-header {
-    border-bottom: 1px solid #dee2e6 !important;
-    background: #ffffff;
-    border-radius: 8px 8px 0 0;
-}
-
-.box.box-solid.box-primary > .box-header,
-.box.box-solid.box-info > .box-header,
-.box.box-solid.box-success > .box-header,
-.box.box-solid.box-warning > .box-header,
-.box.box-solid.box-danger > .box-header {
-    background: #ffffff !important;
-    color: #1d2125 !important;
-    border-bottom: 1px solid #dee2e6 !important;
-}
-
-.box.box-solid.box-primary,
-.box.box-solid.box-info,
-.box.box-solid.box-success,
-.box.box-solid.box-warning,
-.box.box-solid.box-danger {
-    border: 1px solid #dee2e6 !important;
-}
-
-.nav-tabs-custom,
-.tabbable > .nav-tabs {
-    background: #ffffff;
-    border: 1px solid #dee2e6;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-
-.nav-tabs-custom > .nav-tabs > li.active,
-.nav-tabs > li.active {
-    border-top-color: #0f47ad !important;
-}
-
-.nav-tabs-custom > .nav-tabs > li.active > a,
-.nav-tabs > li.active > a {
-    color: #0f47ad !important;
-    font-weight: 600;
-}
-
-.btn-primary,
-.btn-info {
-    background: #0f47ad !important;
-    border-color: #0f47ad !important;
-}
-
-.btn-primary:hover,
-.btn-info:hover {
-    background: #0b347f !important;
-    border-color: #0b347f !important;
-}
-
-.btn-warning {
-    background: #f0ad4e !important;
-    border-color: #eea236 !important;
-    color: #1d2125 !important;
-}
-
-.form-control,
-.selectize-input,
-.input-sm,
-input[type='text'],
-input[type='password'],
-select {
-    border-radius: 4px !important;
-    border-color: #ced4da !important;
-    box-shadow: none !important;
-}
-
-.form-control:focus,
-.selectize-input.focus {
-    border-color: #0f47ad !important;
-    box-shadow: 0 0 0 0.2rem rgba(15, 71, 173, 0.16) !important;
-}
-
-table.dataTable {
-    border-collapse: collapse !important;
-}
-
-table.dataTable thead th {
-    background: #f8f9fa;
-    color: #1d2125;
-    border-bottom: 1px solid #dee2e6 !important;
-}
-
-.dataTables_wrapper {
-    background: #ffffff;
-    border: 1px solid #dee2e6;
-    padding: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-.small-box {
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-
-.main-footer {
-    background: #ffffff;
-    border-top: 1px solid #dee2e6;
-    color: #6a737b;
-}
-
-/* =========================================================
-   AAST Moodle Moove exact-style pass
-   Mirrors the live Moodle theme without changing Shiny layout.
-   ========================================================= */
-
-@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap");
-
-:root {
-    --moodle-primary: #0f47ad;
-    --moodle-primary-hover: #092a67;
-    --moodle-text: #1d2125;
-    --moodle-muted: #6a737b;
-    --moodle-border: #dee2e6;
-    --moodle-bg: #f8f9fa;
-    --moodle-card-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
-}
-
-html,
-body,
-.wrapper {
+    --navy-deep:    #06193c;
+    --navy-mid:     #0a2454;
+    --navy-light:   #0d2f6a;
+    --navy-hover:   rgba(255,255,255,0.07);
+    --gold:         #C9A84C;
+    --gold-bright:  #e0bc6a;
+    --gold-muted:   rgba(201,168,76,0.15);
+    --white:        #ffffff;
+    --off-white:    #f0f4f8;
+    --text-primary: #1a2340;
+    --text-muted:   #6b7c93;
+    --border:       #dde3ed;
+    --card-shadow:  0 4px 20px rgba(6,25,60,0.10);
+    --radius:       10px;
+}
+
+/* ── Base Reset ────────────────────────────────────────────────────────────── */
+html, body, .wrapper {
+    font-family: 'Roboto', Arial, Helvetica, sans-serif !important;
+    font-size: 14px;
+    background: var(--off-white) !important;
+    color: var(--text-primary);
     min-height: 100%;
-    background: var(--moodle-bg) !important;
-    font-family: Roboto, Arial, Helvetica, sans-serif !important;
-    font-size: 15px;
-    color: var(--moodle-text);
 }
 
-a {
-    color: var(--moodle-primary);
-}
+a { color: var(--navy-mid); text-decoration: none; }
+a:hover { color: var(--gold); }
 
-a:hover,
-a:focus {
-    color: var(--moodle-primary-hover);
-}
-
+/* ── HEADER ────────────────────────────────────────────────────────────────── */
 .skin-blue .main-header {
     position: fixed;
     width: 100%;
-    min-height: 60px;
-    background: #fff;
-    border-bottom: 1px solid var(--moodle-border);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .10);
+    z-index: 1000;
 }
 
 .skin-blue .main-header .logo,
 .skin-blue .main-header .logo:hover {
-    height: 60px;
-    line-height: 60px;
-    background: #fff url("aast-lms-logo.png") center center / 170px auto no-repeat !important;
-    border-right: 1px solid var(--moodle-border);
-    color: transparent !important;
-    overflow: hidden;
+    height: 56px;
+    line-height: 56px;
+    background: var(--navy-deep) !important;
+    border-right: 1px solid rgba(201,168,76,0.3) !important;
+    color: var(--gold) !important;
+    font-family: 'Roboto', sans-serif !important;
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: 0.03em;
+    padding: 0 16px;
 }
 
-.skin-blue .main-header .logo * {
-    opacity: 0;
+/* Show the AAST logo wide image in the header logo area */
+.skin-blue .main-header .logo span strong {
+    display: none;
+}
+
+.skin-blue .main-header .logo::after {
+    content: "";
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 190px;
+    height: 44px;
+    background: url("aast-logo-wide.png") center / contain no-repeat;
 }
 
 .skin-blue .main-header .navbar {
-    min-height: 60px;
-    background: #fff !important;
+    min-height: 56px;
+    background: var(--navy-deep) !important;
+    border-bottom: 1px solid rgba(201,168,76,0.2);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.35);
 }
 
 .skin-blue .main-header .navbar .sidebar-toggle {
-    height: 60px;
-    padding: 20px 16px;
-    color: var(--moodle-text) !important;
+    height: 56px;
+    padding: 18px 16px;
+    color: var(--gold) !important;
+    transition: background 0.2s;
 }
 
 .skin-blue .main-header .navbar .sidebar-toggle:hover {
-    background: #f1f3f5 !important;
-    color: var(--moodle-primary) !important;
+    background: rgba(201,168,76,0.12) !important;
 }
 
 .skin-blue .main-header .navbar .nav > li > a {
-    height: 60px;
-    line-height: 30px;
-    color: var(--moodle-text) !important;
-    font-weight: 400;
+    height: 56px;
+    line-height: 26px;
+    color: var(--gold) !important;
+    font-weight: 500;
+    padding: 15px 18px;
+    transition: background 0.2s;
 }
 
-.skin-blue .main-header .navbar .nav > li > a:hover,
-.skin-blue .main-header .navbar .nav > li > a:focus {
-    background: #f1f3f5 !important;
-    color: var(--moodle-primary) !important;
-    text-decoration: none;
+.skin-blue .main-header .navbar .nav > li > a:hover {
+    background: rgba(201,168,76,0.12) !important;
+    color: var(--gold-bright) !important;
 }
 
-.main-sidebar {
+/* ── SIDEBAR ────────────────────────────────────────────────────────────────── */
+.main-sidebar,
+.skin-blue .main-sidebar,
+.skin-blue .left-side {
+    background: var(--navy-deep) !important;
+    border-right: 1px solid rgba(201,168,76,0.15);
     position: fixed;
-    padding-top: 60px !important;
-    background: #fff !important;
-    border-right: 1px solid var(--moodle-border);
-    box-shadow: 2px 0 8px rgba(0, 0, 0, .05);
+    padding-top: 56px !important;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.3);
 }
 
 .skin-blue .sidebar-menu {
-    padding: 12px 0;
+    padding: 16px 0 12px;
 }
 
 .skin-blue .sidebar-menu > li {
-    margin: 0;
+    margin: 2px 8px;
 }
 
 .skin-blue .sidebar-menu > li > a {
+    border-radius: 8px !important;
     min-height: 44px;
-    color: #343a40 !important;
+    color: rgba(255,255,255,0.75) !important;
     background: transparent !important;
-    border-left: 4px solid transparent !important;
-    padding: 12px 16px 12px 18px;
+    border-left: none !important;
+    padding: 11px 16px 11px 16px !important;
     font-weight: 400;
+    font-size: 0.93rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0;
 }
 
-.skin-blue .sidebar-menu > li > a:hover,
+.skin-blue .sidebar-menu > li > a:hover {
+    color: var(--white) !important;
+    background: rgba(201,168,76,0.12) !important;
+}
+
 .skin-blue .sidebar-menu > li.active > a {
-    color: var(--moodle-primary) !important;
-    background: #edf4ff !important;
-    border-left-color: var(--moodle-primary) !important;
+    color: var(--gold) !important;
+    background: rgba(201,168,76,0.15) !important;
+    font-weight: 600;
+    box-shadow: inset 3px 0 0 var(--gold);
 }
 
 .skin-blue .sidebar-menu > li > a i,
 .skin-blue .sidebar-menu > li > a .fa {
-    color: #6a737b !important;
-    margin-right: 8px;
+    color: rgba(201,168,76,0.7) !important;
+    width: 20px;
+    text-align: center;
+    margin-right: 10px;
+    font-size: 0.95rem;
+    flex-shrink: 0;
 }
 
 .skin-blue .sidebar-menu > li.active > a i,
-.skin-blue .sidebar-menu > li.active > a .fa,
-.skin-blue .sidebar-menu > li > a:hover i,
-.skin-blue .sidebar-menu > li > a:hover .fa {
-    color: var(--moodle-primary) !important;
+.skin-blue .sidebar-menu > li.active > a .fa {
+    color: var(--gold) !important;
 }
 
+.skin-blue .sidebar-menu > li > a:hover i,
+.skin-blue .sidebar-menu > li > a:hover .fa {
+    color: var(--gold-bright) !important;
+}
+
+/* Sidebar divider header labels */
+.skin-blue .sidebar-menu > li.header {
+    color: rgba(201,168,76,0.5) !important;
+    background: transparent !important;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 14px 16px 6px;
+}
+
+/* ── CONTENT WRAPPER ────────────────────────────────────────────────────────── */
 .content-wrapper,
 .right-side {
-    padding-top: 60px;
-    background: var(--moodle-bg) !important;
+    background: var(--off-white) !important;
+    padding-top: 56px !important;
+    margin-top: 0 !important;
+}
+
+/* Remove extra blank space (shinydashboard content-header) */
+.content-header {
+    display: none !important;
 }
 
 .content {
-    max-width: 1280px;
-    margin: 0 auto;
     padding: 24px 28px !important;
+    max-width: 1400px;
 }
 
-.content h1,
-.content h2,
-.content h3,
-.tab-pane > h2 {
-    color: var(--moodle-text);
-    font-family: Roboto, Arial, Helvetica, sans-serif !important;
-    font-weight: 700;
-    line-height: 1.2;
-}
-
-.tab-pane > h2,
-.content h2 {
-    font-size: 1.875rem;
-    margin: 0 0 1rem;
-}
-
-.content p,
-.help-block,
-.helpText {
-    color: var(--moodle-muted);
-}
-
+/* ── BOXES / CARDS ──────────────────────────────────────────────────────────── */
 .box,
 .well,
 .nav-tabs-custom,
 .tabbable,
 .dataTables_wrapper {
-    background: #fff !important;
-    border: 1px solid var(--moodle-border) !important;
-    border-radius: .5rem !important;
-    box-shadow: var(--moodle-card-shadow) !important;
-}
-
-.box {
-    margin-bottom: 1.25rem;
+    background: var(--white) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius) !important;
+    box-shadow: var(--card-shadow) !important;
+    margin-bottom: 20px;
     overflow: hidden;
 }
 
 .box-header,
 .box-header.with-border {
-    background: #fff !important;
-    color: var(--moodle-text) !important;
-    border-bottom: 1px solid var(--moodle-border) !important;
-    padding: 12px 16px;
+    background: var(--white) !important;
+    color: var(--text-primary) !important;
+    border-bottom: 1px solid var(--border) !important;
+    padding: 14px 18px;
+    border-radius: var(--radius) var(--radius) 0 0;
 }
 
 .box-title {
-    color: var(--moodle-text) !important;
-    font-size: 1.05rem !important;
+    color: var(--navy-deep) !important;
+    font-size: 1rem !important;
     font-weight: 700;
+    letter-spacing: 0.01em;
 }
 
 .box-body {
-    padding: 16px;
+    padding: 18px;
 }
 
+/* Coloured box headers — keep them white/flat */
 .box.box-solid > .box-header,
 .box.box-solid.box-primary > .box-header,
 .box.box-solid.box-info > .box-header,
 .box.box-solid.box-success > .box-header,
 .box.box-solid.box-warning > .box-header,
 .box.box-solid.box-danger > .box-header {
-    background: #fff !important;
-    color: var(--moodle-text) !important;
+    background: var(--white) !important;
+    color: var(--text-primary) !important;
+    border-bottom: 2px solid var(--border) !important;
 }
 
-.box.box-primary,
-.box.box-info,
-.box.box-success,
-.box.box-warning,
-.box.box-danger {
-    border-top: 1px solid var(--moodle-border) !important;
+/* Status accent lines on box left border */
+.box.box-primary  { border-left: 3px solid var(--navy-mid) !important; }
+.box.box-info     { border-left: 3px solid #17a2b8 !important; }
+.box.box-success  { border-left: 3px solid #28a745 !important; }
+.box.box-warning  { border-left: 3px solid var(--gold) !important; }
+.box.box-danger   { border-left: 3px solid #dc3545 !important; }
+
+/* Collapsible box tool buttons */
+.box-tools .btn { background: transparent !important; border: none; color: var(--text-muted); }
+.box-tools .btn:hover { color: var(--navy-deep); }
+
+/* ── VALUE BOXES (small-box) ─────────────────────────────────────────────────── */
+.small-box {
+    border-radius: var(--radius) !important;
+    box-shadow: var(--card-shadow) !important;
 }
 
-.nav-tabs {
-    border-bottom: 1px solid var(--moodle-border);
+.small-box h3 {
+    font-size: 2.2rem;
+    font-weight: 700;
 }
 
-.nav-tabs > li > a {
-    border-radius: .5rem .5rem 0 0;
-    color: var(--moodle-text);
-    font-weight: 400;
-}
-
-.nav-tabs > li.active > a,
-.nav-tabs > li.active > a:hover,
-.nav-tabs > li.active > a:focus {
-    color: var(--moodle-primary) !important;
-    border-color: var(--moodle-border) var(--moodle-border) #fff !important;
-    border-top: 3px solid var(--moodle-primary) !important;
+.small-box p {
+    font-size: 0.9rem;
     font-weight: 500;
 }
 
-.btn,
-.action-button,
-.download-button {
-    border-radius: .5rem !important;
-    font-weight: 500;
+/* ── HEADINGS ────────────────────────────────────────────────────────────────── */
+.content h1,
+.content h2,
+.content h3,
+.tab-pane > h2 {
+    color: var(--navy-deep);
+    font-family: 'Roboto', sans-serif !important;
+    font-weight: 700;
+    margin: 0 0 18px;
+    line-height: 1.2;
 }
 
-.btn-primary,
-.btn-info,
-.action-button.btn-primary,
-.download-button.btn-primary {
-    background: var(--moodle-primary) !important;
-    border-color: var(--moodle-primary) !important;
-    color: #fff !important;
+.tab-pane > h2,
+.content h2 {
+    font-size: 1.65rem;
 }
 
-.btn-primary:hover,
-.btn-info:hover,
-.action-button.btn-primary:hover,
-.download-button.btn-primary:hover {
-    background: var(--moodle-primary-hover) !important;
-    border-color: var(--moodle-primary-hover) !important;
-}
-
-.btn-default,
-.btn-secondary {
-    background: #e9ecef !important;
-    border-color: #ced4da !important;
-    color: var(--moodle-text) !important;
-}
-
+/* ── FORM CONTROLS ───────────────────────────────────────────────────────────── */
 .form-control,
 .selectize-input,
 .selectize-control.single .selectize-input,
@@ -701,11 +302,12 @@ input[type="email"],
 select,
 textarea {
     min-height: 38px;
-    color: var(--moodle-text);
-    background: #fff;
-    border: 1px solid #ced4da !important;
-    border-radius: .5rem !important;
+    color: var(--text-primary);
+    background: var(--white);
+    border: 1px solid #c8d0dd !important;
+    border-radius: 6px !important;
     box-shadow: none !important;
+    font-size: 0.93rem;
 }
 
 .form-control:focus,
@@ -713,1267 +315,464 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-    border-color: var(--moodle-primary) !important;
-    box-shadow: 0 0 0 .2rem rgba(15, 71, 173, .16) !important;
+    border-color: var(--navy-mid) !important;
+    box-shadow: 0 0 0 3px rgba(10,36,84,0.12) !important;
+    outline: none;
 }
 
 label {
-    color: var(--moodle-text);
+    color: var(--text-primary);
     font-weight: 500;
+    font-size: 0.88rem;
 }
 
+/* ── BUTTONS ─────────────────────────────────────────────────────────────────── */
+.btn,
+.action-button,
+.download-button {
+    border-radius: 6px !important;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.18s ease;
+}
+
+.btn-primary,
+.action-button.btn-primary,
+.download-button.btn-primary {
+    background: var(--navy-deep) !important;
+    border-color: var(--navy-deep) !important;
+    color: var(--white) !important;
+}
+
+.btn-primary:hover {
+    background: var(--navy-mid) !important;
+    border-color: var(--navy-mid) !important;
+    box-shadow: 0 4px 10px rgba(6,25,60,0.25);
+}
+
+.btn-info {
+    background: #1565c0 !important;
+    border-color: #1565c0 !important;
+    color: var(--white) !important;
+}
+
+.btn-success {
+    background: #2e7d32 !important;
+    border-color: #2e7d32 !important;
+    color: var(--white) !important;
+}
+
+.btn-danger {
+    background: #c62828 !important;
+    border-color: #c62828 !important;
+    color: var(--white) !important;
+}
+
+.btn-warning {
+    background: var(--gold) !important;
+    border-color: var(--gold) !important;
+    color: var(--navy-deep) !important;
+    font-weight: 700;
+}
+
+.btn-default, .btn-secondary {
+    background: #e8edf5 !important;
+    border-color: #c8d0dd !important;
+    color: var(--text-primary) !important;
+}
+
+/* ── WELL PANEL ──────────────────────────────────────────────────────────────── */
+.well,
+.wellPanel {
+    background: var(--white) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius) !important;
+    box-shadow: var(--card-shadow) !important;
+    padding: 18px 20px !important;
+}
+
+/* ── DATATABLES ──────────────────────────────────────────────────────────────── */
 .dataTables_wrapper {
-    padding: 1rem;
+    padding: 12px 16px;
 }
 
 table.dataTable {
     width: 100% !important;
-    color: var(--moodle-text);
+    color: var(--text-primary);
+    border-collapse: collapse !important;
+    font-size: 0.9rem;
 }
 
 table.dataTable thead th,
 table.dataTable thead td {
-    background: #f8f9fa !important;
-    color: var(--moodle-text);
-    border-bottom: 1px solid var(--moodle-border) !important;
+    background: var(--navy-deep) !important;
+    color: var(--gold) !important;
+    border-bottom: none !important;
     font-weight: 700;
+    letter-spacing: 0.03em;
+    padding: 11px 14px;
+}
+
+table.dataTable tbody tr {
+    border-bottom: 1px solid #eef0f5;
+    transition: background 0.12s;
 }
 
 table.dataTable tbody tr:hover {
-    background: #f1f3f5 !important;
+    background: #f0f5ff !important;
+}
+
+table.dataTable tbody td {
+    padding: 9px 14px;
+}
+
+.dataTables_filter input {
+    border: 1px solid var(--border) !important;
+    border-radius: 6px !important;
+    padding: 4px 10px;
+}
+
+.dataTables_length select {
+    border: 1px solid var(--border) !important;
+    border-radius: 6px !important;
 }
 
 .pagination > .active > a,
-.pagination > .active > span,
-.pagination > .active > a:hover,
-.pagination > .active > span:hover {
-    background: var(--moodle-primary) !important;
-    border-color: var(--moodle-primary) !important;
+.pagination > .active > span {
+    background: var(--navy-deep) !important;
+    border-color: var(--navy-deep) !important;
+    color: var(--white) !important;
 }
 
-.small-box {
-    border-radius: .5rem !important;
-    box-shadow: var(--moodle-card-shadow) !important;
-}
+/* ── ALERTS ──────────────────────────────────────────────────────────────────── */
+.alert { border-radius: 8px; }
+.alert-info    { background: #e3f0ff; border-color: #b0d0f5; color: #0d3574; }
+.alert-success { background: #e8f5e9; border-color: #a5d6a7; color: #1b5e20; }
+.alert-warning { background: #fffbf0; border-color: #f5dfa5; color: #7c5700; }
+.alert-danger  { background: #fdecea; border-color: #f5a5a5; color: #7c1515; }
 
-.alert {
-    border-radius: .5rem;
-}
-
-@media (max-width: 767px) {
-    .content-wrapper,
-    .right-side {
-        padding-top: 60px;
-    }
-
-    .content {
-        padding: 16px !important;
-    }
-
-    .main-sidebar {
-        padding-top: 60px !important;
-    }
-}
-
-/* =========================================================
-   Lecturer reference layout pass
-   Matches the compact Moodle attendance reference.
-   ========================================================= */
-
-.skin-blue .main-header .navbar {
-    background: #06284d !important;
-    border-bottom: 0 !important;
-    min-height: 48px !important;
-    box-shadow: none !important;
-}
-
-.skin-blue .main-header .navbar .sidebar-toggle {
-    height: 48px !important;
-    padding: 14px 16px !important;
-    color: #0073e6 !important;
-}
-
-.skin-blue .main-header .navbar .sidebar-toggle:hover {
-    background: #092f5c !important;
-    color: #2b8cff !important;
-}
-
-.skin-blue .main-header .navbar .nav > li > a {
-    height: 48px !important;
-    line-height: 18px !important;
-    padding: 15px 16px !important;
-    color: #f6c343 !important;
+/* ── BADGES / LABELS ──────────────────────────────────────────────────────────── */
+.label {
+    border-radius: 20px !important;
     font-size: 12px !important;
-    font-weight: 700 !important;
+    padding: 5px 12px !important;
+    font-weight: 600;
+    letter-spacing: 0.03em;
 }
 
-.skin-blue .main-header .logo,
-.skin-blue .main-header .logo:hover {
-    height: 48px !important;
-    line-height: 48px !important;
-    background: #ffffff !important;
-    border-right: 1px solid #d8dbe0 !important;
-    color: #24282d !important;
-    font-size: 20px !important;
-    text-align: left !important;
-    padding-left: 50px !important;
+.label-danger  { background: #c62828 !important; }
+.label-success { background: #2e7d32 !important; }
+.label-default { background: #546e7a !important; color: #fff !important; }
+.label-info    { background: #1565c0 !important; }
+.label-warning { background: var(--gold) !important; color: var(--navy-deep) !important; }
+
+/* ── TABS ────────────────────────────────────────────────────────────────────── */
+.nav-tabs {
+    border-bottom: 2px solid var(--border);
 }
 
-.skin-blue .main-header .logo * {
-    opacity: 1 !important;
-}
-
-.skin-blue .main-header .logo small {
-    font-weight: 400 !important;
-    color: #24282d !important;
-}
-
-.main-sidebar {
-    padding-top: 48px !important;
-    background: #ffffff !important;
-    border-right: 1px solid #d8dbe0 !important;
-    box-shadow: 4px 0 16px rgba(0, 0, 0, .10) !important;
-}
-
-.content-wrapper,
-.right-side {
-    padding-top: 48px !important;
-    background: #eef1ee !important;
-}
-
-.content {
-    max-width: none !important;
-    padding: 72px 18px 28px 22px !important;
-}
-
-.skin-blue .sidebar-menu {
-    padding: 50px 0 0 !important;
-}
-
-.skin-blue .sidebar-menu > li.header {
-    padding: 0 0 56px !important;
-    color: #24282d !important;
-    background: #ffffff !important;
-    font-size: 13px !important;
-    font-weight: 400 !important;
-    text-transform: none !important;
-}
-
-.skin-blue .sidebar-menu > li > a {
-    min-height: 38px !important;
-    padding: 8px 14px !important;
-    border-left: 0 !important;
-    background: #ffffff !important;
-    color: #064fb3 !important;
-    font-size: 14px !important;
-    font-weight: 400 !important;
-}
-
-.skin-blue .sidebar-menu .treeview-menu {
-    background: #ffffff !important;
-    padding: 0 0 18px 0 !important;
-}
-
-.skin-blue .sidebar-menu .treeview-menu > li > a {
-    padding: 7px 14px 7px 20px !important;
-    color: #064fb3 !important;
-    font-size: 13px !important;
-}
-
-.skin-blue .sidebar-menu > li:hover > a,
-.skin-blue .sidebar-menu > li.active > a,
-.skin-blue .sidebar-menu > li.menu-open > a,
-.skin-blue .sidebar-menu .treeview-menu > li.active > a,
-.skin-blue .sidebar-menu .treeview-menu > li > a:hover {
-    background: #ffffff !important;
-    color: #00336d !important;
-    border-left: 0 !important;
-}
-
-.skin-blue .sidebar-menu > li > a i,
-.skin-blue .sidebar-menu > li > a .fa,
-.skin-blue .sidebar-menu .treeview-menu > li > a i,
-.skin-blue .sidebar-menu .treeview-menu > li > a .fa {
-    color: #0a55bf !important;
-    width: 16px !important;
-    margin-right: 3px !important;
-}
-
-.reference-page-card,
-.tab-pane > .well,
-.tab-pane > .box,
-.tab-pane > .tabbable {
-    background: #fbfbf8 !important;
-    border: 1px solid #cfd4d8 !important;
-    border-radius: 2px !important;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, .12) !important;
-}
-
-.reference-page-card {
-    min-height: 420px;
-    padding: 18px 16px 66px !important;
-}
-
-.semester-eyebrow {
-    color: #9b7600;
-    font-size: 12px;
+.nav-tabs > li > a {
+    border-radius: 6px 6px 0 0;
+    color: var(--text-muted);
     font-weight: 500;
-    margin-bottom: 6px;
 }
 
-.reference-page-card h2,
-.tab-pane > h2,
-.content h2 {
-    color: #111820 !important;
-    font-size: 25px !important;
-    line-height: 1.15 !important;
-    margin: 0 0 16px !important;
-    font-weight: 700 !important;
+.nav-tabs > li.active > a,
+.nav-tabs > li.active > a:hover,
+.nav-tabs > li.active > a:focus {
+    color: var(--navy-deep) !important;
+    border-top: 3px solid var(--navy-mid) !important;
+    font-weight: 700;
 }
 
-.reference-page-card p,
-.content p,
-.help-block,
-.helpText {
-    color: #34495e !important;
-    font-size: 12px !important;
+/* ── FOOTER ──────────────────────────────────────────────────────────────────── */
+.main-footer {
+    background: var(--navy-deep);
+    border-top: 1px solid rgba(201,168,76,0.2);
+    color: rgba(255,255,255,0.55);
+    font-size: 0.82rem;
 }
 
-.reference-form-box {
-    margin-top: 34px;
-    padding: 16px;
-    border: 1px solid #cbd0d4;
-    border-radius: 2px;
-    background: #fbfbf8;
+/* =============================================================================
+   MY CLASSES — Course table
+   ============================================================================= */
+.reference-page-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: var(--card-shadow);
+    padding: 28px 30px;
 }
 
-.reference-form-box label {
-    color: #000000 !important;
-    font-size: 13px !important;
-    font-weight: 700 !important;
-}
-
-.form-control,
-.selectize-input,
-input[type="text"],
-input[type="password"],
-select,
-textarea {
-    min-height: 34px !important;
-    border-radius: 2px !important;
-    border-color: #bec5ca !important;
-    font-size: 12px !important;
-}
-
-.btn,
-.action-button,
-.download-button,
-.reference-pill-btn {
-    border-radius: 16px !important;
-    min-height: 34px !important;
-    padding: 6px 14px !important;
-    font-size: 12px !important;
-    font-weight: 700 !important;
-}
-
-.btn-primary,
-.btn-info,
-.action-button.btn-primary {
-    background: #050b24 !important;
-    border-color: #050b24 !important;
-    color: #ffffff !important;
-}
-
-.btn-success {
-    background: #050b24 !important;
-    border-color: #050b24 !important;
-}
-
-.dataTables_wrapper {
-    background: #fbfbf8 !important;
-    border: 1px solid #cfd4d8 !important;
-    border-radius: 2px !important;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, .12) !important;
-    padding: 12px !important;
-}
-
-table.dataTable thead th,
-table.dataTable thead td,
-.table > thead > tr > th {
-    background: #080d27 !important;
-    color: #ffffff !important;
-    border-bottom: 0 !important;
-    font-size: 12px !important;
-    font-weight: 700 !important;
-    padding: 10px 12px !important;
-}
-
-table.dataTable tbody td,
-.table > tbody > tr > td {
-    border-top: 1px solid #d7dadd !important;
-    color: #25313b !important;
-    font-size: 12px !important;
-    padding: 9px 12px !important;
-}
-
-table.dataTable tbody tr:nth-child(even),
-.table-striped > tbody > tr:nth-of-type(even) {
-    background: #f1f1ee !important;
-}
-
-table.dataTable tbody tr:hover,
-.table-hover > tbody > tr:hover {
-    background: #c9cbc8 !important;
-}
-
-.attendance-grid {
-    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)) !important;
-    gap: 16px !important;
-}
-
-.student-card {
-    border-radius: 2px !important;
-    border-top: 1px solid #cbd0d4 !important;
-    box-shadow: none !important;
-    padding: 10px !important;
-}
-
-.reference-attendance-page {
-    min-height: 360px !important;
-    padding: 16px 16px 28px !important;
-}
-
-.attendance-title-row {
-    display: grid;
-    grid-template-columns: 1fr 460px;
-    align-items: start;
-    gap: 24px;
-    margin-bottom: 20px;
-}
-
-.attendance-title-row h2 {
-    margin: 0 !important;
-}
-
-.department-filter {
-    display: grid;
-    grid-template-columns: 96px 1fr;
+.reference-page-card h2 {
+    color: var(--navy-deep);
+    font-size: 1.5rem;
+    margin-bottom: 22px;
+    display: flex;
     align-items: center;
-    gap: 24px;
-}
-
-.department-filter label {
-    margin: 0 !important;
-    color: #20262d !important;
-    font-size: 12px !important;
-    font-weight: 700 !important;
-    text-align: left;
-}
-
-.department-filter .form-group {
-    margin: 0 !important;
-}
-
-.department-filter .selectize-input {
-    min-height: 28px !important;
-    padding: 4px 10px !important;
-    border-radius: 2px !important;
-    background: #f4f5f3 !important;
-}
-
-.reference-attendance-table-wrap {
-    overflow-x: auto;
+    gap: 10px;
 }
 
 .reference-attendance-table {
     width: 100%;
     border-collapse: collapse;
-    table-layout: fixed;
-    background: #f7f8f5;
+    font-size: 0.93rem;
 }
 
-.reference-attendance-table th {
-    background: #080d27;
-    color: #ffffff;
-    padding: 11px 10px;
-    font-size: 12px;
-    line-height: 1.1;
+.reference-attendance-table thead tr {
+    background: var(--navy-deep);
+    color: var(--gold);
+}
+
+.reference-attendance-table thead th {
+    padding: 13px 18px;
     font-weight: 700;
-    border: 0;
-    text-align: left;
+    letter-spacing: 0.04em;
+    border: none;
+    text-transform: uppercase;
+    font-size: 0.78rem;
 }
 
-.reference-attendance-table th:nth-child(1) {
-    width: 28%;
+.reference-attendance-table tbody tr {
+    border-bottom: 1px solid #eef0f5;
+    transition: background 0.12s;
 }
 
-.reference-attendance-table th:nth-child(6),
-.reference-attendance-table th:nth-child(7) {
-    width: 16%;
-    text-align: center;
+.reference-attendance-table tbody tr:hover {
+    background: #f0f5ff;
 }
 
-.reference-attendance-table td {
-    padding: 8px 10px;
-    color: #27313a;
-    font-size: 12px;
-    line-height: 1.25;
-    border-bottom: 1px solid #cfd2d2;
-    background: #f7f8f5;
-    vertical-align: middle;
+.reference-attendance-table tbody td {
+    padding: 12px 18px;
+    color: var(--text-primary);
 }
 
-.reference-attendance-table td:nth-child(6),
-.reference-attendance-table td:nth-child(7) {
-    text-align: center;
-}
-
-.reference-attendance-table tr.selected-reference-row td {
-    background: #c7c9c6 !important;
-}
-
-.reference-round-action {
-    width: 37px;
-    height: 26px;
-    min-height: 26px !important;
-    border: 0;
-    border-radius: 999px;
-    background: #071027;
-    color: #ffffff;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .18);
-}
-
-.reference-round-action .fa,
-.reference-round-action svg {
-    color: #ffffff;
-    font-size: 12px;
-}
-
-.course-attendance-detail {
-    margin-top: 22px;
-    padding: 16px;
-    background: #fbfbf8;
-    border: 1px solid #cfd4d8;
-    border-radius: 2px;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, .10);
-}
-
-.course-attendance-detail-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 16px;
-}
-
-.selected-course-title {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    color: #121820;
-}
-
-.selected-course-kicker {
-    color: #9b7600;
-    font-size: 12px;
+.reference-attendance-table tbody td:first-child {
+    color: var(--navy-mid);
     font-weight: 500;
 }
 
-.selected-course-title strong {
-    font-size: 18px;
-    line-height: 1.2;
+.reference-attendance-table tbody td a {
+    color: var(--navy-mid);
+    font-weight: 500;
 }
 
-.selected-course-title span:last-child {
-    color: #4b5560;
-    font-size: 12px;
-}
-
-.course-attendance-actions {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 8px;
-}
-
-.course-attendance-detail .attendance-grid {
-    padding-top: 0;
-}
-
-.course-attendance-detail #lecturer_qr_image {
-    margin-top: 14px;
-}
-
-.mobile-attendance-panel {
-    min-height: 260px;
-    display: grid;
-    grid-template-columns: minmax(280px, 420px) 1fr;
-    align-items: start;
-    gap: 28px;
-}
-
-.mobile-attendance-roster,
-.mobile-attendance-qr {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    color: #121820;
-}
-
-.mobile-attendance-roster strong,
-.mobile-attendance-qr strong {
-    font-size: 20px;
-}
-
-.mobile-attendance-qr span {
-    color: #4b5560;
-    font-size: 12px;
-    line-height: 1.45;
-}
-
-.mobile-attendance-roster ul {
-    max-height: 460px;
-    overflow: auto;
-    margin: 10px 0 0;
-    padding: 0;
-    list-style: none;
-    border: 1px solid #d5d8d2;
-    background: #f7f8f5;
-}
-
-.mobile-attendance-roster li {
-    display: grid;
-    grid-template-columns: 110px 1fr;
-    gap: 12px;
-    padding: 9px 12px;
-    border-bottom: 1px solid #d5d8d2;
-    color: #25313b;
-    font-size: 12px;
-}
-
-.mobile-attendance-roster li:last-child {
-    border-bottom: 0;
-}
-
-.mobile-student-id {
-    font-weight: 700;
-}
-
-.mobile-student-name {
-    color: #334155;
-}
-
-.mobile-empty-roster {
-    display: block !important;
-    color: #6b7280 !important;
-}
-
-.mobile-attendance-panel #lecturer_qr_image {
-    display: flex;
+/* Round action buttons */
+.reference-round-action {
+    background: var(--navy-deep);
+    color: var(--gold);
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 320px;
-    margin-top: 14px;
-    border: 1px solid #d5d8d2;
-    background: #ffffff;
-}
-
-/* Sidebar block styling from the AAST Moodle attendance reference. */
-.skin-blue .main-sidebar {
-    background: #f2f3ee !important;
-    border-right: 1px solid #d2d5d0 !important;
-    box-shadow: 4px 0 16px rgba(0, 0, 0, .14) !important;
-}
-
-.skin-blue .sidebar-menu {
-    padding: 0 0 24px !important;
-}
-
-.skin-blue .sidebar-menu > li.header {
-    height: 56px !important;
-    padding: 14px 0 0 0 !important;
-    color: #222831 !important;
-    background: transparent !important;
-    font-size: 13px !important;
-    font-weight: 400 !important;
-}
-
-.skin-blue .sidebar-menu > li.header + li:not(.treeview) {
-    margin-bottom: 46px !important;
-}
-
-.skin-blue .sidebar-menu > li.treeview {
-    margin: 0 0 42px 0 !important;
-}
-
-.skin-blue .sidebar-menu > li.treeview > a {
-    height: 40px !important;
-    color: #1d2125 !important;
-    background: transparent !important;
-    padding: 10px 8px 8px 0 !important;
-    font-size: 13px !important;
-}
-
-.skin-blue .sidebar-menu > li.treeview > a .pull-right-container {
-    right: 8px !important;
-}
-
-.skin-blue .sidebar-menu > li.treeview > a i,
-.skin-blue .sidebar-menu > li.treeview > a .fa {
-    color: #1d2125 !important;
-}
-
-.skin-blue .sidebar-menu .treeview-menu {
-    margin: 0 10px 0 0 !important;
-    padding: 4px 0 !important;
-    background: #070c25 !important;
-    border-radius: 2px !important;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, .18) !important;
-}
-
-.skin-blue .sidebar-menu .treeview-menu > li > a {
-    min-height: 30px !important;
-    padding: 8px 10px 8px 0 !important;
-    color: #ffffff !important;
-    font-size: 12px !important;
-    line-height: 1.15 !important;
-}
-
-.skin-blue .sidebar-menu .treeview-menu > li > a:hover,
-.skin-blue .sidebar-menu .treeview-menu > li.active > a {
-    background: #101735 !important;
-    color: #ffffff !important;
-}
-
-.skin-blue .sidebar-menu .treeview-menu > li > a i,
-.skin-blue .sidebar-menu .treeview-menu > li > a .fa {
-    color: #ffffff !important;
-    width: 14px !important;
-    margin-right: 0 !important;
-}
-
-.skin-blue .sidebar-menu > li:not(.treeview):not(.header) > a {
-    padding: 8px 10px 8px 0 !important;
-    color: #074eb3 !important;
-    background: transparent !important;
-    font-size: 14px !important;
-}
-
-.skin-blue .sidebar-menu > li:not(.treeview):not(.header) > a:hover,
-.skin-blue .sidebar-menu > li:not(.treeview):not(.header).active > a {
-    background: transparent !important;
-    color: #003a87 !important;
-}
-
-@media (max-width: 900px) {
-    .attendance-title-row {
-        grid-template-columns: 1fr;
-    }
-
-    .department-filter {
-        grid-template-columns: 1fr;
-        gap: 6px;
-    }
-
-    .course-attendance-detail-header {
-        align-items: stretch;
-        flex-direction: column;
-    }
-
-    .course-attendance-actions {
-        justify-content: flex-start;
-    }
-
-    .mobile-attendance-panel {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* Final sidebar pass: force the photographed Moodle side panel shape. */
-body.skin-blue .wrapper .main-sidebar,
-body.skin-blue .wrapper .left-side {
-    width: 260px !important;
-    background: #f1f2ed !important;
-    border-right: 1px solid #d0d2cd !important;
-    box-shadow: 4px 0 15px rgba(0, 0, 0, .16) !important;
-}
-
-body.skin-blue .wrapper .main-sidebar .sidebar {
-    padding: 0 !important;
-}
-
-body.skin-blue .wrapper .main-sidebar .sidebar-menu {
-    padding: 0 !important;
-    margin: 0 !important;
-    background: #f1f2ed !important;
-}
-
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.header {
-    height: 64px !important;
-    padding: 16px 0 0 0 !important;
-    margin: 0 !important;
-    color: #1d2125 !important;
-    background: #f1f2ed !important;
-    font-size: 13px !important;
-    font-weight: 400 !important;
-    text-transform: none !important;
-}
-
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li > a {
-    border-left: 0 !important;
-    background: transparent !important;
-    color: #064fb3 !important;
-    padding: 8px 10px 8px 0 !important;
-    font-size: 14px !important;
-    line-height: 20px !important;
-}
-
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li > a:hover,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.active > a {
-    background: transparent !important;
-    color: #003a87 !important;
-}
-
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview {
-    margin: 0 0 54px 0 !important;
-}
-
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > a {
-    height: 38px !important;
-    padding: 8px 10px 8px 0 !important;
-    color: #1d2125 !important;
-    background: #f1f2ed !important;
-    font-size: 13px !important;
-}
-
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > a:hover,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview.active > a,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview.menu-open > a {
-    background: #f1f2ed !important;
-    color: #1d2125 !important;
-}
-
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > a .pull-right-container {
-    right: 8px !important;
-}
-
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > a i,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > a .fa {
-    color: #1d2125 !important;
-    width: 16px !important;
-    margin-right: 0 !important;
-}
-
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > .treeview-menu {
-    display: block !important;
-    margin: 0 10px 0 0 !important;
-    padding: 5px 0 !important;
-    background: #070c24 !important;
-    border-radius: 2px !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, .22) !important;
-}
-
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > .treeview-menu > li > a {
-    min-height: 29px !important;
-    padding: 8px 8px 7px 0 !important;
-    color: #ffffff !important;
-    background: #070c24 !important;
-    font-size: 12px !important;
-    line-height: 1.1 !important;
-}
-
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > .treeview-menu > li > a:hover,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > .treeview-menu > li.active > a {
-    background: #111735 !important;
-    color: #ffffff !important;
-}
-
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > .treeview-menu > li > a i,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > .treeview-menu > li > a .fa {
-    color: #ffffff !important;
-    width: 14px !important;
-    margin-right: 0 !important;
-}
-
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li:not(.header):not(.treeview) {
-    margin-bottom: 48px !important;
-}
-
-/* Hard sidebar override: keep this last so the side panel visibly matches the reference. */
-.main-sidebar,
-.left-side,
-.skin-blue .main-sidebar,
-.skin-blue .left-side {
-    background: #eff0eb !important;
-    border-right: 1px solid #cfd2cc !important;
-    box-shadow: 5px 0 18px rgba(0, 0, 0, .16) !important;
-}
-
-.main-sidebar .sidebar,
-.main-sidebar .sidebar-menu,
-.skin-blue .sidebar-menu {
-    background: #eff0eb !important;
-}
-
-.main-sidebar .sidebar-menu {
-    padding-top: 0 !important;
-}
-
-.main-sidebar .sidebar-menu > li.header {
-    display: block !important;
-    height: 62px !important;
-    padding: 15px 0 0 0 !important;
-    background: #eff0eb !important;
-    color: #1d2125 !important;
-    font-size: 13px !important;
-    font-weight: 400 !important;
-    text-transform: none !important;
-}
-
-.main-sidebar .sidebar-menu > li > a {
-    background: transparent !important;
-    border-left: 0 !important;
-    color: #074eb3 !important;
-    padding: 8px 10px 8px 0 !important;
-    font-size: 14px !important;
-}
-
-.main-sidebar .sidebar-menu > li > a:hover,
-.main-sidebar .sidebar-menu > li.active > a,
-.main-sidebar .sidebar-menu > li.menu-open > a {
-    background: transparent !important;
-    color: #003a87 !important;
-}
-
-.main-sidebar .sidebar-menu > li.treeview {
-    margin: 0 0 50px 0 !important;
-}
-
-.main-sidebar .sidebar-menu > li.treeview > a {
-    color: #1d2125 !important;
-    background: #eff0eb !important;
-    padding: 8px 8px 8px 0 !important;
-    font-size: 13px !important;
-}
-
-.main-sidebar .sidebar-menu > li.treeview > a .fa,
-.main-sidebar .sidebar-menu > li.treeview > a i {
-    color: #1d2125 !important;
-}
-
-.main-sidebar .sidebar-menu .treeview-menu {
-    display: block !important;
-    margin: 0 10px 0 0 !important;
-    padding: 4px 0 !important;
-    background: #060b23 !important;
-    border-radius: 2px !important;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, .22) !important;
-}
-
-.main-sidebar .sidebar-menu .treeview-menu > li > a {
-    min-height: 30px !important;
-    padding: 8px 8px 7px 0 !important;
-    color: #ffffff !important;
-    background: #060b23 !important;
-    font-size: 12px !important;
-    line-height: 1.1 !important;
-}
-
-.main-sidebar .sidebar-menu .treeview-menu > li > a:hover,
-.main-sidebar .sidebar-menu .treeview-menu > li.active > a {
-    color: #ffffff !important;
-    background: #111836 !important;
-}
-
-.main-sidebar .sidebar-menu .treeview-menu > li > a .fa,
-.main-sidebar .sidebar-menu .treeview-menu > li > a i {
-    color: #ffffff !important;
-    width: 14px !important;
-    margin-right: 0 !important;
-}
-
-/* Sidebar polish layer. */
-.skin-blue .main-header .logo,
-.skin-blue .main-header .logo:hover {
-    background: #f9faf7 !important;
-    border-right: 1px solid #cfd2cc !important;
-    box-shadow: 4px 0 10px rgba(0, 0, 0, .08) !important;
-}
-
-.skin-blue .main-header .logo strong {
-    color: #18212b !important;
-    font-size: 20px !important;
-    letter-spacing: 0 !important;
-}
-
-.skin-blue .main-header .logo small {
-    color: #2b3036 !important;
-}
-
-.main-sidebar::before {
-    content: "";
-    display: block;
-    height: 42px;
-}
-
-.main-sidebar .sidebar-menu > li.header {
-    padding-left: 0 !important;
-    border-bottom: 0 !important;
-}
-
-.main-sidebar .sidebar-menu > li > a {
-    border-radius: 0 3px 3px 0 !important;
-    transition: color .15s ease, background .15s ease;
-}
-
-.main-sidebar .sidebar-menu > li:not(.treeview):not(.header) > a {
-    display: flex !important;
-    align-items: center !important;
-    gap: 5px !important;
-}
-
-.main-sidebar .sidebar-menu > li:not(.treeview):not(.header) > a .fa,
-.main-sidebar .sidebar-menu > li:not(.treeview):not(.header) > a i {
-    color: #0a55bf !important;
-}
-
-.main-sidebar .sidebar-menu > li.treeview > a {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-}
-
-.main-sidebar .sidebar-menu > li.treeview > a > span {
-    flex: 1;
-}
-
-.main-sidebar .sidebar-menu .treeview-menu {
-    overflow: hidden !important;
-}
-
-.main-sidebar .sidebar-menu .treeview-menu > li > a {
-    display: flex !important;
-    align-items: center !important;
-    gap: 5px !important;
-    white-space: normal !important;
-}
-
-.main-sidebar .sidebar-menu .treeview-menu > li.active > a {
-    box-shadow: inset 3px 0 0 #ffffff !important;
-}
-
-.main-sidebar .sidebar-menu .treeview-menu > li > a:hover {
-    padding-left: 4px !important;
-}
-
-.main-sidebar .sidebar-menu > li.treeview:nth-of-type(4) > .treeview-menu {
-    margin-top: 6px !important;
-}
-
-.reference-round-action {
-    cursor: pointer !important;
-    transition: transform .12s ease, background .12s ease, box-shadow .12s ease;
 }
 
 .reference-round-action:hover {
-    background: #111a3a !important;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, .20) !important;
-    transform: translateY(-1px);
+    background: var(--gold);
+    color: var(--navy-deep);
+    transform: scale(1.1);
 }
 
-/* ============================================================
-   AAST PORTAL FINAL OVERRIDE — must remain last in this file.
-   Restores the AAST navy (#002147) + gold (#C9A84C) brand over
-   all preceding Moodle/white-sidebar theme layers.
-   ============================================================ */
-
-/* Header bar — full AAST navy */
-.skin-blue .main-header .logo,
-.skin-blue .main-header .logo:hover,
-body.skin-blue .wrapper .main-header .logo,
-body.skin-blue .wrapper .main-header .logo:hover {
-    background: #002147 !important;
-    border-right: 1px solid #001535 !important;
-    box-shadow: none !important;
-    color: #ffffff !important;
+.selected-reference-row td {
+    background: var(--gold-muted);
 }
 
-.skin-blue .main-header .logo strong,
-body.skin-blue .wrapper .main-header .logo strong {
-    color: #C9A84C !important;
-    font-size: 18px !important;
-    letter-spacing: 0.5px !important;
+/* =============================================================================
+   LIVE DASHBOARD — 2-column layout
+   ============================================================================= */
+.live-2-col {
+    display: flex;
+    gap: 20px;
 }
 
-.skin-blue .main-header .logo small,
-body.skin-blue .wrapper .main-header .logo small {
-    color: #a8b8cc !important;
+.live-left { flex: 2; }
+.live-right { flex: 1; }
+
+/* Student card grid */
+.student-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 12px;
+    padding: 8px 0;
 }
 
-.skin-blue .main-header .navbar,
-body.skin-blue .wrapper .main-header .navbar {
-    background: #002147 !important;
-    border-bottom: 2px solid #C9A84C !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35) !important;
+.student-card {
+    background: var(--white);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    text-align: center;
+    border-bottom: 4px solid #ccc;
+    padding: 12px 8px;
+    transition: all 0.25s;
 }
 
-.skin-blue .main-header .navbar .sidebar-toggle,
-.skin-blue .main-header .navbar .nav > li > a,
-.skin-blue .main-header .navbar .nav > li > a:visited,
-body.skin-blue .wrapper .main-header .navbar .sidebar-toggle,
-body.skin-blue .wrapper .main-header .navbar .nav > li > a {
-    color: #d4e2f0 !important;
-    background: transparent !important;
+.student-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.12);
 }
 
-.skin-blue .main-header .navbar .sidebar-toggle:hover,
-.skin-blue .main-header .navbar .nav > li > a:hover,
-body.skin-blue .wrapper .main-header .navbar .sidebar-toggle:hover,
-body.skin-blue .wrapper .main-header .navbar .nav > li > a:hover {
-    background: rgba(201, 168, 76, 0.15) !important;
-    color: #C9A84C !important;
+.student-card.present { border-bottom-color: #2e7d32; }
+.student-card.absent  { border-bottom-color: #c62828; }
+
+.student-name {
+    font-size: 0.85em;
+    font-weight: 700;
+    padding: 4px;
+    color: var(--navy-deep);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-/* Sidebar — AAST navy */
-.main-sidebar,
-.left-side,
-.skin-blue .main-sidebar,
-.skin-blue .left-side,
-body.skin-blue .wrapper .main-sidebar,
-body.skin-blue .wrapper .left-side {
-    background: #002147 !important;
-    border-right: 1px solid #001535 !important;
-    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.40) !important;
+.student-status {
+    font-size: 0.72em;
+    color: var(--text-muted);
+    padding-bottom: 4px;
 }
 
-.main-sidebar::before {
-    background: #002147 !important;
+/* =============================================================================
+   EXAM PROCTORING TAB — Page Header
+   ============================================================================= */
+.exam-page-header {
+    background: linear-gradient(135deg, var(--navy-deep) 0%, var(--navy-mid) 100%);
+    border-radius: var(--radius);
+    padding: 22px 28px;
+    margin-bottom: 22px;
+    box-shadow: 0 4px 20px rgba(6,25,60,0.25);
+    border: 1px solid rgba(201,168,76,0.2);
 }
 
-.main-sidebar .sidebar,
-.main-sidebar .sidebar-menu,
-.skin-blue .sidebar-menu,
-body.skin-blue .wrapper .main-sidebar .sidebar,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu {
-    background: #002147 !important;
-    padding-top: 0 !important;
+.exam-header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
 }
 
-/* Section headers inside sidebar */
-.main-sidebar .sidebar-menu > li.header,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.header,
-.skin-blue .sidebar-menu > li.header {
-    background: #001535 !important;
-    color: #8aabb8 !important;
-    font-size: 11px !important;
-    font-weight: 700 !important;
-    letter-spacing: 1.2px !important;
-    text-transform: uppercase !important;
-    padding: 10px 12px 8px !important;
-    height: auto !important;
-    border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+.exam-header-inner h2 {
+    color: var(--white) !important;
+    margin: 0 !important;
+    font-size: 1.55rem !important;
+    display: inline-block;
+    vertical-align: middle;
 }
 
-/* Regular sidebar links */
-.main-sidebar .sidebar-menu > li > a,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li > a,
-.skin-blue .sidebar-menu > li > a {
-    color: #c8dbe9 !important;
-    background: transparent !important;
-    border-left: 3px solid transparent !important;
-    padding: 11px 14px 11px 15px !important;
-    font-size: 13.5px !important;
-    font-family: Roboto, Arial, sans-serif !important;
-    transition: background 0.15s, color 0.15s, border-color 0.15s !important;
+.exam-header-icon {
+    color: var(--gold);
+    font-size: 1.5rem;
+    margin-right: 10px;
+    vertical-align: middle;
 }
 
-.main-sidebar .sidebar-menu > li > a .fa,
-.main-sidebar .sidebar-menu > li > a i,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li > a .fa,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li > a i,
-.skin-blue .sidebar-menu > li > a .fa {
-    color: #8aabb8 !important;
-    width: 20px !important;
+/* Pulsing LIVE badge */
+@keyframes pulse-badge {
+    0%   { box-shadow: 0 0 0 0 rgba(198,40,40,0.55); }
+    70%  { box-shadow: 0 0 0 9px rgba(198,40,40,0); }
+    100% { box-shadow: 0 0 0 0 rgba(198,40,40,0); }
 }
 
-.main-sidebar .sidebar-menu > li > a:hover,
-.main-sidebar .sidebar-menu > li.active > a,
-.main-sidebar .sidebar-menu > li.menu-open > a,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li > a:hover,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.active > a,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.menu-open > a,
-.skin-blue .sidebar-menu > li > a:hover {
-    background: rgba(201, 168, 76, 0.12) !important;
-    color: #C9A84C !important;
-    border-left-color: #C9A84C !important;
+.label-danger {
+    animation: pulse-badge 1.5s infinite;
 }
 
-.main-sidebar .sidebar-menu > li > a:hover .fa,
-.main-sidebar .sidebar-menu > li > a:hover i,
-.main-sidebar .sidebar-menu > li.active > a .fa,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li > a:hover .fa,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.active > a .fa {
-    color: #C9A84C !important;
+/* =============================================================================
+   ATTENDANCE & STUDENT PHOTOS
+   ============================================================================= */
+.attendance-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 18px;
+    padding: 16px 0;
 }
 
-/* Treeview parent items */
-.main-sidebar .sidebar-menu > li.treeview > a,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > a,
-.skin-blue .sidebar-menu > li.treeview > a {
-    color: #d4e2f0 !important;
-    background: transparent !important;
-    padding: 11px 14px 11px 15px !important;
-    font-size: 13.5px !important;
-    height: auto !important;
+.student-card-full {
+    background: var(--white);
+    border-radius: 10px;
+    padding: 18px;
+    box-shadow: var(--card-shadow);
+    text-align: center;
+    border: 1px solid var(--border);
+    border-top: 5px solid var(--navy-deep);
+    transition: all 0.25s ease;
+    position: relative;
 }
 
-.main-sidebar .sidebar-menu > li.treeview > a .fa,
-.main-sidebar .sidebar-menu > li.treeview > a i,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > a .fa,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > a i {
-    color: #8aabb8 !important;
+.student-card-full:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(6,25,60,0.15);
 }
 
-.main-sidebar .sidebar-menu > li.treeview > a:hover,
-.main-sidebar .sidebar-menu > li.treeview.active > a,
-.main-sidebar .sidebar-menu > li.treeview.menu-open > a,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > a:hover,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview.menu-open > a {
-    background: rgba(201, 168, 76, 0.12) !important;
-    color: #C9A84C !important;
+.student-card-full.present { border-top-color: #2e7d32; }
+.student-card-full.absent  { border-top-color: #c62828; }
+
+.student-photo {
+    width: 90px;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin-bottom: 12px;
+    border: 3px solid var(--gold);
 }
 
-/* Treeview submenu (nested nav items) */
-.main-sidebar .sidebar-menu .treeview-menu,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > .treeview-menu,
-.skin-blue .sidebar-menu .treeview-menu {
-    background: #001535 !important;
-    margin: 0 8px 4px 8px !important;
-    padding: 4px 0 !important;
-    border-radius: 4px !important;
-    box-shadow: inset 0 1px 4px rgba(0,0,0,0.30) !important;
+.student-id    { font-size: 0.8em; color: var(--text-muted); margin-bottom: 3px; }
+.student-name  { font-weight: 700; font-size: 1.05em; color: var(--navy-deep); margin-bottom: 10px; }
+
+.confidence-high { color: #2e7d32; font-weight: bold; }
+.confidence-med  { color: #e65100; font-weight: bold; }
+.confidence-low  { color: #c62828; font-weight: bold; }
+
+/* =============================================================================
+   RESPONSIVE
+   ============================================================================= */
+@media (max-width: 768px) {
+    .content { padding: 16px !important; }
+    .main-sidebar { padding-top: 56px !important; }
+    .content-wrapper, .right-side { padding-top: 56px !important; }
+    .live-2-col { flex-direction: column; }
+    .exam-header-inner { flex-direction: column; }
 }
 
-.main-sidebar .sidebar-menu .treeview-menu > li > a,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > .treeview-menu > li > a,
-.skin-blue .sidebar-menu .treeview-menu > li > a {
-    color: #aac4d8 !important;
-    background: transparent !important;
-    padding: 8px 14px 8px 20px !important;
-    font-size: 12.5px !important;
-    min-height: auto !important;
+/* =============================================================================
+   LOGIN PAGE
+   ============================================================================= */
+body.no-sidebar .content-wrapper,
+.login-page-body {
+    background: var(--navy-deep) !important;
 }
 
-.main-sidebar .sidebar-menu .treeview-menu > li > a .fa,
-.main-sidebar .sidebar-menu .treeview-menu > li > a i,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > .treeview-menu > li > a .fa {
-    color: #6a9ab5 !important;
-    width: 16px !important;
-    margin-right: 4px !important;
+/* login box styling (inline in app.R) is handled there */
+
+/* =============================================================================
+   MISC UTILITIES
+   ============================================================================= */
+.rtl-label { direction: rtl; text-align: right; }
+
+.reason-input {
+    font-size: 0.85em;
+    width: 100%;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    padding: 4px 8px;
 }
 
-.main-sidebar .sidebar-menu .treeview-menu > li > a:hover,
-.main-sidebar .sidebar-menu .treeview-menu > li.active > a,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > .treeview-menu > li > a:hover,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > .treeview-menu > li.active > a {
-    background: rgba(201, 168, 76, 0.15) !important;
-    color: #C9A84C !important;
+.card-actions {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
-.main-sidebar .sidebar-menu .treeview-menu > li.active > a,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview > .treeview-menu > li.active > a {
-    box-shadow: inset 3px 0 0 #C9A84C !important;
-}
-
-/* Content wrapper stays white/light */
-.content-wrapper,
-.right-side,
-body.skin-blue .wrapper .content-wrapper {
-    background: #f4f6f8 !important;
-}
-
-/* Sidebar user panel (if present) */
-.skin-blue .sidebar-menu > li.user-header,
-.main-sidebar .user-panel {
-    background: #001535 !important;
-    border-bottom: 1px solid rgba(201, 168, 76, 0.3) !important;
-}
-
-/* Scrollbar in sidebar — dark track */
-.main-sidebar .sidebar::-webkit-scrollbar {
-    width: 4px;
-}
-.main-sidebar .sidebar::-webkit-scrollbar-track {
-    background: #001535;
-}
-.main-sidebar .sidebar::-webkit-scrollbar-thumb {
-    background: #C9A84C;
-    border-radius: 2px;
-}
-
-/* Page title / breadcrumb bar */
-.content-header {
-    background: #ffffff !important;
-    border-bottom: 2px solid #e8edf2 !important;
-    padding: 12px 20px !important;
-}
-
-.content-header h1 {
-    color: #002147 !important;
-    font-size: 20px !important;
-    font-weight: 700 !important;
-}
-
-.breadcrumb > li + li::before {
-    color: #C9A84C !important;
-}
-
-.breadcrumb > .active {
-    color: #002147 !important;
-}
-
-/* Box headers — AAST navy accent */
-.box.box-primary > .box-header {
-    background: #002147 !important;
-    color: #ffffff !important;
-    border-bottom: 2px solid #C9A84C !important;
-}
-
-.box.box-primary > .box-header .box-title {
-    color: #ffffff !important;
-}
-
-/* Buttons */
-.btn-primary {
-    background: #002147 !important;
-    border-color: #001535 !important;
-    color: #ffffff !important;
-}
-
-.btn-primary:hover,
-.btn-primary:focus {
-    background: #003875 !important;
-    border-color: #C9A84C !important;
-    color: #ffffff !important;
-}
-
-.btn-warning,
-.btn-success {
-    border-color: transparent !important;
-}
-
-/* Sidebar treeview margin reset (override the huge margins from prior passes) */
+/* Sidebar treeview margin reset */
 .main-sidebar .sidebar-menu > li.treeview,
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li.treeview {
-    margin-bottom: 2px !important;
+.main-sidebar .sidebar-menu > li:not(.header):not(.treeview) {
+    margin-bottom: 1px !important;
 }
-
-.main-sidebar .sidebar-menu > li:not(.header):not(.treeview),
-body.skin-blue .wrapper .main-sidebar .sidebar-menu > li:not(.header):not(.treeview) {
-    margin-bottom: 2px !important;
-}
-/* END AAST PORTAL OVERRIDE */

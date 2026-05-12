@@ -461,6 +461,26 @@ lecturer_server <- function(input, output, session, session_state) {
   active_exam_id     <- reactiveVal(NULL)
   exam_active        <- reactiveVal(FALSE)
 
+  # ── Exam tab selectors ────────────────────────────────────────────────────
+  output$lec_exam_course_selector <- renderUI({
+    df <- lecturer_courses_data()
+    if (nrow(df) == 0) return(p("No courses found.", style = "color:red;"))
+    selectInput("exam_course_id", "Course",
+                choices  = setNames(df$code, df$course),
+                selected = selected_course_id())
+  })
+
+  output$lec_exam_class_selector <- renderUI({
+    req(input$exam_course_id)
+    df <- safe_db_get(sprintf(
+      "SELECT class_id FROM classes WHERE course_id = '%s' AND lecturer_id = '%s'",
+      input$exam_course_id, session_state$user_id
+    ))
+    selectInput("exam_class_id", "Section",
+                choices  = df$class_id,
+                selected = selected_class_id())
+  })
+
   live_incidents <- reactive({
     req(exam_active(), !is.null(active_exam_id()))
     invalidateLater(3000, session)
@@ -495,11 +515,14 @@ lecturer_server <- function(input, output, session, session_state) {
   })
 
   observeEvent(input$exam_start_btn, {
-    req(input$live_class_id, nchar(trimws(input$exam_title_input)) > 0)
+    # Use exam tab selector; fall back to live dashboard selector
+    class_id_to_use <- if (!is.null(input$exam_class_id) && nchar(input$exam_class_id) > 0)
+      input$exam_class_id else input$live_class_id
+    req(class_id_to_use, nchar(trimws(input$exam_title_input)) > 0)
     title <- trimws(input$exam_title_input)
     # Create exam
     res <- api_call("/exam", method = "POST",
-                    body = list(class_id = input$live_class_id,
+                    body = list(class_id = class_id_to_use,
                                 title    = title,
                                 scheduled_start = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ")),
                     auth_token = session_state$token)
@@ -514,7 +537,7 @@ lecturer_server <- function(input, output, session, session_state) {
     current_lecture_id(lid)
     api_call("/session/start", method = "POST",
              body = list(lecture_id  = lid,
-                         class_id    = input$live_class_id,
+                         class_id    = class_id_to_use,
                          lecturer_id = session_state$user_id,
                          title       = title,
                          context     = "exam",

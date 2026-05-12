@@ -51,9 +51,13 @@ lecturer_ui <- function() {
   shinydashboard::dashboardPage(
     skin = "blue",
     shinydashboard::dashboardHeader(
-      title = tags$span(
-        uiOutput("dashboard_logo", inline = TRUE),
-        tags$strong("AAST LMS")
+      title = tags$a(
+        href = "#",
+        tags$img(
+          src    = "aast-logo-wide.png",
+          height = "38px",
+          style  = "margin-top: -2px; filter: brightness(0) invert(1);"
+        )
       ),
       titleWidth = 280,
       tags$li(
@@ -61,18 +65,20 @@ lecturer_ui <- function() {
         actionLink(
           "logout_btn",
           label = tagList(icon("sign-out-alt"), " Logout"),
-          style = "color: #C9A84C; padding: 15px 20px;"
+          style = "color: #C9A84C; padding: 15px 20px; font-weight: 500;"
         )
       )
     ),
+
     shinydashboard::dashboardSidebar(
       width = 260,
       shinydashboard::sidebarMenu(
         id = "lecturer_menu",
-        shinydashboard::menuItem("My Classes", tabName = "lec_roster", icon = icon("house")),
-        shinydashboard::menuItem("Live Dashboard", tabName = "lec_live", icon = icon("play-circle")),
+        shinydashboard::menuItem("My Classes",        tabName = "lec_roster",   icon = icon("house")),
+        shinydashboard::menuItem("Live Dashboard",    tabName = "lec_live",     icon = icon("play-circle")),
+        shinydashboard::menuItem("Exam Proctoring",   tabName = "lec_exam",     icon = icon("shield-alt")),
         shinydashboard::menuItem("Reports & Analytics", tabName = "lec_reports", icon = icon("chart-bar")),
-        shinydashboard::menuItem("LMS Materials", tabName = "lec_materials", icon = icon("file-upload"))
+        shinydashboard::menuItem("LMS Materials",     tabName = "lec_materials", icon = icon("file-upload"))
       )
     ),
     shinydashboard::dashboardBody(
@@ -202,25 +208,6 @@ lecturer_ui <- function() {
             )
           ),
 
-          # ── Exam Proctoring (collapsible, below session controls) ──
-          shinydashboard::box(
-            title = tagList(icon("shield-alt"), " Exam Proctoring"),
-            width = 12, status = "danger", collapsible = TRUE, collapsed = TRUE,
-            fluidRow(
-              column(4, textInput("exam_title_input", "Exam Title", placeholder = "e.g. Midterm Exam")),
-              column(4, br(), uiOutput("exam_start_stop_btn")),
-              column(4, br(), uiOutput("exam_status_badge"))
-            ),
-            hr(),
-            fluidRow(
-              column(3, shinydashboard::valueBoxOutput("exam_box_total",  width = 12)),
-              column(3, shinydashboard::valueBoxOutput("exam_box_high",   width = 12)),
-              column(3, shinydashboard::valueBoxOutput("exam_box_medium", width = 12)),
-              column(3, shinydashboard::valueBoxOutput("exam_box_low",    width = 12))
-            ),
-            DT::dataTableOutput("exam_incidents_table")
-          ),
-
           div(class = "live-2-col",
             # Column 1: Video & Student Grid
             div(class = "live-left",
@@ -250,6 +237,56 @@ lecturer_ui <- function() {
                 uiOutput("lecturer_confusion_alert_ui")
               )
             )
+          )
+        ),
+
+        # --- EXAM PROCTORING (dedicated tab) ---
+        shinydashboard::tabItem(tabName = "lec_exam",
+          div(class = "exam-page-header",
+            tags$div(class = "exam-header-inner",
+              tags$div(
+                icon("shield-alt", class = "exam-header-icon"),
+                h2("Exam Proctoring Center")
+              ),
+              uiOutput("exam_status_badge")
+            )
+          ),
+
+          # ── Setup Panel ──
+          shinydashboard::box(
+            title = tagList(icon("cog"), " Exam Setup"),
+            width = 12, status = "primary",
+            fluidRow(
+              column(4, uiOutput("lec_exam_course_selector")),
+              column(4, uiOutput("lec_exam_class_selector")),
+              column(4,
+                textInput("exam_title_input", "Exam Title", placeholder = "e.g. Midterm Exam")
+              )
+            ),
+            fluidRow(
+              column(4, br(), uiOutput("exam_start_stop_btn")),
+              column(8,
+                br(),
+                tags$p(class = "help-block",
+                  icon("info-circle"), " Start the exam to activate live proctoring. The AI will flag suspicious behaviour automatically."
+                )
+              )
+            )
+          ),
+
+          # ── Incident Summary Cards ──
+          fluidRow(
+            column(3, shinydashboard::valueBoxOutput("exam_box_total",  width = 12)),
+            column(3, shinydashboard::valueBoxOutput("exam_box_high",   width = 12)),
+            column(3, shinydashboard::valueBoxOutput("exam_box_medium", width = 12)),
+            column(3, shinydashboard::valueBoxOutput("exam_box_low",    width = 12))
+          ),
+
+          # ── Live Incident Log ──
+          shinydashboard::box(
+            title = tagList(icon("list-alt"), " Live Incident Log"),
+            width = 12, status = "danger",
+            DT::dataTableOutput("exam_incidents_table")
           )
         ),
 

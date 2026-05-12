@@ -13,21 +13,101 @@ source("server/lecturer_server.R", local = FALSE)
 login_ui_static <- shiny::fluidPage(
   shinyjs::useShinyjs(),
   shiny::tags$head(
+    shiny::tags$link(rel = "stylesheet", type = "text/css", href = "custom.css"),
     shiny::tags$style(HTML("
-      body { background-color: #002147; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-      .login-box { 
-        background: white; color: #333; padding: 40px; 
-        width: 400px; margin: 80px auto; border-radius: 12px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      body {
+        background: #06193c;
+        background-image: radial-gradient(ellipse at 20% 50%, rgba(10,36,84,0.8) 0%, transparent 60%),
+                          radial-gradient(ellipse at 80% 20%, rgba(201,168,76,0.06) 0%, transparent 50%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Roboto', Arial, sans-serif;
       }
-      .btn-primary { background-color: #002147; border: none; width: 100%; padding: 12px; font-weight: 600; border-radius: 6px; }
-      .btn-link { color: #002147; background: none; border: none; padding: 0; font-size: 0.9em; text-decoration: underline; cursor: pointer; }
-      h2 { text-align: center; color: #002147; margin-bottom: 30px; font-weight: 700; }
-      .form-group { margin-bottom: 20px; }
+      .login-wrapper {
+        width: 100%;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+      }
+      .login-logo-area {
+        text-align: center;
+        margin-bottom: 28px;
+      }
+      .login-logo-area img {
+        height: 54px;
+        filter: brightness(0) invert(1);
+        margin-bottom: 10px;
+      }
+      .login-logo-area p {
+        color: rgba(201,168,76,0.85);
+        font-size: 0.82rem;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin: 0;
+      }
+      .login-box {
+        background: rgba(255,255,255,0.97);
+        color: #1a2340;
+        padding: 36px 40px;
+        width: 400px;
+        max-width: 100%;
+        border-radius: 14px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.45), 0 0 0 1px rgba(201,168,76,0.18);
+      }
+      .login-box h2 {
+        text-align: center;
+        color: #06193c;
+        margin-bottom: 26px;
+        font-weight: 700;
+        font-size: 1.4rem;
+      }
+      .login-box .form-group { margin-bottom: 18px; }
+      .login-box label { color: #1a2340; font-weight: 600; font-size: 0.88rem; }
+      .login-box .form-control {
+        border: 1px solid #c8d0dd !important;
+        border-radius: 7px !important;
+        min-height: 42px;
+        font-size: 0.95rem;
+        color: #1a2340;
+      }
+      .login-box .form-control:focus {
+        border-color: #06193c !important;
+        box-shadow: 0 0 0 3px rgba(6,25,60,0.10) !important;
+      }
+      .login-box .btn-primary {
+        background: #06193c !important;
+        border: none !important;
+        width: 100%;
+        padding: 12px;
+        font-weight: 700;
+        border-radius: 8px !important;
+        font-size: 1rem;
+        letter-spacing: 0.03em;
+        transition: background 0.2s, box-shadow 0.2s;
+        color: #fff !important;
+      }
+      .login-box .btn-primary:hover {
+        background: #0a2454 !important;
+        box-shadow: 0 4px 16px rgba(6,25,60,0.3);
+      }
+      .btn-link { color: #06193c; background: none; border: none; padding: 0; font-size: 0.88em; text-decoration: underline; cursor: pointer; }
     "))
   ),
-  shiny::uiOutput("auth_container")
+  shiny::div(class = "login-wrapper",
+    shiny::div(class = "login-logo-area",
+      shiny::tags$img(src = "aast-logo-wide.png", alt = "AAST LMS"),
+      shiny::tags$p("Classroom Emotion Intelligence System")
+    ),
+    shiny::uiOutput("auth_container")
+  )
 )
+
 
 # ============================================================================
 # Main UI
