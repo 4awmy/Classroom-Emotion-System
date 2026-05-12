@@ -10,7 +10,7 @@ services:
     source_dir: python-api
     http_port: 8000
     instance_count: 1
-    instance_size_slug: basic-xxs
+    instance_size_slug: basic-s
     routes:
       - path: /api
       - path: /docs
@@ -37,7 +37,7 @@ services:
     dockerfile_path: shiny-app/Dockerfile 
     http_port: 3838
     instance_count: 1
-    instance_size_slug: basic-xxs
+    instance_size_slug: basic-s
     routes:
       - path: /
     envs:
@@ -47,6 +47,18 @@ services:
       - key: DATABASE_URL
         scope: RUN_TIME
         value: ${dev-db-617746.DATABASE_URL}
+
+static_sites:
+  - name: showcase
+    github:
+      repo: 4awmy/Classroom-Emotion-System
+      branch: deploy-ready
+      deploy_on_push: true
+    source_dir: showcase-site
+    build_command: npm run build
+    output_dir: dist
+    routes:
+      - path: /showcase
 
 databases:
   - name: dev-db-617746

@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@theme {
+  --color-aast-navy: #002244;
+  --color-aast-gold: #C49808;
+  --color-aast-white: #FFFFFF;
+  --color-aast-gray: #F8F9FA;
+  
+  --font-sans: "Inter", "Open Sans", "Arial", sans-serif;
+}
+
+:root {
+  background-color: var(--color-aast-gray);
+  color: #333333;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}

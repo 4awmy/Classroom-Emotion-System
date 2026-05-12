@@ -14,7 +14,9 @@ try:
     from ultralytics import YOLO
     from hsemotion.face_emotions import HSEmotionRecognizer as HSEmotionRecognize
 except ImportError:
+    import sys
     print("[ERROR] Missing dependencies. Run: pip install ultralytics hsemotion-onnx opencv-python requests")
+    sys.exit(1)
 
 # Load environment variables
 load_dotenv()
