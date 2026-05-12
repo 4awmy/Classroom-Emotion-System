@@ -130,6 +130,20 @@ export default function LoginScreen() {
               </Text>
             )}
           </TouchableOpacity>
+
+          {/* Forgot Password */}
+          <TouchableOpacity
+            onPress={() =>
+              Alert.alert(
+                "Forgot Password?",
+                "Please contact your system administrator to reset your password.\n\nEmail: lms@aast.edu",
+                [{ text: "OK" }]
+              )
+            }
+            activeOpacity={0.7}
+          >
+            <Text style={styles.forgotText}>Forgot Password?</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -226,17 +240,11 @@ const styles = StyleSheet.create({
   buttonTextInactive: {
     color: Colors.white,
   },
-  demoBox: {
-    backgroundColor: '#EFF6FF',
-    borderRadius: Radius.sm,
-    padding: 12,
-    alignItems: "center",
-  },
-  demoText: {
-    fontSize: 12,
-    color: '#3B82F6',
-  },
-  demoBold: {
-    fontWeight: "700",
+  forgotText: {
+    fontSize: 13,
+    color: Colors.textMuted,
+    textAlign: "center",
+    textDecorationLine: "underline",
+    marginTop: 4,
   },
 });

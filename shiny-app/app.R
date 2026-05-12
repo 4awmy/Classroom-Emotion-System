@@ -15,16 +15,57 @@ login_ui_static <- shiny::fluidPage(
   shiny::tags$head(
     shiny::tags$link(rel = "stylesheet", type = "text/css", href = "custom.css"),
     shiny::tags$style(HTML("
+      @keyframes floatOrb {
+        0%, 100% { transform: translateY(0px) scale(1); opacity: 0.55; }
+        50%       { transform: translateY(-28px) scale(1.06); opacity: 0.75; }
+      }
+      @keyframes floatOrbAlt {
+        0%, 100% { transform: translateY(0px) scale(1); opacity: 0.35; }
+        50%       { transform: translateY(22px) scale(0.93); opacity: 0.55; }
+      }
+      @keyframes shimmer {
+        0%   { background-position: -400px 0; }
+        100% { background-position: 400px 0; }
+      }
+
       body {
-        background: #06193c;
-        background-image: radial-gradient(ellipse at 20% 50%, rgba(10,36,84,0.8) 0%, transparent 60%),
-                          radial-gradient(ellipse at 80% 20%, rgba(201,168,76,0.06) 0%, transparent 50%);
+        background:
+          radial-gradient(ellipse at 15% 85%, rgba(201,168,76,0.13) 0%, transparent 45%),
+          radial-gradient(ellipse at 85% 15%, rgba(13,47,106,0.90) 0%, transparent 55%),
+          radial-gradient(ellipse at 50% 50%, rgba(10,36,84,0.60) 0%, transparent 70%),
+          linear-gradient(145deg, #04122c 0%, #06193c 40%, #081f4a 100%);
         min-height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;
         font-family: 'Roboto', Arial, sans-serif;
+        overflow: hidden;
+        position: relative;
       }
+
+      /* ── Floating orb decorations ─────────────────────────── */
+      body::before {
+        content: '';
+        position: fixed;
+        top: -120px; left: -120px;
+        width: 420px; height: 420px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(201,168,76,0.18) 0%, transparent 70%);
+        animation: floatOrb 7s ease-in-out infinite;
+        pointer-events: none;
+      }
+      body::after {
+        content: '';
+        position: fixed;
+        bottom: -80px; right: -80px;
+        width: 340px; height: 340px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(13,47,106,0.80) 0%, rgba(201,168,76,0.10) 60%, transparent 80%);
+        animation: floatOrbAlt 9s ease-in-out infinite;
+        pointer-events: none;
+      }
+
+      /* ── Subtle dot grid overlay ──────────────────────────── */
       .login-wrapper {
         width: 100%;
         min-height: 100vh;
@@ -33,7 +74,12 @@ login_ui_static <- shiny::fluidPage(
         align-items: center;
         justify-content: center;
         padding: 40px 20px;
+        position: relative;
+        background-image: radial-gradient(rgba(201,168,76,0.08) 1px, transparent 1px);
+        background-size: 28px 28px;
       }
+
+      /* ── Logo area ────────────────────────────────────────── */
       .login-logo-area {
         text-align: center;
         margin-bottom: 28px;
@@ -51,14 +97,28 @@ login_ui_static <- shiny::fluidPage(
         text-transform: uppercase;
         margin: 0;
       }
+
+      /* ── Login card ───────────────────────────────────────── */
       .login-box {
         background: rgba(255,255,255,0.97);
         color: #1a2340;
         padding: 36px 40px;
         width: 400px;
         max-width: 100%;
-        border-radius: 14px;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.45), 0 0 0 1px rgba(201,168,76,0.18);
+        border-radius: 16px;
+        box-shadow: 0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(201,168,76,0.22);
+        position: relative;
+        overflow: hidden;
+      }
+      /* Gold shimmer top border */
+      .login-box::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #C9A84C, #e0bc6a, #C9A84C);
+        background-size: 400px 100%;
+        animation: shimmer 2.8s linear infinite;
       }
       .login-box h2 {
         text-align: center;
@@ -81,7 +141,7 @@ login_ui_static <- shiny::fluidPage(
         box-shadow: 0 0 0 3px rgba(6,25,60,0.10) !important;
       }
       .login-box .btn-primary {
-        background: #06193c !important;
+        background: linear-gradient(135deg, #06193c 0%, #0a2454 100%) !important;
         border: none !important;
         width: 100%;
         padding: 12px;
@@ -89,12 +149,12 @@ login_ui_static <- shiny::fluidPage(
         border-radius: 8px !important;
         font-size: 1rem;
         letter-spacing: 0.03em;
-        transition: background 0.2s, box-shadow 0.2s;
+        transition: opacity 0.2s, box-shadow 0.2s;
         color: #fff !important;
       }
       .login-box .btn-primary:hover {
-        background: #0a2454 !important;
-        box-shadow: 0 4px 16px rgba(6,25,60,0.3);
+        opacity: 0.88;
+        box-shadow: 0 6px 20px rgba(6,25,60,0.40);
       }
       .btn-link { color: #06193c; background: none; border: none; padding: 0; font-size: 0.88em; text-decoration: underline; cursor: pointer; }
     "))
