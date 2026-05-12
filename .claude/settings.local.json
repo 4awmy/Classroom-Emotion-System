@@ -25,7 +25,11 @@
       "Bash(powershell:*)",
       "Bash(netsh interface:*)",
       "Bash(sed:*)",
-      "Bash(npx expo:*)"
+      "Bash(npx expo:*)",
+      "Bash(echo Token: ${TOKEN:0:40}...:*)",
+      "Bash(python3:*)",
+      "Bash(__NEW_LINE_d25316fea0e17e35__ curl:*)",
+      "Skill(keybindings-help)"
     ]
   }
 }

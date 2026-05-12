@@ -27,7 +27,7 @@ BASE = "https://api.digitalocean.com/v2"
 # ── App spec ─────────────────────────────────────────────────────────────────
 APP_SPEC = {
     "name": APP_NAME,
-    "region": "nyc",
+    "region": "fra",
     "services": [
         {
             "name": "backend",
@@ -40,21 +40,18 @@ APP_SPEC = {
             "source_dir": "python-api",
             "http_port": 8000,
             "instance_count": 1,
-            "instance_size_slug": "basic-xxs",
-            "routes": [{"path": "/"}],
-            "health_check": {
-                "http_path": "/health",
-                "initial_delay_seconds": 30,
-                "period_seconds": 30,
-                "failure_threshold": 3
-            },
+            "instance_size_slug": "basic-s",
+            "routes": [
+                {"path": "/api"},
+                {"path": "/docs"},
+                {"path": "/openapi.json"},
+                {"path": "/health"},
+                {"path": "/internal"}
+            ],
             "envs": [
-                {"key": "DATABASE_URL",   "scope": "RUN_TIME", "value": "${db.DATABASE_URL}"},
-                {"key": "GEMINI_API_KEY", "scope": "RUN_TIME", "type": "SECRET", "value": ""},
-                {"key": "JWT_SECRET",     "scope": "RUN_TIME", "type": "SECRET", "value": "aast-lms-jwt-secret-2026"},
-                {"key": "ENVIRONMENT",    "scope": "RUN_TIME", "value": "production"},
-                {"key": "SPACES_REGION",  "scope": "RUN_TIME", "value": "nyc3"},
-                {"key": "SPACES_ENDPOINT","scope": "RUN_TIME", "value": "https://nyc3.digitaloceanspaces.com"},
+                {"key": "DATABASE_URL", "scope": "RUN_TIME", "value": "${dev-db-617746.DATABASE_URL}"},
+                {"key": "ENVIRONMENT", "scope": "RUN_TIME", "value": "production"},
+                {"key": "JWT_SECRET", "scope": "RUN_TIME", "value": "aast-lms-secret-2026"}
             ]
         },
         {
@@ -68,20 +65,34 @@ APP_SPEC = {
             "dockerfile_path": "shiny-app/Dockerfile",
             "http_port": 3838,
             "instance_count": 1,
-            "instance_size_slug": "basic-xxs",
-            "routes": [{"path": "/portal", "preserve_path_prefix": True}],
+            "instance_size_slug": "basic-s",
+            "routes": [{"path": "/"}],
             "envs": [
-                {"key": "API_URL", "scope": "RUN_TIME", "value": "${backend.PUBLIC_URL}"},
+                {"key": "API_URL", "scope": "RUN_TIME", "value": "https://classroomx-lkbxf.ondigitalocean.app"},
+                {"key": "DATABASE_URL", "scope": "RUN_TIME", "value": "${dev-db-617746.DATABASE_URL}"}
             ]
+        }
+    ],
+    "static_sites": [
+        {
+            "name": "showcase",
+            "github": {
+                "repo": "4awmy/Classroom-Emotion-System",
+                "branch": "deploy-ready",
+                "deploy_on_push": True
+            },
+            "source_dir": "showcase-site",
+            "build_command": "npm run build",
+            "output_dir": "dist",
+            "error_document": "index.html",
+            "routes": [{"path": "/showcase"}]
         }
     ],
     "databases": [
         {
-            "name": "db",
+            "name": "dev-db-617746",
             "engine": "PG",
-            "version": "15",
-            "size": "db-s-dev-database",
-            "num_nodes": 1
+            "version": "17"
         }
     ]
 }
