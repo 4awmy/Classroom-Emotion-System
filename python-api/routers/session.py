@@ -238,7 +238,10 @@ async def get_upcoming(
 
         lectures = query.filter(
             models.Lecture.status.in_(["live", "not_started"])
-        ).order_by(models.Lecture.created_at.desc()).limit(20).all()
+        ).order_by(
+            models.Lecture.status.desc(),          # live first
+            models.Lecture.scheduled_start.asc()   # then soonest upcoming
+        ).limit(5).all()
 
         return [{
             "lecture_id": lec.lecture_id,
