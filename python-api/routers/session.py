@@ -93,9 +93,12 @@ async def session_status(lecture_id: str, db: Session = Depends(get_db)):
     emotion_count = db.query(models.EmotionLog).filter(
         models.EmotionLog.lecture_id == lecture_id
     ).count()
-    check_count = db.query(models.ComprehensionCheck).filter(
-        models.ComprehensionCheck.lecture_id == lecture_id
-    ).count()
+    try:
+        check_count = db.query(models.ComprehensionCheck).filter(
+            models.ComprehensionCheck.lecture_id == lecture_id
+        ).count()
+    except Exception:
+        check_count = 0
 
     return {
         "lecture_id": lecture_id,

@@ -43,6 +43,11 @@ def run_migrations():
         "CREATE TABLE IF NOT EXISTS student_answers (id SERIAL PRIMARY KEY, check_id INTEGER REFERENCES comprehension_checks(id) ON DELETE CASCADE, student_id VARCHAR REFERENCES students(student_id) ON DELETE CASCADE, chosen_option INTEGER NOT NULL, is_correct BOOLEAN NOT NULL, timestamp TIMESTAMP WITH TIME ZONE DEFAULT now())",
         # Lecture status column (added after session state machine implementation)
         "ALTER TABLE lectures ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'not_started'",
+        # Grant permissions on Gemini tables to current DB user (fixes InsufficientPrivilege on DO)
+        "GRANT ALL ON comprehension_checks TO CURRENT_USER",
+        "GRANT ALL ON student_answers TO CURRENT_USER",
+        "GRANT USAGE, SELECT ON SEQUENCE comprehension_checks_id_seq TO CURRENT_USER",
+        "GRANT USAGE, SELECT ON SEQUENCE student_answers_id_seq TO CURRENT_USER",
     ]
     with engine.begin() as conn:
         for sql in migrations:
