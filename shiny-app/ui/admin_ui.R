@@ -89,6 +89,14 @@ admin_ui <- function() {
           "Incident Audit",
           tabName = "admin_incidents",
           icon    = icon("shield-alt")
+        ),
+        
+        tags$li(class = "header", "SYSTEM MANAGEMENT"),
+        
+        shinydashboard::menuItem(
+          "Database Explorer",
+          tabName = "admin_db_explorer",
+          icon    = icon("database")
         )
       )
     ),
@@ -426,6 +434,43 @@ admin_ui <- function() {
           tabName = "admin_incidents",
           h2("Proctoring & Audit Logs"),
           DT::dataTableOutput("admin_incidents_table")
+        ),
+
+        # ── DATABASE EXPLORER (FULL CRUD) ─────────────────────────────────────
+        shinydashboard::tabItem(
+          tabName = "admin_db_explorer",
+          h2("Database Explorer & Raw SQL"),
+          p("Direct CRUD access to the underlying PostgreSQL schemas. Exercise caution."),
+          fluidRow(
+            # Left Column: Table Viewer
+            column(4,
+              wellPanel(
+                h4("Schema Viewer"),
+                uiOutput("db_table_selector"),
+                actionButton("db_refresh_schema_btn", "Refresh Schema", class = "btn-default btn-sm", icon = icon("sync")),
+                hr(),
+                p("Table Preview (Top 100 rows)"),
+                div(style = "max-height: 400px; overflow-y: auto;",
+                  DT::dataTableOutput("db_table_preview")
+                )
+              )
+            ),
+            # Right Column: SQL Executor
+            column(8,
+              shinydashboard::box(
+                title = "SQL Executor (Raw Query)",
+                width = 12,
+                status = "danger",
+                solidHeader = TRUE,
+                textAreaInput("db_sql_query", label = "SQL Query", rows = 6, 
+                              placeholder = "SELECT * FROM students;\nUPDATE classes SET lecturer_id = 'xxx';\nDELETE FROM enrollments WHERE id = 1;"),
+                actionButton("db_execute_sql_btn", "Execute Query", class = "btn-danger", icon = icon("play")),
+                hr(),
+                h4("Execution Results"),
+                DT::dataTableOutput("db_sql_results")
+              )
+            )
+          )
         )
 
       ) # end tabItems

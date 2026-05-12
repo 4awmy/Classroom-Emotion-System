@@ -39,6 +39,32 @@ admin_server <- function(input, output, session, session_state) {
     })
   }
 
+  safe_db_execute <- function(query) {
+    db_url <- get_db_url()
+    if (db_url == "") {
+      global_db_error("DATABASE_URL missing")
+      return(-1)
+    }
+    params <- parse_postgres_url(db_url)
+    tryCatch({
+      con <- if (is.null(params)) {
+        dbConnect(RPostgres::Postgres(), dbname = db_url)
+      } else {
+        dbConnect(RPostgres::Postgres(),
+                  host = params$host, port = params$port,
+                  user = params$user, password = params$password,
+                  dbname = params$dbname, sslmode = "require")
+      }
+      rows_affected <- dbExecute(con, query)
+      dbDisconnect(con)
+      global_db_error("")
+      rows_affected
+    }, error = function(e) {
+      global_db_error(paste("[DB Error]", e$message))
+      -1
+    })
+  }
+
   # ── BRANDING ───────────────────────────────────────────────────────────────
   output$dashboard_logo <- renderUI({
     tags$img(src = "logo.png",
@@ -684,5 +710,83 @@ admin_server <- function(input, output, session, session_state) {
       ORDER BY i.timestamp DESC
     ")
     DT::datatable(df, options = list(pageLength = 10, scrollX = TRUE), rownames = FALSE)
+  })
+
+  # ── DATABASE EXPLORER ──────────────────────────────────────────────────────
+  db_explorer_refresh <- reactiveVal(0)
+  
+  output$db_table_selector <- renderUI({
+    db_explorer_refresh()
+    # Query Postgres for all tables in the public schema
+    tables <- safe_db_get("
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      ORDER BY table_name;
+    ")
+    if (nrow(tables) == 0) return(p("No tables found in public schema.", style = "color:#e74c3c;"))
+    selectInput("db_selected_table", "Select Table to View:", choices = tables$table_name)
+  })
+
+  observeEvent(input$db_refresh_schema_btn, {
+    db_explorer_refresh(db_explorer_refresh() + 1)
+  })
+
+  output$db_table_preview <- DT::renderDataTable({
+    req(input$db_selected_table)
+    db_explorer_refresh()
+    
+    # Safe query building since table name is from information schema
+    query <- paste0("SELECT * FROM \"", input$db_selected_table, "\" LIMIT 100")
+    df <- safe_db_get(query)
+    
+    if (nrow(df) == 0 && nchar(global_db_error()) > 0) {
+      # Show error if query failed
+      return(DT::datatable(data.frame(Error = global_db_error()), rownames = FALSE))
+    }
+    
+    DT::datatable(df, options = list(pageLength = 15, scrollX = TRUE), rownames = FALSE)
+  })
+
+  # SQL Executor Logic
+  observeEvent(input$db_execute_sql_btn, {
+    req(input$db_sql_query)
+    query <- trimws(input$db_sql_query)
+    if (nchar(query) == 0) return()
+    
+    # Simple heuristic to determine if it's a SELECT query or modifying query
+    is_select <- grepl("^(SELECT|WITH|EXPLAIN|SHOW)\\b", toupper(query), perl = TRUE)
+    
+    if (is_select) {
+      # It's a read query, use safe_db_get
+      df <- safe_db_get(query)
+      if (nchar(global_db_error()) > 0) {
+        shinyalert::shinyalert("SQL Error", global_db_error(), type = "error")
+        output$db_sql_results <- DT::renderDataTable({
+          DT::datatable(data.frame(Error = global_db_error()), rownames = FALSE)
+        })
+      } else {
+        shinyalert::shinyalert("Success", paste("Query returned", nrow(df), "rows."), type = "success")
+        output$db_sql_results <- DT::renderDataTable({
+          DT::datatable(df, options = list(pageLength = 10, scrollX = TRUE), rownames = FALSE)
+        })
+      }
+    } else {
+      # It's a modifying query, use safe_db_execute
+      rows <- safe_db_execute(query)
+      if (rows < 0 && nchar(global_db_error()) > 0) {
+        shinyalert::shinyalert("SQL Error", global_db_error(), type = "error")
+        output$db_sql_results <- DT::renderDataTable({
+          DT::datatable(data.frame(Error = global_db_error()), rownames = FALSE)
+        })
+      } else {
+        # Trigger refresh of table preview and schema just in case
+        db_explorer_refresh(db_explorer_refresh() + 1)
+        shinyalert::shinyalert("Executed successfully", paste("Rows affected:", rows), type = "success")
+        output$db_sql_results <- DT::renderDataTable({
+          DT::datatable(data.frame(Status = "Success", Rows_Affected = rows), rownames = FALSE)
+        })
+      }
+    }
   })
 }
