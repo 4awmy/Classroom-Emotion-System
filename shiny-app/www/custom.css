@@ -212,7 +212,6 @@ a:hover { color: var(--gold); }
     border-radius: var(--radius) !important;
     box-shadow: var(--card-shadow) !important;
     margin-bottom: 20px;
-    overflow: hidden;
 }
 
 .box-header,
