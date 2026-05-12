@@ -197,9 +197,19 @@ for prefix in ["", "/api"]:
     app.include_router(vision.router,      prefix=f"{prefix}/vision",     tags=["Vision"])
 
 # Serve Expo web build at /mobile (pre-built static export)
-_mobile_dir = os.path.join(os.path.dirname(__file__), "static", "mobile")
+_mobile_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "mobile")
+logger.info(f"[MOBILE] static dir: {_mobile_dir} — exists: {os.path.isdir(_mobile_dir)}")
 if os.path.isdir(_mobile_dir):
+    # Mount app shell at /mobile
     app.mount("/mobile", StaticFiles(directory=_mobile_dir, html=True), name="mobile")
+    # Expo embeds absolute /_expo and /assets paths in HTML; expose them from backend too
+    _expo_dir = os.path.join(_mobile_dir, "_expo")
+    if os.path.isdir(_expo_dir):
+        app.mount("/_expo", StaticFiles(directory=_expo_dir), name="mobile-expo")
+    _assets_dir = os.path.join(_mobile_dir, "assets")
+    if os.path.isdir(_assets_dir):
+        app.mount("/assets", StaticFiles(directory=_assets_dir), name="mobile-assets")
+    logger.info("[MOBILE] Expo web app mounted at /mobile, /_expo, /assets")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)
