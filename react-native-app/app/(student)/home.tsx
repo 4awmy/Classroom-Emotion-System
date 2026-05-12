@@ -36,7 +36,7 @@ const ACTIVITIES_DARK = [
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { studentId, studentName, activeLectureId, setActiveLectureId, setFocusActive, isDark, toggleDark } = useStore();
+  const { studentId, studentName, activeLectureId, setActiveLectureId, setActiveExamId, setFocusActive, isDark, toggleDark } = useStore();
   const C = isDark ? DarkColors : Colors;
   const styles = useMemo(() => makeStyles(C), [isDark]);
   const ACTIVITIES = isDark ? ACTIVITIES_DARK : ACTIVITIES_LIGHT;
@@ -76,6 +76,19 @@ export default function HomeScreen() {
           "Session Started",
           `A lecture has just gone live${lid ? ` (${lid})` : ""}.\nTap Join to activate focus mode.`,
           [{ text: "OK" }]
+        );
+      }
+
+      if (data.type === "exam:start") {
+        const examId = data.exam_id as string | undefined;
+        if (examId) setActiveExamId(examId);
+        Alert.alert(
+          "Exam Started",
+          `An exam has begun${data.title ? `: ${data.title}` : ""}.\nPlease go to the Exam screen.`,
+          [
+            { text: "Go to Exam", onPress: () => router.push("/(student)/exam") },
+            { text: "Later", style: "cancel" },
+          ]
         );
       }
 

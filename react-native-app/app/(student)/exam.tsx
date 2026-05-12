@@ -17,7 +17,7 @@ import { useStore } from "@/store/useStore";
 import { Colors, DarkColors, Radius, Shadow, Spacing } from "@/constants/theme";
 
 export default function ExamScreen() {
-  const { studentId, activeLectureId, isDark } = useStore();
+  const { studentId, activeLectureId, activeExamId, setActiveExamId, isDark } = useStore();
   const C = isDark ? DarkColors : Colors;
   const styles = useMemo(() => makeStyles(C), [isDark]);
   const router = useRouter();
@@ -31,6 +31,7 @@ export default function ExamScreen() {
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const severity3Ref = useRef(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const examIdRef = useRef<string | null>(null);
 
   // Format elapsed time as HH:MM:SS
   const formatTime = (s: number) => {
@@ -42,19 +43,23 @@ export default function ExamScreen() {
 
   // Start exam on mount
   useEffect(() => {
-    const id = activeLectureId ?? `EXAM_${Date.now()}`;
+    const id = activeExamId ?? activeLectureId ?? null;
     setExamId(id);
-
-    examAPI.start(id, studentId ?? "unknown").catch(() => {});
+    examIdRef.current = id;
 
     timerRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
 
     const sub = AppState.addEventListener("change", handleAppState);
 
-    // Listen for auto-submit from backend via WebSocket
     const unsubWS = wsAPI.onMessage((msg) => {
-      if (msg.type === "exam:autosubmit" && msg.exam_id === id) {
+      if (msg.type === "exam:autosubmit" && msg.exam_id === examIdRef.current) {
         handleAutoSubmit();
+      }
+      if (msg.type === "exam:start") {
+        const newId = msg.exam_id as string;
+        setExamId(newId);
+        examIdRef.current = newId;
+        setActiveExamId(newId);
       }
     });
 
