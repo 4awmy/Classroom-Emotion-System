@@ -5,6 +5,7 @@ import os
 import asyncio
 from fastapi import FastAPI, Header, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text, inspect
 from sqlalchemy.orm import Session
 from database import engine, SessionLocal, get_db
@@ -194,6 +195,11 @@ for prefix in ["", "/api"]:
     app.include_router(upload.router,      prefix=f"{prefix}/upload",     tags=["Upload"])
     app.include_router(notify.router,      prefix=f"{prefix}/notify",     tags=["Notify"])
     app.include_router(vision.router,      prefix=f"{prefix}/vision",     tags=["Vision"])
+
+# Serve Expo web build at /mobile (pre-built static export)
+_mobile_dir = os.path.join(os.path.dirname(__file__), "static", "mobile")
+if os.path.isdir(_mobile_dir):
+    app.mount("/mobile", StaticFiles(directory=_mobile_dir, html=True), name="mobile")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)
