@@ -202,6 +202,25 @@ lecturer_ui <- function() {
             )
           ),
 
+          # ── Exam Proctoring (collapsible, below session controls) ──
+          shinydashboard::box(
+            title = tagList(icon("shield-alt"), " Exam Proctoring"),
+            width = 12, status = "danger", collapsible = TRUE, collapsed = TRUE,
+            fluidRow(
+              column(4, textInput("exam_title_input", "Exam Title", placeholder = "e.g. Midterm Exam")),
+              column(4, br(), uiOutput("exam_start_stop_btn")),
+              column(4, br(), uiOutput("exam_status_badge"))
+            ),
+            hr(),
+            fluidRow(
+              column(3, shinydashboard::valueBoxOutput("exam_box_total",  width = 12)),
+              column(3, shinydashboard::valueBoxOutput("exam_box_high",   width = 12)),
+              column(3, shinydashboard::valueBoxOutput("exam_box_medium", width = 12)),
+              column(3, shinydashboard::valueBoxOutput("exam_box_low",    width = 12))
+            ),
+            DT::dataTableOutput("exam_incidents_table")
+          ),
+
           div(class = "live-2-col",
             # Column 1: Video & Student Grid
             div(class = "live-left",

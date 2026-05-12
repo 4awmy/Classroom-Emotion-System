@@ -455,6 +455,119 @@ lecturer_server <- function(input, output, session, session_state) {
     current_session_status("not_started")
   })
 
+  # ════════════════════════════════════════════════════════════════════════════
+  # EXAM PROCTORING
+  # ════════════════════════════════════════════════════════════════════════════
+  active_exam_id     <- reactiveVal(NULL)
+  exam_active        <- reactiveVal(FALSE)
+
+  live_incidents <- reactive({
+    req(exam_active(), !is.null(active_exam_id()))
+    invalidateLater(3000, session)
+    safe_db_get(sprintf(
+      "SELECT i.timestamp, s.name AS student, i.flag_type, i.severity, i.evidence_path
+       FROM incidents i
+       LEFT JOIN students s ON i.student_id = s.student_id
+       WHERE i.exam_id = '%s'
+       ORDER BY i.timestamp DESC
+       LIMIT 100", active_exam_id()
+    ))
+  })
+
+  output$exam_start_stop_btn <- renderUI({
+    if (!exam_active()) {
+      actionButton("exam_start_btn", tagList(icon("play"), " Start Exam"),
+                   class = "btn-danger btn-block")
+    } else {
+      actionButton("exam_stop_btn", tagList(icon("stop"), " End Exam"),
+                   class = "btn-dark btn-block")
+    }
+  })
+
+  output$exam_status_badge <- renderUI({
+    if (exam_active()) {
+      tags$span(class = "label label-danger", style = "font-size:14px; padding:6px 12px;",
+                icon("circle"), " EXAM LIVE")
+    } else {
+      tags$span(class = "label label-default", style = "font-size:14px; padding:6px 12px;",
+                "No active exam")
+    }
+  })
+
+  observeEvent(input$exam_start_btn, {
+    req(input$live_class_id, nchar(trimws(input$exam_title_input)) > 0)
+    title <- trimws(input$exam_title_input)
+    # Create exam
+    res <- api_call("/exam", method = "POST",
+                    body = list(class_id = input$live_class_id,
+                                title    = title,
+                                scheduled_start = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ")),
+                    auth_token = session_state$token)
+    if (is.null(res) || is.null(res$exam_id)) {
+      shinyalert::shinyalert("Error", "Could not create exam.", type = "error")
+      return()
+    }
+    eid <- res$exam_id
+    active_exam_id(eid)
+    # Start vision pipeline in exam context
+    lid <- paste0("EXAM_", gsub("[^A-Za-z0-9]", "", title), "_", format(Sys.Date(), "%Y%m%d"))
+    current_lecture_id(lid)
+    api_call("/session/start", method = "POST",
+             body = list(lecture_id  = lid,
+                         class_id    = input$live_class_id,
+                         lecturer_id = session_state$user_id,
+                         title       = title,
+                         context     = "exam",
+                         exam_id     = eid),
+             auth_token = session_state$token)
+    exam_active(TRUE)
+    shinyalert::shinyalert("Exam Started", paste("Proctoring active for:", title), type = "success")
+  })
+
+  observeEvent(input$exam_stop_btn, {
+    eid <- active_exam_id()
+    lid <- current_lecture_id()
+    if (!is.null(eid)) api_call(paste0("/exam/", eid, "/end"), method = "POST",
+                                auth_token = session_state$token)
+    if (nchar(lid) > 0)  api_call("/session/end", method = "POST",
+                                  body = list(lecture_id = lid),
+                                  auth_token = session_state$token)
+    exam_active(FALSE)
+    active_exam_id(NULL)
+    shinyalert::shinyalert("Exam Ended", "Proctoring session closed.", type = "info")
+  })
+
+  sev_color <- function(s) switch(as.character(s), "3"="#dc3545","2"="#fd7e14","1"="#ffc107","#6c757d")
+
+  output$exam_incidents_table <- DT::renderDataTable({
+    df <- if (exam_active()) live_incidents() else data.frame()
+    if (is.null(df) || nrow(df) == 0)
+      return(DT::datatable(data.frame(Message = "No incidents yet."), options = list(dom = "t"), rownames = FALSE))
+    df$severity <- as.integer(df$severity)
+    DT::datatable(df[, c("timestamp","student","flag_type","severity")],
+                  rownames = FALSE, options = list(pageLength = 10, dom = "tp")) |>
+      DT::formatStyle("severity",
+        backgroundColor = DT::styleEqual(c(1,2,3), c("#fff3cd","#ffe0b2","#ffcdd2")),
+        fontWeight = "bold")
+  })
+
+  output$exam_box_total  <- shinydashboard::renderValueBox({
+    n <- if (exam_active() && nrow(live_incidents()) > 0) nrow(live_incidents()) else 0
+    shinydashboard::valueBox(n, "Total Incidents", icon = icon("flag"), color = "red")
+  })
+  output$exam_box_high   <- shinydashboard::renderValueBox({
+    n <- if (exam_active() && nrow(live_incidents()) > 0) sum(live_incidents()$severity == 3, na.rm=TRUE) else 0
+    shinydashboard::valueBox(n, "High (Sev 3)", icon = icon("exclamation-triangle"), color = "red")
+  })
+  output$exam_box_medium <- shinydashboard::renderValueBox({
+    n <- if (exam_active() && nrow(live_incidents()) > 0) sum(live_incidents()$severity == 2, na.rm=TRUE) else 0
+    shinydashboard::valueBox(n, "Medium (Sev 2)", icon = icon("eye"), color = "orange")
+  })
+  output$exam_box_low    <- shinydashboard::renderValueBox({
+    n <- if (exam_active() && nrow(live_incidents()) > 0) sum(live_incidents()$severity == 1, na.rm=TRUE) else 0
+    shinydashboard::valueBox(n, "Low (Sev 1)", icon = icon("info-circle"), color = "yellow")
+  })
+
   # ── Live gauge ────────────────────────────────────────────────────────────
   output$lecturer_d1_gauge <- plotly::renderPlotly({
     df  <- live_emotions()
