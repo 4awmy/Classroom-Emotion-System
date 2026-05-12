@@ -14,8 +14,7 @@ login_ui_static <- shiny::fluidPage(
   shinyjs::useShinyjs(),
   shiny::tags$head(
     shiny::tags$link(rel = "stylesheet", type = "text/css", href = "custom.css"),
-    # Add login-page-body class so custom.css can apply campus.jpg background
-    shiny::tags$script(HTML("document.addEventListener('DOMContentLoaded', function() { document.body.classList.add('login-page-body'); });")),
+    # Background logic now handled directly in .login-wrapper CSS below
     shiny::tags$style(HTML("
       @keyframes floatOrb {
         0%, 100% { transform: translateY(0px) scale(1); opacity: 0.55; }
@@ -72,8 +71,12 @@ login_ui_static <- shiny::fluidPage(
         justify-content: center;
         padding: 40px 20px;
         position: relative;
-        background-image: radial-gradient(rgba(201,168,76,0.08) 1px, transparent 1px);
-        background-size: 28px 28px;
+        /* Combined background: Dot grid + Dark overlay + Campus image */
+        background: 
+          radial-gradient(rgba(201,168,76,0.08) 1px, transparent 1px),
+          linear-gradient(rgba(4,18,44,0.72), rgba(4,18,44,0.72)),
+          url('campus.jpg') center / cover no-repeat fixed !important;
+        background-size: 28px 28px, auto, cover;
       }
 
       /* ── Logo area ────────────────────────────────────────── */
