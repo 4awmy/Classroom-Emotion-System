@@ -2,22 +2,74 @@
 
 @theme {
   --color-aast-navy: #002244;
+  --color-aast-navy-dark: #001122;
   --color-aast-gold: #C49808;
+  --color-aast-gold-light: #E8B817;
   --color-aast-white: #FFFFFF;
   --color-aast-gray: #F8F9FA;
+  --color-aast-glass: rgba(0, 34, 68, 0.6);
+  --color-aast-glass-border: rgba(196, 152, 8, 0.2);
   
   --font-sans: "Inter", "Open Sans", "Arial", sans-serif;
+
+  --animate-blob: blob 7s infinite;
+  --animate-fade-in-up: fadeInUp 0.8s ease-out forwards;
+}
+
+@keyframes blob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 :root {
-  background-color: var(--color-aast-gray);
-  color: #333333;
+  background-color: var(--color-aast-navy-dark);
+  color: var(--color-aast-white);
+  color-scheme: dark;
 }
 
 body {
   margin: 0;
   display: flex;
-  place-items: center;
+  flex-direction: column;
   min-width: 320px;
   min-height: 100vh;
+  overflow-x: hidden;
+  background: radial-gradient(circle at top, var(--color-aast-navy), var(--color-aast-navy-dark));
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+.glass-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--color-aast-glass-border);
+  box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  border-color: rgba(196, 152, 8, 0.5);
+  transform: translateY(-5px);
+  box-shadow: 0 8px 32px -1px rgba(196, 152, 8, 0.15);
+}
+
+.text-gradient {
+  background: linear-gradient(to right, #FFFFFF, #C49808);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }

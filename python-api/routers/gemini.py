@@ -149,7 +149,17 @@ async def generate_check(lecture_id: str, db: Session = Depends(get_db)):
     db.add(new_check)
     db.commit()
     db.refresh(new_check)
-    
+
+    # Broadcast MCQ to connected student devices
+    await manager.broadcast({
+        "type": "comprehension_check",
+        "check_id": new_check.id,
+        "lecture_id": lecture_id,
+        "question": new_check.question,
+        "options": mcq["options"],
+        "topic": new_check.topic,
+    })
+
     return {
         "id": new_check.id,
         "question": new_check.question,

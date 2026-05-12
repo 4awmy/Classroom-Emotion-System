@@ -22,43 +22,35 @@ The Classroom Emotion System is a consolidated cloud platform designed for real-
 
 ---
 
-## 1. System Boundary Map
+## 1. System Topology & Data Flow
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                          CLASSROOM (Local Layer)                            │
-│                                                                             │
-│   ┌──────────────────┐                                                      │
-│   │  IP Camera (1x)  │  RTSP / USB                                          │
-│   │  Fixed Position  │──────────────────────────────────────────────────┐  │
-│   └──────────────────┘                                                   │  │
-└──────────────────────────────────────────────────────────────────────────│──┘
-                                                                           │ Data/Signal
-                                                                           ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                DIGITAL OCEAN APP PLATFORM (Production)                       │
-│                                                                              │
-│  ┌──────────────────────────┐          ┌──────────────────────────────────┐  │
-│  │   FastAPI API Service    │◀────────▶│   Managed PostgreSQL (DO)        │  │
-│  │   (uvicorn / main.py)    │          │   (classroom_emotions DB)        │  │
-│  └─────────────┬────────────┘          └──────────────────────────────────┘  │
-│                │                                                             │
-│                │                                                             │
-│                ▼                                                             │
-│  ┌──────────────────────────┐                                                │
-│  │   DO Spaces (Storage)    │                                                │
-│  │   (Snapshots/Evidence)   │                                                │
-│  └──────────────────────────┘                                                │
-└──────────┬───────────────────────────────┬───────────────────────────────── ┘
-           │ HTTP / Direct SQL             │ WebSocket / HTTP
-           ▼                               ▼
-┌─────────────────────┐        ┌─────────────────────────┐
-│  R/Shiny staff Portal│        │  React Native App       │
-│  (Lecturers/Admins) │        │  (Students ONLY)        │
-│                     │        │                         │
-│  Reports: 2x2 Grid  │        │  Role: Student          │
-│  Live: 3-Step Sel.  │        │  Signals: Focus Strikes │
-└─────────────────────┘        └─────────────────────────┘
+### 1.1 High-Level Component Map
+```mermaid
+graph TD
+    subgraph Classroom
+        CAM[IP/USB Camera] --> VIS[Vision Node: vision/main.py]
+    end
+
+    subgraph DigitalOcean [Cloud Layer]
+        API[FastAPI Backend]
+        DB[(Managed PostgreSQL)]
+        OBJ[DO Spaces: S3 Storage]
+        GEM[Gemini 2.5 Flash AI]
+    end
+
+    subgraph Clients [Frontend Layer]
+        STAFF[R/Shiny Staff Portal]
+        APP[React Native Student App]
+    end
+
+    VIS -- Anonymized Metadata --> API
+    VIS -- Snapshot Upload --> OBJ
+    API -- Query/Save --> DB
+    API -- Context --> GEM
+    GEM -- Intervention --> API
+    API -- WebSockets --> STAFF
+    API -- WebSockets --> APP
+    STAFF -- Analytics Query --> DB
 ```
 
 ---
@@ -66,17 +58,36 @@ The Classroom Emotion System is a consolidated cloud platform designed for real-
 ## 2. Identity & Data Standards
 
 ### 2.1 User Identity Flow
-- **Authentication:** Managed directly by the FastAPI backend using standard JWT tokens and BCrypt (`pbkdf2_sha256`) password hashing.
-- **UUIDs:** Every record in `admins`, `lecturers`, and `students` contains an `auth_user_id` (UUID). This UUID is used as the sub-claim in the JWT for secure session management.
-- **Naming:** All user names are stored in **English** (transliterated from Arabic where necessary) for system compatibility and clean UI.
-- **Emails:**
-    - **Students:** Format `[FirstInitial][StudentID]@aast.com` (e.g., `m231006367@aast.com`).
-    - **Staff:** Standard AAST/University emails.
+```mermaid
+sequenceDiagram
+    participant User as Student/Lecturer
+    participant API as FastAPI Backend
+    participant DB as PostgreSQL
+    participant JWT as Auth Service
 
-### 2.2 Database Persistence
-- **Engine:** PostgreSQL 15+.
-- **Timezone:** All timestamps are stored as `TIMESTAMPTZ` (UTC) to ensure accuracy across geographic regions.
-- **Binary Data:** `face_encoding` is stored as `BYTEA` (Postgres binary) for high-performance retrieval.
+    User->>API: Login (Email/Password)
+    API->>DB: Fetch user by Email
+    DB-->>API: Returns password_hash & auth_user_id
+    API->>API: Verify password (BCrypt)
+    API->>JWT: Generate Token (sub: auth_user_id)
+    JWT-->>User: Returns JWT Token
+```
+
+### 2.2 Entity Relationship Diagram (ERD)
+```mermaid
+erDiagram
+    ADMINS ||--o{ LOGS : manages
+    LECTURERS ||--o{ CLASSES : teaches
+    CLASSES ||--o{ LECTURES : contains
+    CLASSES ||--o{ ENROLLMENTS : registers
+    STUDENTS ||--o{ ENROLLMENTS : joins
+    LECTURES ||--o{ EMOTION_LOG : records
+    LECTURES ||--o{ ATTENDANCE_LOG : tracks
+    STUDENTS ||--o{ EMOTION_LOG : displays
+    STUDENTS ||--o{ ATTENDANCE_LOG : marked_in
+    LECTURES ||--o{ MATERIALS : links
+    MATERIALS ||--o{ COMPREHENSION_CHECKS : triggers
+```
 
 ---
 
@@ -93,55 +104,38 @@ The Classroom Emotion System is a consolidated cloud platform designed for real-
 | `face_encoding`| BYTEA | 128-dim face vector |
 | `photo_url` | TEXT | Link to DO Spaces/Google Drive |
 
-### `lectures`
-| Column | Type | Description |
-| :--- | :--- | :--- |
-| `lecture_id` | TEXT (PK) | Generated ID |
-| `class_id` | TEXT (FK) | Link to `classes` |
-| `title` | TEXT | Lecture title (Advanced...) |
-| `actual_start_time` | TIMESTAMPTZ | When the camera actually started |
-| `end_time` | TIMESTAMPTZ | When the session closed |
+---
+
+## 4. AI Pipeline Specifications
+
+### 4.1 Vision Inference Flow
+```mermaid
+flowchart LR
+    F[Frame Capture] --> DET[YOLOv8: Person/Face Detection]
+    DET --> CROP[Face Cropping]
+    CROP --> ID[Face Recognition: Identity]
+    CROP --> EMO[HSEmotion: Emotion Classification]
+    ID --> SYNC[Aggregator]
+    EMO --> SYNC
+    SYNC --> SEND[Post to Backend]
+```
+
+### 4.2 AI Interventions (Gemini)
+- **Signal:** Student "Confused" score > 0.8 for 3 consecutive cycles.
+- **Context:** Extracts text from current `lecture_materials` (PDF/PPT).
+- **Prompt:** "Explain [Concept] for a student who looks confused."
+- **Action:** Sends a **Fresh Brainer** question via WebSocket to the Student App.
 
 ---
 
-## 4. Frontend Specifications
+## 5. Deployment
 
-### 4.1 Lecturer Portal (R/Shiny)
-- **Live Dashboard:** Implements a **3-Step Selector** (Course → Class → Session Info) to prevent accidental stream starts.
-- **Analytics Tab:** Features a **2x2 Grid Layout**:
-    1.  **Emotion Frequency:** Distribution of class mood.
-    2.  **Engagement Timeline:** 5-minute rolling average of focus scores.
-    3.  **Attendance Summary:** Real-time presence vs. roster.
-    4.  **Student Drill-down:** Individual performance metrics.
-
-### 4.2 Student App (React Native)
-- **Signal Flow:** Sends `focus_strike` events via WebSockets when the app is backgrounded.
-- **Identity:** Authenticates against the FastAPI backend; receives real-time "Fresh Brainer" alerts (Gemini AI questions) via WebSocket broadcasts.
-
----
-
-## 5. Vision Pipeline Data Flow
-
-1.  **Capture:** 1 frame every 5 seconds (configurable for performance).
-2.  **Detection:** Stage 1 (Person detection) → Stage 2 (Face crop).
-3.  **Recognition:** Compares `face_encoding` against `students` table.
-4.  **Inference:** Classifies emotion into: *Focused, Engaged, Confused, Anxious, Frustrated, Disengaged*.
-5.  **Logging:**
-    - `attendance_log`: Written on **first** identification per session.
-    - `emotion_log`: Written every cycle while student is visible.
-    - `snapshots`: Face crop saved to DO Spaces for visual presence proof.
-
----
-
-## 6. Deployment & Seeding
-
-### 6.1 Production Environment
-- **Digital Ocean App Platform:** Hosts the FastAPI backend and Shiny frontend.
-- **Environment Variables:** `DATABASE_URL`, `JWT_SECRET`, `SPACES_BUCKET`.
-
-### 6.2 Seeding Standards
-- **Script:** `python-api/scripts/prod_import_and_seed.py`.
-- **Visual Testing:** Automatically generates 5 historical lectures per course with simulated data to ensure immediate UI functionality upon deployment.
+### 5.1 Cloud Topology
+- **Primary Region:** `fra` (Frankfurt, Germany)
+- **Infrastructure:**
+    - App Platform: `basic-s` (2GB RAM)
+    - Managed Database: PostgreSQL 15 (Development Node)
+    - Object Storage: DigitalOcean Spaces (S3)
 
 ---
 

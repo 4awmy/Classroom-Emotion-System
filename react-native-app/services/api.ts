@@ -23,8 +23,12 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Native WebSocket client
+// ── WebSocket ─────────────────────────────────────────────────────────────────
+
 let wsConnection: WebSocket | null = null;
+let wsReconnectDelay = 2000;
+let wsReconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
 type FocusStrikeMessage = {
   type: "focus_strike";
   student_id: string;
@@ -35,6 +39,7 @@ type FocusStrikeMessage = {
 };
 
 const pendingStrikeMessages: FocusStrikeMessage[] = [];
+const messageListeners: Array<(data: Record<string, unknown>) => void> = [];
 
 const sendJson = (message: FocusStrikeMessage) => {
   wsConnection?.send(JSON.stringify(message));
@@ -49,6 +54,11 @@ export const connectWebSocket = (): WebSocket => {
     return wsConnection;
   }
 
+  if (wsReconnectTimer) {
+    clearTimeout(wsReconnectTimer);
+    wsReconnectTimer = null;
+  }
+
   const wsEndpoint = WS_URL.endsWith("/session/ws")
     ? WS_URL
     : `${WS_URL.replace(/\/$/, "")}/session/ws`;
@@ -57,19 +67,22 @@ export const connectWebSocket = (): WebSocket => {
 
   wsConnection.onopen = () => {
     console.log("[WebSocket] Connected");
+    wsReconnectDelay = 2000; // Reset backoff on successful connect
     while (
       pendingStrikeMessages.length > 0 &&
       wsConnection?.readyState === WebSocket.OPEN
     ) {
       const message = pendingStrikeMessages.shift();
-      if (message) {
-        sendJson(message);
-      }
+      if (message) sendJson(message);
     }
   };
 
   wsConnection.onclose = () => {
-    console.log("[WebSocket] Disconnected");
+    console.log(`[WebSocket] Disconnected — reconnecting in ${wsReconnectDelay}ms`);
+    wsReconnectTimer = setTimeout(() => {
+      wsReconnectDelay = Math.min(wsReconnectDelay * 2, 30000);
+      connectWebSocket();
+    }, wsReconnectDelay);
   };
 
   wsConnection.onerror = (error) => {
@@ -91,9 +104,7 @@ export const connectWebSocket = (): WebSocket => {
 
 export const getWebSocket = (): WebSocket | null => wsConnection;
 
-/**
- * Local API Service Methods
- */
+// ── Auth ──────────────────────────────────────────────────────────────────────
 
 export const authAPI = {
   login: async (userId: string, password: string) => {
@@ -101,13 +112,15 @@ export const authAPI = {
       user_id: userId,
       password,
     });
-    return response.data; // Expected { access_token, token_type }
+    return response.data;
   },
   getMe: async () => {
     const response = await apiClient.get("/auth/me");
     return response.data;
-  }
+  },
 };
+
+// ── Session ───────────────────────────────────────────────────────────────────
 
 export const sessionAPI = {
   getUpcoming: async (studentId?: string) => {
@@ -129,6 +142,8 @@ export const sessionAPI = {
   },
 };
 
+// ── Notes ─────────────────────────────────────────────────────────────────────
+
 export const notesAPI = {
   get: async (studentId: string, lectureId: string) => {
     const response = await apiClient.get(`/notes/${studentId}/${lectureId}`);
@@ -140,6 +155,8 @@ export const notesAPI = {
   },
 };
 
+// ── Attendance ────────────────────────────────────────────────────────────────
+
 export const attendanceAPI = {
   scanCheckIn: async (lectureId: string, studentId: string) => {
     const response = await apiClient.post("/attendance/scan", {
@@ -150,23 +167,53 @@ export const attendanceAPI = {
   },
 };
 
+// ── Comprehension Checks ──────────────────────────────────────────────────────
+
 export const checkAPI = {
   submitAnswer: async (checkId: number, studentId: string, chosenOption: number) => {
     const response = await apiClient.post("/gemini/check/submit", null, {
-      params: {
-        check_id: checkId,
-        student_id: studentId,
-        chosen_option: chosenOption,
-      },
+      params: { check_id: checkId, student_id: studentId, chosen_option: chosenOption },
     });
     return response.data;
   },
 };
 
-// WebSocket message listeners
-const messageListeners: Array<(data: Record<string, unknown>) => void> = [];
+// ── Notifications ─────────────────────────────────────────────────────────────
 
-// WebSocket events wrapper
+export const notifyAPI = {
+  getStudent: async (studentId: string) => {
+    try {
+      const response = await apiClient.get(`/notify/student/${studentId}`);
+      return response.data;
+    } catch {
+      return { notifications: [], unread: 0 };
+    }
+  },
+};
+
+// ── Exam ──────────────────────────────────────────────────────────────────────
+
+export const examAPI = {
+  /**
+   * Fetch the currently active exam for a student (lecturer-started, not mobile-initiated).
+   * Returns { active: false } if no live exam found.
+   */
+  getActive: async (studentId: string) => {
+    const response = await apiClient.get(`/exam/active/${studentId}`);
+    return response.data as { active: boolean; exam_id?: string; title?: string; class_id?: string };
+  },
+  submit: async (examId: string, studentId: string, reason = "manual") => {
+    const response = await apiClient.post("/exam/submit", {
+      exam_id: examId,
+      student_id: studentId,
+      reason,
+    });
+    return response.data;
+  },
+};
+
+// ── WebSocket events wrapper ──────────────────────────────────────────────────
+
 export const wsAPI = {
   emitStrike: (
     studentId: string,
@@ -186,13 +233,11 @@ export const wsAPI = {
 
     if (ws?.readyState === WebSocket.OPEN) {
       sendJson(message);
-      console.log("[WebSocket] Strike emitted:", message);
       return true;
     }
 
     pendingStrikeMessages.push(message);
     connectWebSocket();
-    console.log("[WebSocket] Strike queued:", message);
     return false;
   },
 
@@ -202,22 +247,5 @@ export const wsAPI = {
       const idx = messageListeners.indexOf(cb);
       if (idx >= 0) messageListeners.splice(idx, 1);
     };
-  },
-};
-
-export const examAPI = {
-  start: async (examId: string, studentId: string) => {
-    const response = await apiClient.post("/exam", {
-      class_id: examId,
-      student_id: studentId,
-    });
-    return response.data;
-  },
-  submit: async (examId: string, studentId: string) => {
-    const response = await apiClient.post("/exam/submit", {
-      exam_id: examId,
-      student_id: studentId,
-    });
-    return response.data;
   },
 };

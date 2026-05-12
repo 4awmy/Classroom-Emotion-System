@@ -1,4 +1,4 @@
-import { CheckCircle2, Shield, Zap, Layout, Globe, Cpu } from 'lucide-react';
+import { CheckCircle2, Shield, Zap, Layout, Globe, Cpu, BookOpen, Key, PlayCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const features = [
@@ -13,7 +13,7 @@ const features = [
     icon: CheckCircle2,
   },
   {
-    title: 'Smart Proctering',
+    title: 'Smart Proctoring',
     desc: 'Automated cheating detection and student behavior monitoring for exam security.',
     icon: Shield,
   },
@@ -32,6 +32,13 @@ const features = [
     desc: 'Designed specifically for the AASTMT Smart Village Campus ecosystem.',
     icon: Globe,
   },
+];
+
+const quickNav = [
+  { name: 'System Architecture', path: '/docs/architecture', icon: Cpu, desc: 'Technical component breakdown' },
+  { name: 'Testing Manual', path: '/manual', icon: Key, desc: 'Credentials & instructions' },
+  { name: 'User Documentation', path: '/docs/overview', icon: BookOpen, desc: 'How to use the system' },
+  { name: 'Live Demo', path: '#demo', icon: PlayCircle, desc: 'Watch the system in action' },
 ];
 
 export default function Home() {
@@ -59,11 +66,27 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Quick Navigation / "Navbar" on Main Page */}
+      <section className="bg-white rounded-3xl p-4 shadow-xl border border-gray-100 max-w-5xl mx-auto -mt-12 relative z-10">
+        <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-gray-100">
+          {quickNav.map((item) => (
+            <Link 
+              key={item.name} 
+              to={item.path} 
+              className="p-6 hover:bg-aast-gray transition-all group flex flex-col items-center text-center"
+            >
+              <item.icon size={24} className="text-aast-navy mb-3 group-hover:text-aast-gold transition-colors" />
+              <span className="font-bold text-aast-navy text-sm">{item.name}</span>
+              <span className="text-[10px] text-gray-400 mt-1 uppercase tracking-wider">{item.desc}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       {/* Demo Video Section */}
       <section id="demo" className="relative">
         <div className="absolute inset-0 bg-aast-navy rounded-[3rem] -rotate-1 scale-105 opacity-5"></div>
         <div className="bg-black rounded-[2rem] overflow-hidden shadow-2xl aspect-video relative group ring-12 ring-white">
-          {/* In a real scenario, this would be a YouTube iframe. Placeholder for now. */}
           <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-tr from-aast-navy/80 to-transparent">
             <div className="w-24 h-24 bg-aast-gold text-aast-navy rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-all cursor-pointer">
               <div className="ml-2 border-y-[12px] border-y-transparent border-l-[20px] border-l-aast-navy"></div>
@@ -93,7 +116,7 @@ export default function Home() {
         ))}
       </section>
 
-      {/* Case Study Section */}
+      {/* Impact Section */}
       <section className="bg-white rounded-3xl p-12 border border-aast-gray shadow-sm">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl font-bold text-aast-navy mb-8 text-center">Project Impact</h2>

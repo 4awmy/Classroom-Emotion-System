@@ -8,6 +8,7 @@ interface StudentStore {
   studentName: string | null;
   authToken: string | null;
   activeLectureId: string | null;
+  activeExamId: string | null;
   focusActive: boolean;
   strikes: number;
   isDark: boolean;
@@ -16,6 +17,7 @@ interface StudentStore {
   setStudentName: (name: string | null) => void;
   setAuthToken: (token: string | null) => void;
   setActiveLectureId: (id: string | null) => void;
+  setActiveExamId: (id: string | null) => void;
   setFocusActive: (active: boolean) => void;
   setStrikes: (count: number | ((prev: number) => number)) => void;
   setIsDark: (dark: boolean) => void;
@@ -34,6 +36,7 @@ export const useStore = create<StudentStore>()(
       studentName: null,
       authToken: null,
       activeLectureId: null,
+      activeExamId: null,
       focusActive: false,
       strikes: 0,
       isDark: false,
@@ -45,6 +48,7 @@ export const useStore = create<StudentStore>()(
         if (token) setAPIAuthToken(token);
       },
       setActiveLectureId: (id) => set({ activeLectureId: id }),
+      setActiveExamId: (id) => set({ activeExamId: id }),
       setFocusActive: (active) => set({ focusActive: active }),
       setStrikes: (count) =>
         set((state) => ({
@@ -64,6 +68,7 @@ export const useStore = create<StudentStore>()(
           studentName: null,
           authToken: null,
           activeLectureId: null,
+          activeExamId: null,
           focusActive: false,
           strikes: 0,
         }),

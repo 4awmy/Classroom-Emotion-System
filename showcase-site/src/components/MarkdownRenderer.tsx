@@ -1,5 +1,6 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import Mermaid from './Mermaid';
 
 interface MarkdownRendererProps {
   content: string;
@@ -13,7 +14,21 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
       prose-table:border prose-table:border-gray-200
       prose-th:bg-aast-gray prose-th:p-2
       prose-td:p-2 prose-td:border-t prose-td:border-gray-100">
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+      <ReactMarkdown 
+        remarkPlugins={[remarkGfm]}
+        components={{
+          code({ node, inline, className, children, ...props }: any) {
+            const match = /language-mermaid/.exec(className || '');
+            return !inline && match ? (
+              <Mermaid chart={String(children).replace(/\n$/, '')} />
+            ) : (
+              <code className={className} {...props}>
+                {children}
+              </code>
+            );
+          },
+        }}
+      >
         {content}
       </ReactMarkdown>
     </div>

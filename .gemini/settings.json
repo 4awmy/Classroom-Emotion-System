@@ -1,7 +1,6 @@
 {
   "hooksConfig": {
     "disabled": [
-      "context-mode hook gemini-cli beforetool"
     ]
   }
 }

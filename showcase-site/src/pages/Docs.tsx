@@ -1,35 +1,36 @@
-import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import MarkdownRenderer from '../components/MarkdownRenderer';
-
-const docsMap: any = import.meta.glob('../docs/*.md', { query: '?raw' });
+import { useLocation, Navigate } from 'react-router-dom';
+import Overview from './docs/Overview';
+import Architecture from './docs/Architecture';
+import AIPipeline from './docs/AIPipeline';
+import DataSchema from './docs/DataSchema';
 
 export default function Docs() {
   const location = useLocation();
-  const [content, setContent] = useState<string>('Loading documentation...');
-  
-  const docKey = location.pathname.split('/').pop() || 'overview';
-  const docPath = `../docs/${docKey}.md`;
+  const docKey = location.pathname.split('/').pop();
 
-  useEffect(() => {
-    const loadDoc = async () => {
-      try {
-        if (docsMap[docPath]) {
-          const module = await docsMap[docPath]();
-          setContent(module.default);
-        } else {
-          setContent('# 404\nDocumentation section not found.');
-        }
-      } catch (err) {
-        setContent('# Error\nFailed to load documentation content.');
-      }
-    };
-    loadDoc();
-  }, [docPath]);
+  const renderDoc = () => {
+    switch (docKey) {
+      case 'overview':
+        return <Overview />;
+      case 'architecture':
+        return <Architecture />;
+      case 'ai':
+        return <AIPipeline />;
+      case 'database':
+        return <DataSchema />;
+      default:
+        return <Overview />;
+    }
+  };
+
+  // If base /docs path is accessed, redirect to overview
+  if (location.pathname === '/docs' || location.pathname === '/docs/') {
+    return <Navigate to="/docs/overview" replace />;
+  }
 
   return (
-    <div className="max-w-4xl">
-      <MarkdownRenderer content={content} />
+    <div className="w-full max-w-5xl mx-auto">
+      {renderDoc()}
     </div>
   );
 }
