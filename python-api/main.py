@@ -56,13 +56,15 @@ def run_migrations():
         "GRANT USAGE, SELECT ON SEQUENCE comprehension_checks_id_seq TO CURRENT_USER",
         "GRANT USAGE, SELECT ON SEQUENCE student_answers_id_seq TO CURRENT_USER",
     ]
-    with engine.begin() as conn:
-        for sql in migrations:
-            try:
+    # Each migration in its own transaction — PostgreSQL aborts the whole
+    # transaction on any error, so a single shared connection means later
+    # migrations silently fail if an earlier one fails.
+    for sql in migrations:
+        try:
+            with engine.begin() as conn:
                 conn.execute(text(sql))
-            except Exception as e:
-                # Silently skip if table/column exists or error occurs
-                pass
+        except Exception as e:
+            logger.debug(f"[MIGRATION] Skipped (already applied or N/A): {e}")
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):

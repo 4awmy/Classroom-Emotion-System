@@ -22,7 +22,7 @@ class AdminUpdate(BaseModel):
 
 class AdminResponse(AdminBase):
     auth_user_id: Optional[str] = None
-    needs_password_reset: bool
+    needs_password_reset: Optional[bool] = False
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
@@ -51,7 +51,7 @@ class LecturerUpdate(BaseModel):
 
 class LecturerResponse(LecturerBase):
     auth_user_id: Optional[str] = None
-    needs_password_reset: bool
+    needs_password_reset: Optional[bool] = False
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
@@ -81,7 +81,7 @@ class StudentUpdate(BaseModel):
 
 class StudentResponse(StudentBase):
     auth_user_id: Optional[str] = None
-    needs_password_reset: bool
+    needs_password_reset: Optional[bool] = False
     enrolled_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
