@@ -1,4 +1,5 @@
 import { CheckCircle2, Shield, Zap, Layout, Globe, Cpu } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const features = [
   {
@@ -49,10 +50,10 @@ export default function Home() {
           An end-to-end AI system that bridges the gap between student engagement and academic success through real-time vision analytics and intelligent interventions.
         </p>
         <div className="flex justify-center gap-4">
-          <a href="/docs/overview" className="bg-aast-navy text-white px-8 py-4 rounded-xl font-bold shadow-xl hover:shadow-aast-navy/20 transition-all">
+          <Link to="/docs/overview" className="bg-aast-navy text-white px-8 py-4 rounded-xl font-bold shadow-xl hover:shadow-aast-navy/20 transition-all text-center">
             Get Started
-          </a>
-          <a href="#demo" className="bg-white text-aast-navy border-2 border-aast-navy/10 px-8 py-4 rounded-xl font-bold hover:bg-aast-gray transition-all">
+          </Link>
+          <a href="#demo" className="bg-white text-aast-navy border-2 border-aast-navy/10 px-8 py-4 rounded-xl font-bold hover:bg-aast-gray transition-all text-center">
             Watch Demo
           </a>
         </div>

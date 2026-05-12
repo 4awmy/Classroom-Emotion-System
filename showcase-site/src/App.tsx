@@ -6,7 +6,7 @@ import Manual from './pages/Manual';
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/showcase">
       <Routes>
         <Route path="/" element={<MainLayout />}>
           <Route index element={<Home />} />
