@@ -43,6 +43,13 @@ def run_migrations():
         "CREATE TABLE IF NOT EXISTS student_answers (id SERIAL PRIMARY KEY, check_id INTEGER REFERENCES comprehension_checks(id) ON DELETE CASCADE, student_id VARCHAR REFERENCES students(student_id) ON DELETE CASCADE, chosen_option INTEGER NOT NULL, is_correct BOOLEAN NOT NULL, timestamp TIMESTAMP WITH TIME ZONE DEFAULT now())",
         # Lecture status column (added after session state machine implementation)
         "ALTER TABLE lectures ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'not_started'",
+        # needs_password_reset — ensure column exists and has no NULLs
+        "ALTER TABLE admins    ADD COLUMN IF NOT EXISTS needs_password_reset BOOLEAN DEFAULT FALSE",
+        "ALTER TABLE lecturers ADD COLUMN IF NOT EXISTS needs_password_reset BOOLEAN DEFAULT FALSE",
+        "ALTER TABLE students  ADD COLUMN IF NOT EXISTS needs_password_reset BOOLEAN DEFAULT FALSE",
+        "UPDATE admins    SET needs_password_reset = FALSE WHERE needs_password_reset IS NULL",
+        "UPDATE lecturers SET needs_password_reset = FALSE WHERE needs_password_reset IS NULL",
+        "UPDATE students  SET needs_password_reset = FALSE WHERE needs_password_reset IS NULL",
         # Grant permissions on Gemini tables to current DB user (fixes InsufficientPrivilege on DO)
         "GRANT ALL ON comprehension_checks TO CURRENT_USER",
         "GRANT ALL ON student_answers TO CURRENT_USER",
