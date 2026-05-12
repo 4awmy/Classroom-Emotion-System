@@ -776,3 +776,15 @@ body.no-sidebar .content-wrapper,
 .main-sidebar .sidebar-menu > li:not(.header):not(.treeview) {
     margin-bottom: 1px !important;
 }
+
+/* ── Login page background (campus.jpg resolved relative to this CSS file) ── */
+body.login-page-body {
+    background:
+        linear-gradient(rgba(4,18,44,0.65), rgba(4,18,44,0.65)),
+        url('campus.jpg') center / cover no-repeat fixed !important;
+    min-height: 100vh !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+}

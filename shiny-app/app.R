@@ -14,6 +14,8 @@ login_ui_static <- shiny::fluidPage(
   shinyjs::useShinyjs(),
   shiny::tags$head(
     shiny::tags$link(rel = "stylesheet", type = "text/css", href = "custom.css"),
+    # Add login-page-body class so custom.css can apply campus.jpg background
+    shiny::tags$script(HTML("document.addEventListener('DOMContentLoaded', function() { document.body.classList.add('login-page-body'); });")),
     shiny::tags$style(HTML("
       @keyframes floatOrb {
         0%, 100% { transform: translateY(0px) scale(1); opacity: 0.55; }
@@ -29,9 +31,6 @@ login_ui_static <- shiny::fluidPage(
       }
 
       body {
-        background:
-          linear-gradient(rgba(4,18,44,0.62), rgba(4,18,44,0.62)),
-          url('campus.jpg') center / cover no-repeat fixed;
         min-height: 100vh;
         display: flex;
         align-items: center;
@@ -194,8 +193,8 @@ server <- function(input, output, session) {
     if (session_state$view == "login") {
       shiny::div(class = "login-box",
         shiny::h2("AAST LMS Login"),
-        shiny::div(class="form-group", shiny::textInput("user_id", "User ID", placeholder = "Enter ID (e.g. 2310...)")),
-        shiny::div(class="form-group", shiny::passwordInput("password", "Password", placeholder = "admin / 123")),
+        shiny::div(class="form-group", shiny::textInput("user_id", "User ID", placeholder = "e.g. 231006367")),
+        shiny::div(class="form-group", shiny::passwordInput("password", "Password", placeholder = "Enter your password")),
         shiny::actionButton("login_btn", "Log In", class = "btn-primary", style="color:white;"),
         shiny::br(), shiny::br(),
         shiny::div(style="text-align:center;",
