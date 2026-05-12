@@ -6,39 +6,54 @@
 > | Admin | `omar` | `aast2026` |
 > | Lecturer | `mohamedfathy` | `aast2026` |
 > | Student | `231006131` | `aast2026` |
-> | Course | `STAT401` — Advanced Statistics | Class: `STAT401-A` |
+>
+> **Best class for live demo with real data:** `CLASS_2029` — [EBA3201] Advanced Statistics (lecturer: `omar`)
+> **Best lecture for showing analytics:** `LEC_2029_1` — 194 emotion readings, 24 students, all 6 emotion states captured
 
 ---
 
 ## What Is This System?
 
-The AAST Classroom Emotion Intelligence System is an AI-powered Learning Management Platform built for Arab Academy for Science, Technology and Maritime Transport. It uses a single fixed classroom camera to automatically identify every enrolled student in the room, analyze their emotional state in real time, and feed that data into a live dashboard for the lecturer — all without any interaction from the students themselves.
+The AAST Classroom Emotion Intelligence System is an AI-powered Learning Management Platform built for Arab Academy for Science, Technology and Maritime Transport. A single fixed classroom camera automatically identifies every enrolled student, analyzes their emotional state in real time, and streams results into a live dashboard — with zero interaction required from students.
 
-The system has three interfaces:
+**Three interfaces:**
+- **Web portal** (R/Shiny) — Admin and Lecturer
+- **Mobile app** (React Native / Expo) — Student only
+- **Python FastAPI backend** — AI engine, REST API, WebSocket server
 
-- **Web portal** (R/Shiny) — for Admins and Lecturers
-- **Mobile app** (React Native / Expo) — for Students
-- **Python FastAPI backend** — the AI engine connecting both
-
-The AI pipeline runs every 5 seconds: YOLOv8 detects every person in the crowd frame, `face_recognition` identifies which enrolled student each person is, and HSEmotion classifies their facial expression into one of six educational states — Focused, Engaged, Confused, Anxious, Frustrated, or Disengaged. Every result is stored live in the database and pushed to the lecturer's dashboard in real time.
+**What's live in production right now:**
+- **121 students** enrolled across 6 real AAST courses — 115 with face encodings stored
+- **5 completed lecture sessions** with real emotion data captured from a live camera:
+  - LEC_2029_1 — Advanced Statistics: **194 emotions**, 24 students
+  - LEC_10227_1 — System Modeling & Simulation: 186 emotions, 23 students
+  - LEC_10230_1 — Computing Algorithms: 173 emotions, 21 students
+  - LEC_10232_1 — Computer Graphics: 176 emotions, 21 students
+  - LEC_1523_1 — Numerical Methods: 164 emotions, 21 students
+- **100 enrollments** across those courses
 
 ---
 
 ## Part 1 — Admin: System Setup
 
-> Open the Shiny portal. The login page shows the AAST campus with the system name.
+> Open the Shiny portal. The login page shows the AAST campus photo.
 
 **Login:** `omar` / `aast2026`
-
-You land on the Admin dashboard. This is the system control center.
 
 ---
 
 ### Overview Tab
 
-The overview shows three live counters at the top — total students, lecturers, and courses registered in the system. Below that is a recent attendance table and a global emotion distribution chart that aggregates emotion data across all lectures ever run.
+Three live counters at the top — total students, lecturers, and courses in the system. Below: a recent attendance table and a global emotion distribution chart aggregated across all sessions ever run.
 
-> "At a glance, the admin can see the health of the entire institution."
+> "At a glance, the admin sees the health of the entire institution — real numbers from real sessions."
+
+---
+
+### User Management — Manage Admins
+
+> Go to: **Manage Admins**
+
+Admin accounts are created here. The `omar` account you're logged in with was created through this panel. Admins can add, edit, or delete other admin users.
 
 ---
 
@@ -46,11 +61,9 @@ The overview shows three live counters at the top — total students, lecturers,
 
 > Go to: **Manage Lecturers**
 
-This is where lecturer accounts are created. The form on the left takes a Lecturer ID, name, AAST email, department, and password. Click Save and the account is live immediately — the lecturer can log in from the same portal.
+Lecturer accounts live here. Each has an ID, name, AAST email, and department. The table on the right shows all faculty. Click any row to edit.
 
-The table on the right shows the full faculty roster. Click any row to load their details into the form for editing.
-
-> "We've pre-created Mohamed Fathy as our demo lecturer. His ID is `mohamedfathy`."
+> "Mohamed Fathy is registered here as a lecturer. His ID is `mohamedfathy`, assigned to the Advanced Statistics class."
 
 ---
 
@@ -58,9 +71,9 @@ The table on the right shows the full faculty roster. Click any row to load thei
 
 > Go to: **Manage Students**
 
-Same pattern — the admin creates student accounts with their 9-digit AAST registration number, name, email, and optionally uploads a face photo. The face photo is processed server-side by the ArcFace model to extract a 512-dimensional face embedding, which is stored in the database and used by the vision pipeline for identification.
+Students are registered with their 9-digit AAST registration number. When a face photo is uploaded here, the system runs **InsightFace ArcFace** on it server-side — generating a 512-dimensional face embedding stored as binary in the database. This is what the camera uses to identify students in real time.
 
-> "Student 231006131 is already registered. You can see their record in the table."
+> "115 of our 121 students already have face embeddings stored. The other 6 have no photo uploaded yet."
 
 ---
 
@@ -68,7 +81,7 @@ Same pattern — the admin creates student accounts with their 9-digit AAST regi
 
 > Go to: **Course Manager**
 
-Courses are the top-level academic units. We've created **STAT401 — Advanced Statistics**.
+Six real AAST courses are loaded: Numerical Methods, System Modeling & Simulation, Computing Algorithms, Computer Graphics, Professional Training in AI, and Advanced Statistics. These were imported directly from the university's course catalog.
 
 ---
 
@@ -76,9 +89,9 @@ Courses are the top-level academic units. We've created **STAT401 — Advanced S
 
 > Go to: **Class & Sections**
 
-A class is a section of a course — it's the unit that the vision pipeline tracks. Each class has a course, a lecturer, and a section name. **STAT401-A** is assigned to Mohamed Fathy.
+Each class is a section of a course with an assigned lecturer. `CLASS_2029` is the Advanced Statistics section assigned to `omar`. This is the class with the richest live data.
 
-> "This is the critical link — the class ties the course to the lecturer. When a lecture starts for STAT401-A, the AI knows which enrolled students to look for."
+> "The class is the key unit — it links a course to a lecturer to a set of enrolled students. The vision pipeline always runs against a class."
 
 ---
 
@@ -86,165 +99,175 @@ A class is a section of a course — it's the unit that the vision pipeline trac
 
 > Go to: **Enrollment**
 
-Only enrolled students are tracked by the camera. The admin enrolls students one by one or bulk-pastes a comma-separated list of IDs.
+Only enrolled students are tracked by the camera. There are 100 enrollments across the 6 classes. Students can be enrolled one by one or bulk-pasted as comma-separated IDs.
 
-Student **231006131** is enrolled in **STAT401-A**.
-
-> "If a student is not enrolled, the camera will detect a face but mark it as unknown. Enrollment is the gate."
+> "If a student is not enrolled, the camera detects their face but marks them as unknown. Enrollment is the gate."
 
 ---
 
-### Analytics (Admin-Side)
+### Analytics
 
 > Go to: **Engagement Log**
 
-Three charts here: engagement score over time across all lectures, average engagement per lecture, and emotion variation across sessions. All of this is aggregated across the whole institution.
+Three charts: engagement score over time, average engagement per lecture, emotion variation across sessions — aggregated across the entire institution.
 
 > Go to: **Emotion Analysis**
 
-An emotion distribution pie chart, an engagement timeline, a table of emotion counts per lecture, and two K-means cluster maps — one clustering lecturers by their effectiveness and engagement variance, and one clustering students by their subject-level performance.
-
-> "The K-means plots show the admin which lecturers are consistently high-performing, which are mid-range, and which need support — without anyone having to write a single report."
+Emotion distribution pie, engagement timeline, per-lecture emotion counts, and two K-means cluster scatter plots — one clustering lecturers by effectiveness, one clustering students by subject-level engagement.
 
 > Go to: **Incident Audit**
 
-A full log of every proctoring incident across all exams — phone detected, identity mismatch, absent, head rotation — with severity, student ID, and timestamp. The admin sees everything.
+Full log of all proctoring incidents across all exams — phone detected, identity mismatch, absent, head rotation — with severity, student, and timestamp.
 
 ---
 
-**Logout** (top-right, gold "Logout" link)
+**Logout**
 
 ---
 
 ## Part 2 — Lecturer: Live Lecture
 
-**Login:** `mohamedfathy` / `aast2026`
+**Login:** `mohamedfathy` / `aast2026` *(or `omar` to see the real historical data)*
 
-The lecturer lands on **My Classes** — a table showing all classes assigned to them. STAT401 / STAT401-A is listed with two action buttons: one for Attendance History and one for Live Dashboard.
+> If demoing with real historical data, log in as `omar` — all 5 completed sessions belong to their classes.
 
 ---
 
 ### My Classes
 
-> "The lecturer's home screen shows their assigned courses at a glance. Two actions per row — jump directly to the live dashboard or view historical reports."
+The home screen shows all classes assigned to this lecturer. Each row has two action buttons: jump to Reports (attendance history) or jump to Live Dashboard.
 
 ---
 
 ### Live Dashboard — Starting a Lecture
 
-> Go to: **Live Dashboard** (click the play button on STAT401-A, or go to the sidebar tab)
+> Go to: **Live Dashboard** → select course → select class → click Start Lecture
 
-At the top of the Live Dashboard is a selector bar: choose the course, the class section, and the academic week. Below that is a two-column layout.
+The selector bar at the top lets the lecturer pick course, class section, and academic week. Then two columns:
 
 **Left column:**
-- **Live AI Video Stream** — a camera preview with a canvas overlay. When auto-capture is running, the overlay draws bounding boxes around detected faces. Green boxes = enrolled students identified. Orange = face detected but not enrolled. Each box shows the student's name and current emotion label.
-- **Live Attendance Grid** — photo cards for each enrolled student. Green border = present (detected by camera). Red border = absent.
+- **Live AI Video Stream** — camera preview with a canvas overlay. Bounding boxes drawn over every detected face. Green box = enrolled student identified by name. Orange = face detected but not enrolled. Each box shows student name + current emotion label.
+- **Live Attendance Grid** — photo cards per enrolled student. Green border = present (identified by camera). Red border = absent.
 
 **Right column:**
-- **Class Engagement gauge** — a real-time dial showing the average engagement score from 0 to 1.
-- **Live Sentiment Ticker** — a live scroll of the most recent emotion detections.
-- **AI Interventions panel** — the confusion alert and the Fresh Brainer button.
+- **Class Engagement gauge** — real-time dial, 0 to 1
+- **Live Sentiment Ticker** — scrolling feed of the latest emotion detections
+- **AI Interventions panel** — confusion alert + Fresh Brainer trigger
 
-> Now click **Start Lecture**. The button is in the session actions area below the video stream.
-
-This does three things simultaneously:
-1. Creates a lecture record in the database with status `live`
-2. Spawns a background thread running the vision pipeline — camera opens, YOLO starts
-3. Broadcasts a WebSocket event `session:start` to all connected mobile clients
-
-> "The lecture is now live. Every 5 seconds, the system processes a frame — detecting, identifying, classifying. No one in the room knows this is happening beyond the camera being present."
-
-The gauges and ticker begin updating. The attendance grid fills in as students are identified.
+> Click **Start Lecture**. This creates the lecture record in the DB, starts the vision pipeline thread, and broadcasts `session:start` via WebSocket to all connected student phones.
 
 ---
 
-### The Vision Pipeline — What's Happening Behind the Scenes
+### The Vision Pipeline — What Actually Happens
 
-Every 5 seconds:
+The pipeline is running on the local machine where the camera is connected. Here is the exact sequence:
 
-1. **YOLO person detection** — draws bounding boxes around every person in the crowd frame
-2. **face_recognition** — crops each person ROI, extracts a 128-dimensional face encoding, compares it against every enrolled student's stored encoding. Match within distance 0.5 → student identified
-3. **YOLOv8 face detection** — runs on the identified person's ROI to get a tight face crop
-4. **HSEmotion classification** — runs the face crop through the `enet_b0_8_best_afew` model trained on 450,000 labelled face images. Returns one of 8 raw emotions
-5. **Emotion mapping** — maps the raw emotion to an educational state:
-   - `neutral` → Focused (confidence 1.00)
-   - `happy` / `surprise` → Engaged (0.85)
-   - `fear` → Anxious (0.35)
-   - `anger` / `disgust` at low intensity → Confused (0.55)
-   - `anger` / `disgust` at high intensity → Frustrated (0.25)
-   - `sad` → Disengaged (0.00)
-6. **Database write** — one row to `emotion_log` and one to `attendance_log` (first detection only)
-7. **WebSocket broadcast** — updated emotion data pushed to the dashboard
+**Every frame (~30fps):**
+- Camera frame captured via OpenCV
+- Frame encoded as JPEG and pushed to the shared stream state (for the live video feed in the dashboard)
 
-The confidence values are fixed by design — they are not taken from the model's softmax output. This makes the engagement score academically reproducible and defensible.
+**Every 5 frames:**
+- **YOLOv8n person detection** — bounding boxes around every person in the frame
+
+**For each detected person:**
+- **YOLOv8n-face** — runs on the person crop to get a tight face bounding box
+
+**Every 20 frames (face recognition pass):**
+- **InsightFace ArcFace ONNX** (`buffalo_sc`) — extracts a 512-dimensional embedding from the face crop
+- **Cosine similarity** compared against all 115 stored student embeddings
+- If best similarity ≥ 0.60 → student identified
+- First identification in the session → `AttendanceLog` row written (method: FACE), snapshot saved to `data/snapshots/{lecture_id}/{student_id}.jpg`
+
+**Every 30 frames (emotion pass) — identified students only:**
+- **HSEmotion `enet_b0_8_best_afew`** — trained on AffectNet (450K+ annotated face images)
+- Returns a dictionary of softmax probabilities for 8 raw emotion classes
+- The class with the highest probability is taken as the label
+- That probability score is stored directly as both `confidence` and `engagement_score`
+- One `EmotionLog` row written per identified student per 30-frame cycle
+
+> "The confidence value is the model's actual softmax score — so a student reading as 0.97 Focused is a very strong signal. A student at 0.45 Confused is borderline. The score is honest."
+
+**Raw HSEmotion → educational state mapping used in the UI:**
+
+| HSEmotion label | Educational state shown |
+|---|---|
+| neutral | Focused |
+| happy, surprise | Engaged |
+| fear | Anxious |
+| anger, disgust (low score) | Confused |
+| anger, disgust (high score) | Frustrated |
+| sad | Disengaged |
+
+**Real data from LEC_2029_1 (Advanced Statistics, 24 students):**
+- Focused: 82 readings (42%)
+- Engaged: 61 readings (31%)
+- Disengaged: 17 readings (9%)
+- Frustrated: 16 readings (8%)
+- Confused: 10 readings (5%)
+- Anxious: 8 readings (4%)
 
 ---
 
 ### The 7 Live Dashboard Panels
 
 **D1 — Engagement Gauge**
-A dial from 0 to 1. The value is the mean engagement score of the last 60 emotion readings across all students. Red below 0.25 (critical), amber 0.25–0.45, green above 0.45.
+Dial 0 to 1. Value = mean confidence score of the last 60 emotion readings. Red < 0.25 (critical), amber 0.25–0.45, green > 0.45.
 
 **D2 — Emotion Timeline**
-A line chart with 6 lines — one per emotion state. X-axis is time bucketed into 2-minute windows, Y-axis is percentage of the class in that state. This shows the lecturer exactly when the class started to lose focus or get confused during the session.
+Line chart with 6 lines, one per emotional state. X = time in 2-minute buckets, Y = % of class in that state. Shows the lecturer exactly when confusion started.
 
 **D3 — Cognitive Load Indicator**
-A value box: `cognitive load = confusion rate + frustration rate`. Green below 0.30, amber 0.30–0.50, red above 0.50 with the label "Overloaded — slow down". When this is red, the AI intervention fires automatically.
+`cognitive_load = confusion_rate + frustration_rate`. Green < 0.30, amber 0.30–0.50, red > 0.50 → "Overloaded — slow down".
 
 **D4 — Class Valence Meter**
-A horizontal gauge from -1 to +1. `valence = (focused + engaged) - (frustrated + disengaged + anxious)`. Positive valence = class is doing well. Negative for 5 consecutive readings triggers a warning alert.
+Horizontal gauge -1 to +1. `valence = (focused + engaged) - (frustrated + disengaged + anxious)`. Negative for 5 consecutive readings → warning.
 
 **D5 — Per-Student Emotion Heatmap**
-A grid — each row is a student, each column is a 5-minute time segment. Cells are colored by dominant emotion: dark green = Focused, green = Engaged, amber = Confused, orange = Frustrated, purple = Anxious, red = Disengaged. The lecturer can see at a glance which individual students are struggling and when it started.
+Grid, row = student, column = 5-min segment, fill = dominant emotion. Dark green = Focused, green = Engaged, amber = Confused, orange = Frustrated, purple = Anxious, red = Disengaged.
 
 **D6 — Persistent Struggle Alert Table**
-A table of students who have been Confused or Frustrated for 3 or more consecutive 5-second readings. Amber for Confused×3, red for Frustrated×3. The lecturer can see duration and consecutive count.
+Students Confused or Frustrated for ≥ 3 consecutive readings. Columns: Student, Emotion, Duration, Consecutive Count.
 
-**D7 — Peak Confusion Detector**
-A value box showing the 2-minute window during the lecture with the highest combined confusion + frustration rate. Shown after the session ends as a post-session insight — "Most confusing moment: 10:42 AM".
+**D7 — Peak Confusion Moment Detector**
+Value box: "Most confusing moment: 10:42 AM" — the 2-minute window with the highest `confusion + frustration` rate. Shown after the session ends.
 
 ---
 
 ### AI Intervention — Fresh Brainer
 
-If the confusion rate reaches 40% or higher for 2 consecutive minutes, the system automatically triggers a Gemini AI call.
+When confusion rate ≥ 40% for 2 consecutive minutes, Gemini 1.5 Flash is triggered automatically.
 
-> Click **Ask AI (from materials)** to trigger it manually, or wait for the auto-trigger.
+> Or click **Ask AI (from materials)** to trigger manually.
 
 The system:
-1. Retrieves the current lecture's uploaded slides from the database
-2. Extracts the text from the PDF using pdfplumber
-3. Sends it to Gemini 1.5 Flash with the prompt: *"Generate ONE clarifying question under 2 sentences to help confused students refocus"*
-4. Returns the question to the Shiny dashboard as a popup alert
+1. Fetches the lecture's uploaded PDF slides from the database
+2. Extracts slide text with pdfplumber
+3. Calls Gemini 1.5 Flash: *"Generate ONE clarifying question under 2 sentences to help confused students refocus"*
+4. Returns the question as a popup in the Shiny UI
 
-The popup shows:
-- The confusion rate: "Class confused — 42%"
-- The suggested question: *"Can you explain the difference between a Type I and Type II error with a real-world example?"*
-- Two buttons: **Ask it** | **Dismiss**
+Popup shows the confusion rate, the question, and two buttons: **Ask it** / **Dismiss**.
 
-If the lecturer clicks "Ask it", the question is broadcast via WebSocket to every connected student phone. Students see it as an overlay in their Focus Mode screen.
-
-> "This closes the loop between AI detection and human response without the lecturer having to think about it."
+Clicking **Ask it** broadcasts the question via WebSocket → every connected student phone gets it as an overlay immediately.
 
 ---
 
 ### QR Attendance
 
-Below the engagement gauge is a QR panel. The lecturer can generate a QR code for the current lecture. Students who are not in the camera's field of view can scan it with the mobile app to mark themselves present manually as a fallback.
+A QR code is available below the gauge panel. Students who are not in the camera frame can scan it with the mobile app to mark themselves present as a manual fallback.
 
 ---
 
 ### Ending the Lecture
 
-> Click **End Lecture**.
+> Click **End Lecture**
 
-This sets the lecture status to `ended`, stops the vision pipeline thread, clears the frame buffer, and broadcasts `session:end` to all connected phones. The student app releases Focus Mode automatically.
+Sets lecture status to `ended`, stops the pipeline thread, clears the frame buffer, broadcasts `session:end` to all phones. Student Focus Mode releases automatically.
 
 ---
 
 ## Part 3 — Student: Mobile App
 
-> Open Expo Go on the phone and scan the dev server QR, or open the installed APK.
+> Open Expo Go and scan the dev QR, or open the installed APK.
 
 **Login:** `231006131` / `aast2026`
 
@@ -252,191 +275,198 @@ This sets the lecture status to `ended`, stops the vision pipeline thread, clear
 
 ### Home Screen
 
-The home screen shows:
-- A greeting: "Welcome, Omar Metwall"
-- A card for the upcoming or active lecture: STAT401-A — Advanced Statistics, status `live`
-- A summary of the student's last session engagement score
-
-> "The student sees their lecture is live. One tap to enter Focus Mode."
+Shows a greeting, an active/upcoming lecture card for the student's enrolled class, and their last session engagement summary.
 
 ---
 
 ### Focus Mode
 
-Focus Mode is the student's active lecture screen. When they tap in:
-
-1. The app connects to the WebSocket server
-2. If a `session:start` event is already live, Focus Mode activates immediately
-3. An `AppState` listener fires whenever the student leaves the app — home button, task switcher, incoming call
+The active lecture screen. On entry:
+- Connects to the WebSocket server
+- If `session:start` is already live, Focus Mode activates immediately
+- `AppState` listener starts — fires on any app backgrounding
 
 > **Press the home button on the phone.**
 
-The app detects the background state change and immediately sends a WebSocket event to the backend:
+The `AppState` API fires instantly. The app sends:
+```json
+{ "type": "focus_strike", "student_id": "231006131",
+  "lecture_id": "...", "strike_type": "app_background" }
 ```
-{ type: "focus_strike", student_id: "231006131", lecture_id: "...", strike_type: "app_background" }
-```
+The backend writes it to `focus_strikes`. The strike counter on screen increments.
 
-The backend logs it to the `focus_strikes` table. The strike counter on the Focus Mode screen increments.
-
-> "Three strikes and the lecturer gets an alert. This is purely AppState monitoring — no OS-level locks, no device management. The system trusts students to stay in the app."
+> "Three strikes alerts the lecturer. No OS locks — just the AppState listener. The system trusts the student to stay."
 
 ---
 
 ### Fresh Brainer Overlay
 
-When the lecturer clicks "Ask it" after an AI intervention, the question appears on every connected student's phone as a bottom-sheet overlay — no interaction required. The student reads it, thinks, and refocuses.
+When the lecturer sends the AI question, it appears on every connected student's phone as a bottom-sheet overlay — no action needed from the student. Read it, refocus.
 
 ---
 
 ## Part 4 — Exam Proctoring
 
-> Back on the Shiny portal, logged in as mohamedfathy. Go to: **Exam Proctoring**
+> Shiny portal, logged in as lecturer. Go to: **Exam Proctoring**
 
 ---
 
 ### Setup
 
-Three inputs at the top:
-- Course: STAT401
-- Class: STAT401-A
-- Exam Title: `Midterm Exam`
+Select course → class → enter exam title (e.g. `Midterm Exam`) → click **Start Exam**.
 
-> Click **Start Exam**.
-
-This does two things:
-1. Creates an exam record in the database and broadcasts `exam:start` to all connected phones
-2. Starts a vision pipeline session in `exam` context — same pipeline as a lecture, but now running the proctoring logic
-
-The student app receives `exam:start` and navigates to the exam screen automatically.
+This creates an exam record, broadcasts `exam:start` to all connected phones (students' apps navigate to the exam screen automatically), and starts the vision pipeline in `exam` context — same pipeline as a lecture but with the ProctorService layer active.
 
 ---
 
 ### What the Camera Watches For
 
-The proctoring pipeline runs the same YOLO + face_recognition stack as a lecture, but adds two extra detection layers:
+The same YOLO + ArcFace + HSEmotion pipeline runs, plus:
 
-| What | How | Flag | Severity |
+| Detection | Method | Flag | Severity |
 |---|---|---|---|
-| Phone on desk | YOLOv8 detects COCO class 67 (cell phone) in frame | `phone_on_desk` | 3 |
-| Student absent | No face detected in their region for > 5 seconds | `absent` | 3 |
-| Multiple people | YOLO detects more than 1 person in the student's zone | `multiple_persons` | 3 |
-| Head rotation | MediaPipe FaceMesh measures yaw/pitch angle | `head_rotation` | 2 |
-| Identity mismatch | Detected face encoding doesn't match enrolled student | `identity_mismatch` | 3 |
-| App goes background | React Native AppState event | `app_background` | 1 |
+| Phone on desk | YOLOv8 COCO class 67 (cell phone) in person ROI | `phone_on_desk` | 3 |
+| Student absent | No face for the student for > 5s | `absent` | 3 |
+| Multiple people in frame | YOLO person count > 1 | `multiple_persons` | 3 |
+| Head rotation | MediaPipe FaceMesh — yaw/pitch from 468 facial landmarks | `head_rotation` | 2 |
+| Identity mismatch | ArcFace cosine similarity < 0.60 for enrolled student | `identity_mismatch` | 3 |
+| App goes to background | React Native AppState | `app_background` | 1 |
 
-All incidents are saved to the `incidents` table with a screenshot in `data/evidence/`.
+All incidents saved to `incidents` table with screenshot in `data/evidence/`.
 
 ---
 
 ### Head Rotation Flag
 
-> Look sharply to one side while facing the camera.
+> Look sharply sideways while in view of the camera.
 
-MediaPipe FaceMesh places 468 3D landmarks on the face. The pipeline computes the rotation angle from these landmarks. An extreme yaw (looking sideways) or pitch (looking down) triggers a `head_rotation` incident at Severity 2.
-
-Watch the **Live Incident Log** table update in real time:
-
-```
-Timestamp        Student         Flag Type       Severity
-10:45:03         Omar Metwall    head_rotation   2
-```
-
-The four value boxes at the top update: Total Incidents, High (Sev 3), Medium (Sev 2), Low (Sev 1).
+MediaPipe FaceMesh puts 468 3D landmarks on the face. The pipeline computes the yaw and pitch angles. An extreme rotation triggers `head_rotation` at Severity 2 — appears in the Live Incident Log within the next 30-frame cycle (~1 second).
 
 ---
 
 ### Auto-Submit Rule
 
-If any student accumulates **3 or more Severity-3 incidents within any rolling 10-minute window**, the system automatically calls `POST /exam/submit` with reason `auto-submit: 3+ high-severity incidents`. A WebSocket event `exam:autosubmit` is pushed to the student's phone, which navigates them to a "Submitted" screen — no lecturer action required.
+**3 × Severity-3 incidents in any rolling 10-minute window** → system calls `POST /exam/submit` automatically with reason `auto-submit: 3+ high-severity incidents`. WebSocket broadcasts `exam:autosubmit` to the student's phone — they see a "Submitted" screen. No lecturer action needed.
 
 ---
 
-### Ending the Exam
+### End Exam
 
-> Click **End Exam**.
+> Click **End Exam**
 
-The exam record is closed, the vision pipeline stops, and all incident data is preserved for the admin's Incident Audit log.
+Closes the exam record, stops the pipeline. All incidents remain for the admin's Incident Audit.
 
 ---
 
 ## Part 5 — Reports & Analytics
 
-> Go to: **Reports & Analytics** (lecturer sidebar)
+> Lecturer sidebar → **Reports & Analytics**
 
-Select STAT401 → STAT401-A → a completed session.
+Select course → class → a completed session.
 
-Four charts load:
+**Per-session charts:**
+1. **Emotion Frequency** — pie chart of emotion distribution for that session
+2. **Engagement Timeline** — average engagement score minute by minute across the session
+3. **Attendance Summary** — every enrolled student, attendance status, method (FACE / QR / Manual)
+4. **Student Performance Clusters** — K-means scatter of students by engagement score vs cognitive load
 
-1. **Emotion Frequency** — pie chart of how much time the class spent in each emotional state during that session
-2. **Engagement Timeline** — line chart of average engagement score across the session, minute by minute
-3. **Attendance Summary** — table of every enrolled student, their attendance status, and method (AI camera, QR scan, or manual)
-4. **Student Performance Clusters** — K-means scatter plot clustering students by engagement score and cognitive load for that session. Clusters emerge naturally: high-performers, struggling students, and mid-range
+**Cross-session charts (whole class history):**
+5. **Engagement Trend Across Sessions** — class average engagement week by week
+6. **Emotion Variation Across Sessions** — stacked bar, each bar = one lecture, segments = emotion proportions
+7. **Per-Student Summary** — table with each student's average engagement, dominant emotion, cognitive load across all sessions
 
-Below that is the **Cross-Session Analytics** section for the class as a whole:
-
-- **Engagement Trend Across Sessions** — how the class's average engagement has changed week by week
-- **Emotion Variation Across Sessions** — stacked bar chart, each bar is one lecture, each segment is an emotion state proportion
-- **Per-Student Summary** — a table with every student's average engagement, dominant emotion, and cognitive load across all sessions
+> "For Advanced Statistics (`CLASS_2029`), we have 5 sessions of real data. The cross-session trend shows how the class evolved over those weeks."
 
 ---
 
 ## Part 6 — Materials
 
-> Go to: **LMS Materials** (lecturer sidebar)
+> Lecturer sidebar → **LMS Materials**
 
-The lecturer selects a course, class, and academic week, then uploads a PDF of their slides. The file is stored and linked to the lecture record. When an AI intervention fires during a lecture, this is the PDF the system reads to generate the clarifying question.
+Select course, class, and week → upload a PDF. The file is stored and linked to the lecture record. When an AI intervention triggers, this is the PDF Gemini reads to generate the question.
 
 ---
 
 ## System Architecture Summary
 
 ```
-Classroom Camera (RTSP)
+Classroom Camera (USB / RTSP)
         |
         v
-Vision Pipeline (python-api/services/vision_pipeline.py)
-  - YOLOv8n         — person bounding boxes
-  - face_recognition — student identity (128-dim embeddings)
-  - YOLOv8n-face    — tight face crop
-  - HSEmotion        — emotion classification
-  - Fixed confidence — Focused=1.00, Engaged=0.85, Confused=0.55,
-                       Anxious=0.35, Frustrated=0.25, Disengaged=0.00
+Vision Pipeline  (python-api/services/vision_pipeline.py)
+  Every frame   → OpenCV capture → JPEG stream state
+  Every 5 frames  → YOLOv8n person detection
+  Every 20 frames → InsightFace ArcFace ONNX (512-dim)
+                    Cosine similarity >= 0.60 → student identified
+                    AttendanceLog written on first detection
+  Every 30 frames → HSEmotion enet_b0_8_best_afew
+                    Softmax score → EmotionLog written
+  Exam context    → ProctorService: phone / absent / rotation / mismatch
         |
         v
-PostgreSQL Database (DigitalOcean Managed DB)
-  - emotion_log, attendance_log, focus_strikes, incidents
+PostgreSQL Database (DigitalOcean Managed)
+  emotion_log, attendance_log, focus_strikes, incidents, lectures
         |
       /   \
      v     v
-Shiny Portal          React Native App
-(Admin + Lecturer)    (Student)
-  - Live dashboard      - Focus Mode
-  - Exam proctoring     - Fresh Brainer overlay
-  - Reports             - QR attendance
-  - K-means clusters    - Session notifications
+Shiny Portal              React Native App
+(Admin + Lecturer)        (Student)
+  - Live dashboard          - Focus Mode + AppState strikes
+  - Exam proctoring         - Fresh Brainer overlay
+  - Reports + K-means       - QR attendance
+  - User/course/enrollment  - Session notifications
 
 Both connected via:
-  - REST API  (FastAPI on DigitalOcean App Platform)
-  - WebSocket (/session/ws — real-time broadcasts)
+  REST  → FastAPI on DigitalOcean App Platform
+  WS    → /session/ws (session:start/end, freshbrainer, exam:start/autosubmit)
 ```
 
 **Tech stack:**
-- Backend: Python 3.11, FastAPI, SQLAlchemy, PostgreSQL
-- Web portal: R 4.3, Shiny, shinydashboard, plotly, DT
-- Mobile: React Native + Expo, Zustand, WebSocket
-- AI models: YOLOv8n (Ultralytics), face_recognition (dlib), HSEmotion ONNX, Gemini 1.5 Flash (Google AI)
-- Hosting: DigitalOcean App Platform (API + DB), shinyapps.io (Shiny), Expo Go (mobile)
+
+| Layer | Technology |
+|---|---|
+| Backend API | Python 3.11, FastAPI, SQLAlchemy, PostgreSQL |
+| Face detection | InsightFace `buffalo_sc` — RetinaFace + ArcFace ONNX (512-dim, CPU) |
+| Person / phone detection | YOLOv8n (Ultralytics) |
+| Emotion classification | HSEmotion `enet_b0_8_best_afew` (AffectNet, 450K images) |
+| Head posture | MediaPipe FaceMesh (468 landmarks) |
+| AI intervention | Gemini 1.5 Flash (Google AI Studio) |
+| Web portal | R 4.3, Shiny, shinydashboard, plotly, DT |
+| Mobile app | React Native + Expo, Zustand, WebSocket |
+| Hosting | DigitalOcean App Platform + Managed PostgreSQL |
+
+---
+
+## Production Data Reference
+
+| Lecture ID | Course | Emotions | Students | Status |
+|---|---|---|---|---|
+| LEC_2029_1 | [EBA3201] Advanced Statistics | 194 | 24 | ended |
+| LEC_10227_1 | [CCS3003] System Modeling & Simulation | 186 | 23 | ended |
+| LEC_10230_1 | [CCS3403] Computing Algorithms | 173 | 21 | ended |
+| LEC_10232_1 | [CCS3501] Computer Graphics | 176 | 21 | ended |
+| LEC_1523_1 | [CCS3002] Numerical Methods | 164 | 21 | ended |
+
+**Emotion breakdown — LEC_2029_1 (Advanced Statistics):**
+- Focused: 82 (42%) — students actively processing
+- Engaged: 61 (31%) — positive affect
+- Disengaged: 17 (9%) — withdrawn
+- Frustrated: 16 (8%) — blocked
+- Confused: 10 (5%) — struggling
+- Anxious: 8 (4%) — stressed
+
+**Face encodings:** 115 / 121 students have 512-dim ArcFace embeddings stored
 
 ---
 
 ## Credentials Reference
 
-| Role | User ID | Password | Notes |
+| Role | User ID | Password | Assigned to |
 |---|---|---|---|
-| Admin | `omar` | `aast2026` | Full system access |
-| Admin (system) | `admin` | `aast2026` | Built-in root account |
-| Lecturer | `mohamedfathy` | `aast2026` | Assigned to STAT401-A |
+| Admin | `omar` | `aast2026` | All 6 real courses |
+| Admin (system) | `admin` | `aast2026` | Root account |
+| Lecturer | `mohamedfathy` | `aast2026` | STAT401-A (demo class) |
 | Student | `231006131` | `aast2026` | Enrolled in STAT401-A |
 
-**Course:** STAT401 — Advanced Statistics
-**Class/Section:** STAT401-A — Section A (lecturer: mohamedfathy, student: 231006131)
+> To demo with **real historical data**, use **`omar`** as the lecturer — their classes (`CLASS_2029`, `CLASS_10227`, etc.) contain the 5 completed sessions.
+> To demo **live lecture start + exam from scratch**, use **`mohamedfathy`** → `STAT401-A`.
