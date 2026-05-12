@@ -199,7 +199,7 @@ for prefix in ["", "/api"]:
 # Serve Expo web build at /mobile (pre-built static export)
 _mobile_dir = os.path.join(os.path.dirname(__file__), "static", "mobile")
 if os.path.isdir(_mobile_dir):
-    app.mount("/internal/mobile", StaticFiles(directory=_mobile_dir, html=True), name="mobile")
+    app.mount("/mobile", StaticFiles(directory=_mobile_dir, html=True), name="mobile")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)
