@@ -608,7 +608,7 @@ admin_server <- function(input, output, session, session_state) {
 
   output$admin_emotion_dist <- renderPlot({
     df <- safe_db_get("
-      SELECT emotion, COUNT(*) AS count
+      SELECT emotion, COUNT(*)::integer AS count
       FROM emotion_log
       GROUP BY emotion
       ORDER BY count DESC
@@ -618,6 +618,7 @@ admin_server <- function(input, output, session, session_state) {
       text(0.5, 0.5, "No emotion data yet", cex = 1.4, col = "#888")
       return()
     }
+    df$count <- as.numeric(df$count)
     colors <- c(
       "Focused"     = "#1B5E20", "Engaged"    = "#4CAF50",
       "Confused"    = "#FFC107", "Frustrated" = "#FF9800",
