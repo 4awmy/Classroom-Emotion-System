@@ -5,7 +5,6 @@ import os
 import asyncio
 from fastapi import FastAPI, Header, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text, inspect
 from sqlalchemy.orm import Session
 from database import engine, SessionLocal, get_db
@@ -95,6 +94,7 @@ app.add_middleware(
 )
 
 # Root/Health (Enhanced diagnostics)
+@app.get("/")
 @app.get("/health")
 @app.get("/api/health")
 @app.get("/ping")
@@ -195,22 +195,6 @@ for prefix in ["", "/api"]:
     app.include_router(notify.router,      prefix=f"{prefix}/notify",     tags=["Notify"])
     app.include_router(vision.router,      prefix=f"{prefix}/vision",     tags=["Vision"])
 
-# Serve Expo web build (DO strips /mobile prefix, so assets arrive at /_expo and /assets,
-# while page routes arrive at /, /login, /home etc. — mount as SPA fallback at root)
-_mobile_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "mobile")
-logger.info(f"[MOBILE] static dir: {_mobile_dir} — exists: {os.path.isdir(_mobile_dir)}")
-if os.path.isdir(_mobile_dir):
-    # Asset bundles: HTML files patched to use /mobile/_expo/ and /mobile/assets/
-    # DO strips /mobile → FastAPI receives /_expo/... and /assets/... → serve from here
-    _expo_dir = os.path.join(_mobile_dir, "_expo")
-    if os.path.isdir(_expo_dir):
-        app.mount("/_expo", StaticFiles(directory=_expo_dir), name="mobile-expo")
-    _assets_dir = os.path.join(_mobile_dir, "assets")
-    if os.path.isdir(_assets_dir):
-        app.mount("/assets", StaticFiles(directory=_assets_dir), name="mobile-assets")
-    # SPA fallback: mount at root LAST so all API routes still take priority
-    app.mount("/", StaticFiles(directory=_mobile_dir, html=True), name="mobile")
-    logger.info("[MOBILE] Expo web SPA mounted at / (SPA fallback), /_expo, /assets")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)
