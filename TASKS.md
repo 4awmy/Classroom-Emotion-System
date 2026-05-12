@@ -127,10 +127,10 @@
 
 | Task | Assignee | Description | Status |
 |---|---|---|---|
-| T065 | S1 | Proctor service (`proctor_service.py` — all detections) | — |
-| T066 | S1 | Proctor loop + auto-submit (3×Sev3 in 10 min) | — |
-| T067 | S3 | Real `exam.py` endpoints | — |
-| T068 | S4 | Exam screen (`exam.tsx`) | — |
+| T065 | S1 | Proctor service (`proctor_service.py` — all detections) | ✅ |
+| T066 | S1 | Proctor loop + auto-submit (3×Sev3 in 10 min) | ✅ |
+| T067 | S3 | Real `exam.py` endpoints | ✅ |
+| T068 | S4 | Exam screen (`exam.tsx`) | ✅ |
 | T069 | S2 | Exam incidents Shiny panel | ✅ |
 
 ---
@@ -139,10 +139,10 @@
 
 | Task | Assignee | Description | Status |
 |---|---|---|---|
-| T070 | S3 | Real upload/material endpoint | — |
-| T071 | S3 | GitHub Actions CI/CD (`deploy.yml`) | — |
-| T072 | ALL | End-to-end integration test | — |
-| T073 | S3 | Final README (clone-to-run guide) | — |
+| T070 | S3 | Real upload/material endpoint | ✅ |
+| T071 | S3 | GitHub Actions CI/CD (`deploy.yml`) | ✅ |
+| T072 | ALL | End-to-end integration test | ✅ |
+| T073 | S3 | Final README (clone-to-run guide) | ✅ |
 | T074 | S2 | Final Shiny deploy to shinyapps.io | ✅ |
 
 ---

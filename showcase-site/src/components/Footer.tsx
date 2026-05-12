@@ -15,9 +15,9 @@ export default function Footer() {
           <div>
             <h3 className="text-aast-gold font-bold text-lg mb-4">Quick Links</h3>
             <ul className="space-y-3 text-sm text-white/60">
-              <li><a href="#" className="hover:text-aast-gold transition-colors flex items-center gap-2"><span>→</span> University Website</a></li>
-              <li><a href="#" className="hover:text-aast-gold transition-colors flex items-center gap-2"><span>→</span> Staff Portal (Shiny)</a></li>
-              <li><a href="#" className="hover:text-aast-gold transition-colors flex items-center gap-2"><span>→</span> AI Research Handout</a></li>
+              <li><a href="https://aast.edu" target="_blank" className="hover:text-aast-gold transition-colors flex items-center gap-2"><span>→</span> University Website</a></li>
+              <li><a href="https://classroomx-lkbxf.ondigitalocean.app" target="_blank" className="hover:text-aast-gold transition-colors flex items-center gap-2"><span>→</span> Staff Portal (Shiny)</a></li>
+              <li><a href="https://github.com/omarh/Classroom-Emotion-System/blob/main/AI_TOOLS_HANDOUT.md" target="_blank" className="hover:text-aast-gold transition-colors flex items-center gap-2"><span>→</span> AI Research Handout</a></li>
             </ul>
           </div>
           <div>

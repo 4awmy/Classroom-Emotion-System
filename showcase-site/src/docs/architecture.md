@@ -1,142 +1,218 @@
-# ARCHITECTURE.md — Logical Architecture & Data Flow Specification
-> **Audience:** Engineering team only. This document defines the precise wiring between every subsystem.
-> **Status:** Production-Ready (FastAPI + PostgreSQL + Digital Ocean)
+# 🏛️ Classroom Emotion System — Master Architecture
+> **Audience:** Engineering & Product Teams. 
+> **Purpose:** A creative and comprehensive visualization of the AASTMT Classroom Emotion System's architecture, data flows, and AI integrations.
+> **Status:** Production-Ready (FastAPI + PostgreSQL + DigitalOcean + Gemini)
 
 ---
 
-## 0. System Overview: Consolidated Cloud Architecture
+## 1. 🌌 The Macro Architecture
 
-The Classroom Emotion System is a consolidated cloud platform designed for real-time engagement monitoring and automated proctoring.
+Our architecture is a **Hybrid Edge-to-Cloud Pipeline**. It processes heavy computer vision locally in the classroom to ensure privacy and low latency, while offloading analytics, storage, and generative AI to a centralized cloud.
 
-### 0.1 Centralized Cloud (DigitalOcean)
-- **Backend (FastAPI):** Orchestrates business logic, authentication, WebSocket signaling, and AI interventions.
-- **Database (Managed PostgreSQL):** Hosted on Digital Ocean. The single source of truth for academic records, user credentials, attendance, and emotion logs.
-- **Identity:** Managed directly via the FastAPI auth router using `password_hash` and `auth_user_id` (UUID) in the PostgreSQL user tables.
-- **Storage (DO Spaces):** S3-compatible storage for student photos, attendance snapshots, and exam evidence.
-
-### 0.2 Local Vision Nodes (Classroom)
-- **Hardware:** Classroom PC/Laptop or Edge Device.
-- **Software:** `vision/main.py` or FastAPI Vision Thread.
-- **AI Stack:** YOLOv8 (Person/Face detection), face-recognition (Identity), HSEmotion (Emotion classification).
-- **Privacy:** Processes video locally; only anonymized metadata and occasional proof-of-presence snapshots are sent to the cloud.
-
----
-
-## 1. System Topology & Data Flow
-
-### 1.1 High-Level Component Map
 ```mermaid
-graph TD
-    subgraph Classroom
-        CAM[IP/USB Camera] --> VIS[Vision Node: vision/main.py]
-    end
+flowchart TD
+    %% Custom Styling
+    classDef edge fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#fff,rx:10px
+    classDef cloud fill:#312e81,stroke:#8b5cf6,stroke-width:2px,color:#fff,rx:10px
+    classDef db fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff,rx:10px
+    classDef client fill:#7c2d12,stroke:#f59e0b,stroke-width:2px,color:#fff,rx:10px
+    classDef ai fill:#831843,stroke:#ec4899,stroke-width:2px,color:#fff,rx:10px
+    classDef dataflow stroke:#cbd5e1,stroke-width:2px,stroke-dasharray: 5 5
 
-    subgraph DigitalOcean [Cloud Layer]
-        API[FastAPI Backend]
-        DB[(Managed PostgreSQL)]
-        OBJ[DO Spaces: S3 Storage]
-        GEM[Gemini 2.5 Flash AI]
+    %% -------------------------------------
+    %% 1. CLASSROOM EDGE
+    %% -------------------------------------
+    subgraph Classroom ["🏫 Classroom Edge Layer"]
+        direction LR
+        Cam(("📸 IP/USB\nCamera\n(30 FPS)"))
+        VisNode["🧠 Edge Vision Node\n(Python Pipeline)"]
+        
+        Cam == "RTSP Stream" ==> VisNode
+        
+        subgraph Models ["Deep Learning Stack"]
+            direction TB
+            YoloP("🧍 YOLOv8\n(Persons)")
+            YoloF("👤 YOLOv8\n(Faces)")
+            ID("🆔 InsightFace\n(ArcFace 512d)")
+            HSE("😊 HSEmotion\n(AffectNet)")
+            
+            YoloP --> YoloF
+            YoloF --> ID
+            YoloF --> HSE
+        end
+        VisNode -.-> Models
     end
+    class Classroom edge
 
-    subgraph Clients [Frontend Layer]
-        STAFF[R/Shiny Staff Portal]
-        APP[React Native Student App]
+    %% -------------------------------------
+    %% 2. CLOUD INFRASTRUCTURE
+    %% -------------------------------------
+    subgraph Cloud ["☁️ DigitalOcean Cloud Infrastructure"]
+        direction TB
+        FastAPI{"⚡ FastAPI\nCentral Hub"}
+        
+        DB[("🗄️ PostgreSQL\n(Managed DB with WAL)")]
+        Spaces[("📦 DO Spaces\n(S3 Evidence Storage)")]
+        
+        FastAPI <== "ORM / SQL Queries" ==> DB
+        FastAPI -. "Image Uploads" .-> Spaces
     end
+    class Cloud cloud
+    class DB db
+    class Spaces db
+    class FastAPI cloud
 
-    VIS -- Anonymized Metadata --> API
-    VIS -- Snapshot Upload --> OBJ
-    API -- Query/Save --> DB
-    API -- Context --> GEM
-    GEM -- Intervention --> API
-    API -- WebSockets --> STAFF
-    API -- WebSockets --> APP
-    STAFF -- Analytics Query --> DB
+    %% -------------------------------------
+    %% 3. GENERATIVE AI 
+    %% -------------------------------------
+    subgraph GenAI ["✨ Generative AI Engine"]
+        direction LR
+        Gemini("🤖 Gemini 2.5 Flash")
+        ContextExt("📄 Slide Text Extractor\n(pdfplumber)")
+        
+        ContextExt -. "Injected Context" .-> Gemini
+    end
+    class GenAI ai
+    class Gemini ai
+    class ContextExt ai
+
+    %% -------------------------------------
+    %% 4. FRONTEND CLIENTS
+    %% -------------------------------------
+    subgraph Clients ["📱 Client Interfaces"]
+        direction LR
+        Shiny("📊 R/Shiny Portal\n(Lecturer / Admin)")
+        ReactNative("📲 React Native\n(Student App)")
+    end
+    class Clients client
+    class Shiny client
+    class ReactNative client
+
+    %% -------------------------------------
+    %% GLOBAL CONNECTIONS
+    %% -------------------------------------
+    VisNode == "Anonymized Logs\n(HTTP POST)" ==> FastAPI
+    FastAPI == "Confusion Spike\nTriggers AI" ==> ContextExt
+    Gemini == "Fresh-Brainer Qs\n& Action Plans" ==> FastAPI
+    
+    FastAPI <== "WebSockets\n(Real-time Dashboards)" === Shiny
+    FastAPI <== "WebSockets\n(Push Notifications)" === ReactNative
+    
+    Shiny == "Direct Read\n(RPostgres)" ==> DB
+
 ```
 
 ---
 
-## 2. Identity & Data Standards
+## 2. 🧩 The Vision Pipeline Breakdown
 
-### 2.1 User Identity Flow
+The **Edge Vision Node** is the workhorse of the system. To maintain a high frame rate while running multiple neural networks, the pipeline is staggered.
+
 ```mermaid
 sequenceDiagram
-    participant User as Student/Lecturer
-    participant API as FastAPI Backend
-    participant DB as PostgreSQL
-    participant JWT as Auth Service
+    participant Cam as 📸 IP Camera
+    participant Pipe as 🧠 Vision Pipeline
+    participant YOLO as 🧍 YOLOv8 (Detect)
+    participant Face as 🆔 InsightFace (Identity)
+    participant EMO as 😊 HSEmotion (Affect)
+    participant API as ⚡ Cloud API
 
-    User->>API: Login (Email/Password)
-    API->>DB: Fetch user by Email
-    DB-->>API: Returns password_hash & auth_user_id
-    API->>API: Verify password (BCrypt)
-    API->>JWT: Generate Token (sub: auth_user_id)
-    JWT-->>User: Returns JWT Token
+    loop Every Frame (30 FPS)
+        Cam->>Pipe: Capture Frame
+    end
+
+    loop Every 5 Frames
+        Pipe->>YOLO: Find Persons & Crop Faces
+        YOLO-->>Pipe: Face ROIs
+    end
+
+    loop Every 20 Frames
+        Pipe->>Face: Compare 512d ArcFace Embeddings
+        Face-->>Pipe: Assign Student ID (e.g. 231006367)
+    end
+
+    loop Every 30 Frames (~1 FPS)
+        Pipe->>EMO: Predict Emotion from Face ROI
+        EMO-->>Pipe: Return State (Focused, Confused, etc.)
+        Pipe->>API: HTTP POST /emotion/log
+    end
 ```
 
-### 2.2 Entity Relationship Diagram (ERD)
+### 💡 Why this design?
+1. **Privacy-First:** Video frames **never** leave the classroom. Only the computed metadata (Student ID + Emotion) is sent to the cloud.
+2. **Performance Optimization:** Running heavy identity matching every 20 frames instead of every frame saves massive CPU/GPU resources while maintaining high tracking accuracy.
+
+---
+
+## 3. 🔐 Security & Identity Flow
+
+The system features a **Hybrid JWT & PostgreSQL** identity architecture.
+
 ```mermaid
-erDiagram
-    ADMINS ||--o{ LOGS : manages
-    LECTURERS ||--o{ CLASSES : teaches
-    CLASSES ||--o{ LECTURES : contains
-    CLASSES ||--o{ ENROLLMENTS : registers
-    STUDENTS ||--o{ ENROLLMENTS : joins
-    LECTURES ||--o{ EMOTION_LOG : records
-    LECTURES ||--o{ ATTENDANCE_LOG : tracks
-    STUDENTS ||--o{ EMOTION_LOG : displays
-    STUDENTS ||--o{ ATTENDANCE_LOG : marked_in
-    LECTURES ||--o{ MATERIALS : links
-    MATERIALS ||--o{ COMPREHENSION_CHECKS : triggers
+sequenceDiagram
+    box rgb(30, 41, 59) Authentication Flow
+        participant User as 👤 Student/Lecturer
+        participant API as ⚡ FastAPI
+        participant DB as 🗄️ PostgreSQL
+    end
+
+    User->>API: POST /auth/login (Email + Password)
+    API->>DB: Query User BCrypt Hash
+    API-->>User: Issue JWT Token (sub: auth_user_id)
 ```
 
 ---
 
-## 3. Data Contracts — PostgreSQL Schema
+## 4. 🤖 The Gemini AI "Fresh-Brainer" Flow
 
-### `students`
-| Column | Type | Description |
-| :--- | :--- | :--- |
-| `student_id` | TEXT (PK) | Primary academic ID (e.g. 231006367) |
-| `auth_user_id` | UUID (Unique) | Internal Unique identifier |
-| `password_hash`| TEXT | Securely hashed password |
-| `name` | TEXT | English Full Name |
-| `email` | TEXT | `[initial][id]@aast.com` |
-| `face_encoding`| BYTEA | 128-dim face vector |
-| `photo_url` | TEXT | Link to DO Spaces/Google Drive |
+One of the most innovative features is the automated **Fresh-Brainer** system, designed to combat class-wide confusion in real-time.
 
----
-
-## 4. AI Pipeline Specifications
-
-### 4.1 Vision Inference Flow
 ```mermaid
 flowchart LR
-    F[Frame Capture] --> DET[YOLOv8: Person/Face Detection]
-    DET --> CROP[Face Cropping]
-    CROP --> ID[Face Recognition: Identity]
-    CROP --> EMO[HSEmotion: Emotion Classification]
-    ID --> SYNC[Aggregator]
-    EMO --> SYNC
-    SYNC --> SEND[Post to Backend]
+    classDef trigger fill:#7f1d1d,stroke:#f87171,stroke-width:2px,color:#fff
+    classDef action fill:#14532d,stroke:#34d399,stroke-width:2px,color:#fff
+
+    A(("Spike Detected:\n> 40% Confused")):::trigger --> B["FastAPI pulls current\nLecture Slides (PDF)"]
+    B --> C["Extract text using\npdfplumber"]
+    C --> D{"Gemini 2.5 Flash"}
+    D --> |Prompt: Generate a clarifying question| E["Return 'Fresh-Brainer'\nQuestion"]
+    E --> F(("Lecturer Approves")):::action
+    F --> G["WebSocket Broadcast\nto Student Apps"]
 ```
 
-### 4.2 AI Interventions (Gemini)
-- **Signal:** Student "Confused" score > 0.8 for 3 consecutive cycles.
-- **Context:** Extracts text from current `lecture_materials` (PDF/PPT).
-- **Prompt:** "Explain [Concept] for a student who looks confused."
-- **Action:** Sends a **Fresh Brainer** question via WebSocket to the Student App.
-
 ---
 
-## 5. Deployment
+## 5. 🗄️ Database Architecture (ERD)
 
-### 5.1 Cloud Topology
-- **Primary Region:** `fra` (Frankfurt, Germany)
-- **Infrastructure:**
-    - App Platform: `basic-s` (2GB RAM)
-    - Managed Database: PostgreSQL 15 (Development Node)
-    - Object Storage: DigitalOcean Spaces (S3)
+The entire system state is stored in a structured, relational PostgreSQL database.
 
----
+```mermaid
+erDiagram
+    %% Core Entities
+    COURSES ||--o{ CLASSES : "has sections"
+    LECTURERS ||--o{ CLASSES : "teaches"
+    CLASSES ||--o{ LECTURES : "hosts sessions"
+    
+    %% Users
+    STUDENTS }|--|{ CLASSES : "enrolled in"
+    
+    %% Logs & Real-time
+    LECTURES ||--o{ EMOTION_LOG : "generates"
+    STUDENTS ||--o{ EMOTION_LOG : "experiences"
+    
+    LECTURES ||--o{ ATTENDANCE_LOG : "tracks"
+    STUDENTS ||--o{ ATTENDANCE_LOG : "marked as"
+    
+    %% Proctoring
+    EXAMS ||--o{ INCIDENTS : "triggers violations"
+    STUDENTS ||--o{ INCIDENTS : "commits"
+    
+    %% Materials & AI
+    LECTURES ||--o{ MATERIALS : "provides"
+    MATERIALS ||--o{ COMPREHENSION_CHECKS : "sources AI questions"
+```
 
-*End of Specification — Last Updated May 2026*
+### 📊 Performance Features:
+- **Write-Ahead Logging (WAL):** Ensures that the high-velocity writes from the Vision Node don't block analytical reads from the R/Shiny portal.
+- **BYTEA Storage:** Stores massive `512-dim` float arrays for face encodings directly in the database for blazing fast nearest-neighbor calculations.
+- **Timescale Accuracy:** All timestamps are strictly `TIMESTAMPTZ` (UTC) to guarantee global accuracy during remote exams and logging.

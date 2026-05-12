@@ -62,7 +62,7 @@ export default function Manual() {
               Access the deep analytics dashboard and real-time classroom monitoring tool built with R/Shiny.
             </p>
           </div>
-          <a href="#" className="flex items-center justify-center gap-2 w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold hover:shadow-[0_0_30px_rgba(59,130,246,0.4)] hover:scale-[1.02] transition-all">
+          <a href="https://classroomx-lkbxf.ondigitalocean.app" target="_blank" className="flex items-center justify-center gap-2 w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold hover:shadow-[0_0_30px_rgba(59,130,246,0.4)] hover:scale-[1.02] transition-all">
             Launch Portal <ExternalLink size={18} />
           </a>
         </div>
@@ -79,7 +79,7 @@ export default function Manual() {
               Explore the FastAPI Swagger documentation to understand the vision pipeline and AI endpoints.
             </p>
           </div>
-          <a href="#" className="flex items-center justify-center gap-2 w-full py-4 bg-white/5 text-white border border-white/10 rounded-xl font-bold hover:bg-white/10 hover:border-white/20 transition-all">
+          <a href="https://classroomx-lkbxf.ondigitalocean.app/docs" target="_blank" className="flex items-center justify-center gap-2 w-full py-4 bg-white/5 text-white border border-white/10 rounded-xl font-bold hover:bg-white/10 hover:border-white/20 transition-all">
             Open Swagger <ExternalLink size={18} />
           </a>
         </div>
