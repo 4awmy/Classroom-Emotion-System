@@ -183,6 +183,10 @@ def cmd_status():
         name = svc["name"]
         print(f"  Service: {name}")
 
+    for site in app.get("spec", {}).get("static_sites", []):
+        name = site["name"]
+        print(f"  Static Site: {name}")
+
     # DB info
     for db in app.get("spec", {}).get("databases", []):
         print(f"  Database: {db['name']} ({db['engine']} {db.get('version','')})")
@@ -317,10 +321,18 @@ def _wait_for_active(app_id, timeout=900):
         time.sleep(20)
     print("\n[WAIT] Timed out waiting for deployment.")
 
+def cmd_update():
+    app_id = get_app_id()
+    print(f"[UPDATE] Updating app spec for {app_id}...")
+    result = _put(f"/apps/{app_id}", {"spec": APP_SPEC})
+    print("[UPDATE] Spec updated successfully!")
+    _wait_for_active(app_id)
+
 # ── Entry point ───────────────────────────────────────────────────────────────
 COMMANDS = {
     "deploy":   cmd_deploy,
     "status":   cmd_status,
+    "update":   cmd_update,
     "redeploy": cmd_redeploy,
     "urls":     cmd_urls,
     "seed-db":  cmd_seed_db,
