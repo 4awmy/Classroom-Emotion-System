@@ -18,7 +18,7 @@ import { Colors, Radius, Shadow } from "@/constants/theme";
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { setStudentId, setAuthToken: setStoreAuthToken } = useStore();
+  const { setStudentId, setStudentName, setAuthToken: setStoreAuthToken } = useStore();
 
   const [studentId, setStudentIdInput] = useState("");
   const [password, setPassword] = useState("");
@@ -32,11 +32,18 @@ export default function LoginScreen() {
     try {
       // Real API login
       const response = await authAPI.login(studentId.trim(), password);
-      
+
       if (response?.access_token) {
         setStoreAuthToken(response.access_token);
         setAuthToken(response.access_token);
         setStudentId(studentId.trim());
+        // Fetch display name
+        try {
+          const me = await authAPI.getMe();
+          if (me?.name) setStudentName(me.name);
+        } catch {
+          // Non-fatal — ID shown as fallback
+        }
         connectWebSocket();
         router.replace("/(student)/home");
       } else {

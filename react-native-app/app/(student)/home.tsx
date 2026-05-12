@@ -36,7 +36,7 @@ const ACTIVITIES_DARK = [
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { studentId, activeLectureId, setActiveLectureId, setFocusActive, isDark, toggleDark } = useStore();
+  const { studentId, studentName, activeLectureId, setActiveLectureId, setFocusActive, isDark, toggleDark } = useStore();
   const C = isDark ? DarkColors : Colors;
   const styles = useMemo(() => makeStyles(C), [isDark]);
   const ACTIVITIES = isDark ? ACTIVITIES_DARK : ACTIVITIES_LIGHT;
@@ -131,7 +131,7 @@ export default function HomeScreen() {
           {/* Name + ID */}
           <View style={styles.profileInfo}>
             <Text style={styles.greeting}>
-              Hi, <Text style={styles.greetingBold}>{studentId ?? "Student"}</Text>
+              Hi, <Text style={styles.greetingBold}>{studentName ?? studentId ?? "Student"}</Text>
             </Text>
             {studentId && (
               <View style={styles.idBadge}>

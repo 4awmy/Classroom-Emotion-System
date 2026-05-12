@@ -5,6 +5,7 @@ import { setAuthToken as setAPIAuthToken } from "@/services/api";
 
 interface StudentStore {
   studentId: string | null;
+  studentName: string | null;
   authToken: string | null;
   activeLectureId: string | null;
   focusActive: boolean;
@@ -12,6 +13,7 @@ interface StudentStore {
   isDark: boolean;
 
   setStudentId: (id: string | null) => void;
+  setStudentName: (name: string | null) => void;
   setAuthToken: (token: string | null) => void;
   setActiveLectureId: (id: string | null) => void;
   setFocusActive: (active: boolean) => void;
@@ -29,6 +31,7 @@ export const useStore = create<StudentStore>()(
   persist(
     (set, get) => ({
       studentId: null,
+      studentName: null,
       authToken: null,
       activeLectureId: null,
       focusActive: false,
@@ -36,6 +39,7 @@ export const useStore = create<StudentStore>()(
       isDark: false,
 
       setStudentId: (id) => set({ studentId: id }),
+      setStudentName: (name) => set({ studentName: name }),
       setAuthToken: (token) => {
         set({ authToken: token });
         if (token) setAPIAuthToken(token);
@@ -57,6 +61,7 @@ export const useStore = create<StudentStore>()(
       reset: () =>
         set({
           studentId: null,
+          studentName: null,
           authToken: null,
           activeLectureId: null,
           focusActive: false,
@@ -67,9 +72,10 @@ export const useStore = create<StudentStore>()(
       name: "student-app-storage",
       storage: createJSONStorage(() => AsyncStorage),
       // Persist auth and preferences
-      partialize: (state) => ({ 
+      partialize: (state) => ({
         isDark: state.isDark,
         studentId: state.studentId,
+        studentName: state.studentName,
         authToken: state.authToken
       }),
       onRehydrateStorage: () => (state) => {
