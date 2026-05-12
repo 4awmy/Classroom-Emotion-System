@@ -850,7 +850,7 @@ lecturer_server <- function(input, output, session, session_state) {
   output$lec_report_emotion_variation_sessions <- plotly::renderPlotly({
     req(input$rep_class_id)
     df <- safe_db_get(sprintf(
-      "SELECT COALESCE(l.title, el.lecture_id) AS session_label,
+      "SELECT COALESCE(l.title, l.lecture_id) AS session_label,
               el.emotion,
               COUNT(*) AS cnt
        FROM emotion_log el
