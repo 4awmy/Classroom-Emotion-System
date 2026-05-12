@@ -89,14 +89,6 @@ admin_ui <- function() {
           "Incident Audit",
           tabName = "admin_incidents",
           icon    = icon("shield-alt")
-        ),
-        
-        tags$li(class = "header", "SYSTEM MANAGEMENT"),
-        
-        shinydashboard::menuItem(
-          "Database Explorer",
-          tabName = "admin_db_explorer",
-          icon    = icon("database")
         )
       )
     ),
@@ -140,6 +132,7 @@ admin_ui <- function() {
         shinydashboard::tabItem(
           tabName = "admin_manage_admins",
           h2("Administrator Roster"),
+          p(tags$i("Click a row in the table to edit its details, or enter a new ID to create a new record.")),
           fluidRow(
             column(4,
               wellPanel(
@@ -147,11 +140,17 @@ admin_ui <- function() {
                 textInput("adm_id_in",    "Admin User ID"),
                 textInput("adm_name_in",  "Full Name"),
                 textInput("adm_email_in", "AAST Email"),
-                passwordInput("adm_pwd_in", "Password"),
+                passwordInput("adm_pwd_in", "Password (leave blank to keep current)"),
                 actionButton(
                   "adm_submit", "Save Admin",
                   class = "btn-primary btn-block",
                   icon  = icon("save")
+                ),
+                hr(),
+                actionButton(
+                  "adm_delete", "Delete Selected",
+                  class = "btn-danger btn-block",
+                  icon  = icon("trash")
                 )
               )
             ),
@@ -171,6 +170,7 @@ admin_ui <- function() {
         shinydashboard::tabItem(
           tabName = "admin_lecturers",
           h2("Lecturer Roster"),
+          p(tags$i("Click a row in the table to edit its details, or enter a new ID to create a new record.")),
           fluidRow(
             column(4,
               wellPanel(
@@ -179,11 +179,17 @@ admin_ui <- function() {
                 textInput("admin_lecturer_name",  "Full Name"),
                 textInput("admin_lecturer_email", "AAST Email"),
                 textInput("admin_lecturer_dept",  "Department"),
-                passwordInput("admin_lecturer_pwd", "Password"),
+                passwordInput("admin_lecturer_pwd", "Password (leave blank to keep current)"),
                 actionButton(
                   "admin_lecturer_submit", "Save Lecturer",
                   class = "btn-primary btn-block",
                   icon  = icon("save")
+                ),
+                hr(),
+                actionButton(
+                  "admin_lecturer_delete", "Delete Selected",
+                  class = "btn-danger btn-block",
+                  icon  = icon("trash")
                 )
               )
             ),
@@ -203,6 +209,7 @@ admin_ui <- function() {
         shinydashboard::tabItem(
           tabName = "admin_students",
           h2("Student Roster (Master)"),
+          p(tags$i("Click a row in the table to edit its details, or enter a new ID to create a new record.")),
           fluidRow(
             column(4,
               wellPanel(
@@ -219,7 +226,7 @@ admin_ui <- function() {
                     "Artificial Intelligence"
                   )
                 ),
-                passwordInput("admin_student_pwd", "Password"),
+                passwordInput("admin_student_pwd", "Password (leave blank to keep current)"),
                 fileInput(
                   "admin_student_photo", "Face Photo",
                   accept = c(".jpg", ".jpeg", ".png")
@@ -253,16 +260,23 @@ admin_ui <- function() {
         shinydashboard::tabItem(
           tabName = "admin_courses",
           h2("Course Catalog"),
+          p(tags$i("Click a row in the table to edit its details, or enter a new ID to create a new record.")),
           fluidRow(
             column(4,
               wellPanel(
-                h3("Add Course"),
+                h3("Add / Edit Course"),
                 textInput("course_id_in",    "Course Code"),
                 textInput("course_title_in", "Title"),
                 actionButton(
-                  "course_submit", "Add Course",
+                  "course_submit", "Save Course",
                   class = "btn-primary btn-block",
-                  icon  = icon("plus")
+                  icon  = icon("save")
+                ),
+                hr(),
+                actionButton(
+                  "course_delete", "Delete Selected",
+                  class = "btn-danger btn-block",
+                  icon  = icon("trash")
                 )
               )
             ),
@@ -282,17 +296,24 @@ admin_ui <- function() {
         shinydashboard::tabItem(
           tabName = "admin_classes",
           h2("Classroom Assignment"),
+          p(tags$i("Click a row in the table to edit its details, or enter a new ID to create a new record.")),
           fluidRow(
             column(4,
               wellPanel(
-                h3("Assign Class"),
+                h3("Add / Edit Class"),
                 uiOutput("class_course_selector"),
                 uiOutput("class_lecturer_selector"),
                 textInput("class_id_in", "Class / Section ID"),
                 actionButton(
-                  "class_submit", "Assign Class",
+                  "class_submit", "Save Class",
                   class = "btn-primary btn-block",
-                  icon  = icon("chalkboard")
+                  icon  = icon("save")
+                ),
+                hr(),
+                actionButton(
+                  "class_delete", "Delete Selected",
+                  class = "btn-danger btn-block",
+                  icon  = icon("trash")
                 )
               )
             ),
@@ -371,6 +392,7 @@ admin_ui <- function() {
         shinydashboard::tabItem(
           tabName = "admin_engagement",
           h2("Global Engagement Trends"),
+          br(),
           fluidRow(
             shinydashboard::box(
               title = "Engagement Score Over Time", width = 12,
@@ -378,6 +400,7 @@ admin_ui <- function() {
               plotly::plotlyOutput("admin_confidence_trend", height = "280px")
             )
           ),
+          br(),
           fluidRow(
             shinydashboard::box(
               title = "Avg Engagement Score per Lecture", width = 6,
@@ -396,6 +419,7 @@ admin_ui <- function() {
         shinydashboard::tabItem(
           tabName = "admin_emotions",
           h2("Emotion Analysis"),
+          br(),
           fluidRow(
             shinydashboard::box(
               title = "Overall Emotion Distribution", width = 6,
@@ -408,6 +432,7 @@ admin_ui <- function() {
               plotly::plotlyOutput("admin_emotion_trend", height = "320px")
             )
           ),
+          br(),
           fluidRow(
             shinydashboard::box(
               title = "Emotion Counts by Lecture", width = 12,
@@ -415,6 +440,7 @@ admin_ui <- function() {
               DT::dataTableOutput("admin_emotion_by_lecture")
             )
           ),
+          br(),
           fluidRow(
             shinydashboard::box(
               title = "Lecturer Engagement Clusters (K-Means)", width = 6,
@@ -434,43 +460,6 @@ admin_ui <- function() {
           tabName = "admin_incidents",
           h2("Proctoring & Audit Logs"),
           DT::dataTableOutput("admin_incidents_table")
-        ),
-
-        # ── DATABASE EXPLORER (FULL CRUD) ─────────────────────────────────────
-        shinydashboard::tabItem(
-          tabName = "admin_db_explorer",
-          h2("Database Explorer & Raw SQL"),
-          p("Direct CRUD access to the underlying PostgreSQL schemas. Exercise caution."),
-          fluidRow(
-            # Left Column: Table Viewer
-            column(4,
-              wellPanel(
-                h4("Schema Viewer"),
-                uiOutput("db_table_selector"),
-                actionButton("db_refresh_schema_btn", "Refresh Schema", class = "btn-default btn-sm", icon = icon("sync")),
-                hr(),
-                p("Table Preview (Top 100 rows)"),
-                div(style = "max-height: 400px; overflow-y: auto;",
-                  DT::dataTableOutput("db_table_preview")
-                )
-              )
-            ),
-            # Right Column: SQL Executor
-            column(8,
-              shinydashboard::box(
-                title = "SQL Executor (Raw Query)",
-                width = 12,
-                status = "danger",
-                solidHeader = TRUE,
-                textAreaInput("db_sql_query", label = "SQL Query", rows = 6, 
-                              placeholder = "SELECT * FROM students;\nUPDATE classes SET lecturer_id = 'xxx';\nDELETE FROM enrollments WHERE id = 1;"),
-                actionButton("db_execute_sql_btn", "Execute Query", class = "btn-danger", icon = icon("play")),
-                hr(),
-                h4("Execution Results"),
-                DT::dataTableOutput("db_sql_results")
-              )
-            )
-          )
         )
 
       ) # end tabItems

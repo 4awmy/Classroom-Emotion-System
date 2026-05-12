@@ -104,21 +104,62 @@ admin_server <- function(input, output, session, session_state) {
   output$admin_list_table <- DT::renderDataTable({
     admin_refresh()
     df <- safe_db_get("SELECT admin_id, name, email, created_at FROM admins ORDER BY created_at DESC")
-    DT::datatable(df, options = list(pageLength = 10, scrollX = TRUE), rownames = FALSE)
+    DT::datatable(df, selection = "single", options = list(pageLength = 10, scrollX = TRUE), rownames = FALSE)
+  })
+
+  observeEvent(input$admin_list_table_rows_selected, {
+    s <- input$admin_list_table_rows_selected
+    req(s)
+    df <- safe_db_get("SELECT admin_id, name, email FROM admins ORDER BY created_at DESC")
+    row <- df[s, ]
+    updateTextInput(session, "adm_id_in",    value = row$admin_id)
+    updateTextInput(session, "adm_name_in",  value = row$name)
+    updateTextInput(session, "adm_email_in", value = row$email)
   })
 
   observeEvent(input$adm_submit, {
     req(input$adm_id_in, input$adm_name_in)
+    
+    exists_df <- safe_db_get(paste0("SELECT admin_id FROM admins WHERE admin_id = '", input$adm_id_in, "'"))
+    is_update <- nrow(exists_df) > 0
+
     body <- list(
       admin_id = input$adm_id_in,
       name     = input$adm_name_in,
-      email    = input$adm_email_in,
-      password = if (nchar(input$adm_pwd_in) > 0) input$adm_pwd_in else "aast2026"
+      email    = input$adm_email_in
     )
-    res <- api_call("/admin/admins", method = "POST", body = body, auth_token = session_state$token)
+    
+    if (nchar(input$adm_pwd_in) > 0) {
+      body$password <- input$adm_pwd_in
+    } else if (!is_update) {
+      body$password <- "aast2026"
+    }
+
+    if (is_update) {
+      res <- api_call(paste0("/admin/admins/", input$adm_id_in), method = "PUT", body = body, auth_token = session_state$token)
+    } else {
+      res <- api_call("/admin/admins", method = "POST", body = body, auth_token = session_state$token)
+    }
+
     if (!is.null(res)) {
       admin_refresh(admin_refresh() + 1)
       shinyalert::shinyalert("Success", paste("Admin", input$adm_name_in, "saved."), type = "success")
+      updateTextInput(session, "adm_id_in",    value = "")
+      updateTextInput(session, "adm_name_in",  value = "")
+      updateTextInput(session, "adm_email_in", value = "")
+      updateTextInput(session, "adm_pwd_in",   value = "")
+    }
+  })
+
+  observeEvent(input$adm_delete, {
+    s <- input$admin_list_table_rows_selected
+    req(s)
+    df <- safe_db_get("SELECT admin_id FROM admins ORDER BY created_at DESC")
+    aid <- df[s, "admin_id"]
+    res <- api_call(paste0("/admin/admins/", aid), method = "DELETE", auth_token = session_state$token)
+    if (!is.null(res)) {
+      admin_refresh(admin_refresh() + 1)
+      shinyalert::shinyalert("Deleted", paste("Admin", aid, "removed."), type = "warning")
       updateTextInput(session, "adm_id_in",    value = "")
       updateTextInput(session, "adm_name_in",  value = "")
       updateTextInput(session, "adm_email_in", value = "")
@@ -129,24 +170,69 @@ admin_server <- function(input, output, session, session_state) {
   output$admin_lecturer_table <- DT::renderDataTable({
     lecturer_refresh()
     df <- safe_db_get("SELECT lecturer_id, name, email, department FROM lecturers ORDER BY name")
-    DT::datatable(df, options = list(pageLength = 10, scrollX = TRUE), rownames = FALSE)
+    DT::datatable(df, selection = "single", options = list(pageLength = 10, scrollX = TRUE), rownames = FALSE)
+  })
+
+  observeEvent(input$admin_lecturer_table_rows_selected, {
+    s <- input$admin_lecturer_table_rows_selected
+    req(s)
+    df <- safe_db_get("SELECT lecturer_id, name, email, department FROM lecturers ORDER BY name")
+    row <- df[s, ]
+    updateTextInput(session, "admin_lecturer_id",    value = row$lecturer_id)
+    updateTextInput(session, "admin_lecturer_name",  value = row$name)
+    updateTextInput(session, "admin_lecturer_email", value = row$email)
+    updateTextInput(session, "admin_lecturer_dept",  value = row$department)
   })
 
   observeEvent(input$admin_lecturer_submit, {
     req(input$admin_lecturer_id, input$admin_lecturer_name)
+
+    exists_df <- safe_db_get(paste0("SELECT lecturer_id FROM lecturers WHERE lecturer_id = '", input$admin_lecturer_id, "'"))
+    is_update <- nrow(exists_df) > 0
+
     body <- list(
       lecturer_id = input$admin_lecturer_id,
       name        = input$admin_lecturer_name,
       email       = input$admin_lecturer_email,
-      department  = input$admin_lecturer_dept,
-      password    = if (nchar(input$admin_lecturer_pwd) > 0) input$admin_lecturer_pwd else "aast2026"
+      department  = input$admin_lecturer_dept
     )
-    res <- api_call("/admin/lecturers", method = "POST", body = body, auth_token = session_state$token)
+
+    if (nchar(input$admin_lecturer_pwd) > 0) {
+      body$password <- input$admin_lecturer_pwd
+    } else if (!is_update) {
+      body$password <- "aast2026"
+    }
+
+    if (is_update) {
+      res <- api_call(paste0("/admin/lecturers/", input$admin_lecturer_id), method = "PUT", body = body, auth_token = session_state$token)
+    } else {
+      res <- api_call("/admin/lecturers", method = "POST", body = body, auth_token = session_state$token)
+    }
+
     if (!is.null(res)) {
       lecturer_refresh(lecturer_refresh() + 1)
       shinyalert::shinyalert("Success", paste("Lecturer", input$admin_lecturer_name, "saved."), type = "success")
       updateTextInput(session, "admin_lecturer_id",   value = "")
       updateTextInput(session, "admin_lecturer_name", value = "")
+      updateTextInput(session, "admin_lecturer_email",value = "")
+      updateTextInput(session, "admin_lecturer_dept", value = "")
+      updateTextInput(session, "admin_lecturer_pwd",  value = "")
+    }
+  })
+
+  observeEvent(input$admin_lecturer_delete, {
+    s <- input$admin_lecturer_table_rows_selected
+    req(s)
+    df <- safe_db_get("SELECT lecturer_id FROM lecturers ORDER BY name")
+    lid <- df[s, "lecturer_id"]
+    res <- api_call(paste0("/admin/lecturers/", lid), method = "DELETE", auth_token = session_state$token)
+    if (!is.null(res)) {
+      lecturer_refresh(lecturer_refresh() + 1)
+      shinyalert::shinyalert("Deleted", paste("Lecturer", lid, "removed."), type = "warning")
+      updateTextInput(session, "admin_lecturer_id",   value = "")
+      updateTextInput(session, "admin_lecturer_name", value = "")
+      updateTextInput(session, "admin_lecturer_email",value = "")
+      updateTextInput(session, "admin_lecturer_dept", value = "")
     }
   })
 
@@ -161,8 +247,22 @@ admin_server <- function(input, output, session, session_state) {
     )
   })
 
+  observeEvent(input$admin_student_table_rows_selected, {
+    s <- input$admin_student_table_rows_selected
+    req(s)
+    df <- safe_db_get("SELECT student_id, name, email, department FROM students ORDER BY name")
+    row <- df[s, ]
+    updateTextInput(session, "admin_student_id",    value = row$student_id)
+    updateTextInput(session, "admin_student_name",  value = row$name)
+    updateTextInput(session, "admin_student_email", value = row$email)
+    updateSelectInput(session, "admin_student_dept", selected = row$department)
+  })
+
   observeEvent(input$admin_student_submit, {
     req(input$admin_student_id, input$admin_student_name)
+
+    exists_df <- safe_db_get(paste0("SELECT student_id FROM students WHERE student_id = '", input$admin_student_id, "'"))
+    is_update <- nrow(exists_df) > 0
 
     photo_b64 <- NULL
     if (!is.null(input$admin_student_photo)) {
@@ -177,17 +277,32 @@ admin_server <- function(input, output, session, session_state) {
       student_id = input$admin_student_id,
       name       = input$admin_student_name,
       email      = input$admin_student_email,
-      department = input$admin_student_dept,
-      password   = if (nchar(input$admin_student_pwd) > 0) input$admin_student_pwd else "aast2026",
-      photo_b64  = photo_b64
+      department = input$admin_student_dept
     )
-    res <- api_call("/admin/students", method = "POST", body = body, auth_token = session_state$token)
+    if (!is.null(photo_b64)) {
+      body$photo_b64 <- photo_b64
+    }
+
+    if (nchar(input$admin_student_pwd) > 0) {
+      body$password <- input$admin_student_pwd
+    } else if (!is_update) {
+      body$password <- "aast2026"
+    }
+
+    if (is_update) {
+      res <- api_call(paste0("/admin/students/", input$admin_student_id), method = "PUT", body = body, auth_token = session_state$token)
+    } else {
+      res <- api_call("/admin/students", method = "POST", body = body, auth_token = session_state$token)
+    }
+
     if (!is.null(res)) {
       student_refresh(student_refresh() + 1)
       enc_msg <- if (isTRUE(res$has_encoding)) " Face encoding saved." else " (No face detected in photo.)"
       shinyalert::shinyalert("Success", paste("Student saved.", enc_msg), type = "success")
       updateTextInput(session, "admin_student_id",   value = "")
       updateTextInput(session, "admin_student_name", value = "")
+      updateTextInput(session, "admin_student_email",value = "")
+      updateTextInput(session, "admin_student_pwd",  value = "")
     }
   })
 
@@ -200,6 +315,9 @@ admin_server <- function(input, output, session, session_state) {
     if (!is.null(res)) {
       student_refresh(student_refresh() + 1)
       shinyalert::shinyalert("Deleted", paste("Student", sid, "removed."), type = "warning")
+      updateTextInput(session, "admin_student_id",   value = "")
+      updateTextInput(session, "admin_student_name", value = "")
+      updateTextInput(session, "admin_student_email",value = "")
     }
   })
 
@@ -207,21 +325,54 @@ admin_server <- function(input, output, session, session_state) {
   output$admin_courses_table <- DT::renderDataTable({
     course_refresh()
     DT::datatable(safe_db_get("SELECT course_id, title FROM courses ORDER BY course_id"),
+      selection = "single",
       options = list(pageLength = 15, scrollX = TRUE), rownames = FALSE)
+  })
+
+  observeEvent(input$admin_courses_table_rows_selected, {
+    s <- input$admin_courses_table_rows_selected
+    req(s)
+    df <- safe_db_get("SELECT course_id, title FROM courses ORDER BY course_id")
+    row <- df[s, ]
+    updateTextInput(session, "course_id_in",    value = row$course_id)
+    updateTextInput(session, "course_title_in", value = row$title)
   })
 
   observeEvent(input$course_submit, {
     req(input$course_id_in, input$course_title_in)
+    
+    exists_df <- safe_db_get(paste0("SELECT course_id FROM courses WHERE course_id = '", input$course_id_in, "'"))
+    is_update <- nrow(exists_df) > 0
+    
     body <- list(course_id = input$course_id_in, title = input$course_title_in)
-    res  <- api_call("/courses", method = "POST", body = body, auth_token = session_state$token)
+    
+    if (is_update) {
+      res <- api_call(paste0("/courses/", input$course_id_in), method = "PUT", body = body, auth_token = session_state$token)
+    } else {
+      res <- api_call("/courses", method = "POST", body = body, auth_token = session_state$token)
+    }
+
     if (!is.null(res)) {
       course_refresh(course_refresh() + 1)
-      shinyalert::shinyalert("Success", "Course added.", type = "success")
+      shinyalert::shinyalert("Success", "Course saved.", type = "success")
       updateTextInput(session, "course_id_in",    value = "")
       updateTextInput(session, "course_title_in", value = "")
     }
   })
 
+  observeEvent(input$course_delete, {
+    s <- input$admin_courses_table_rows_selected
+    req(s)
+    df <- safe_db_get("SELECT course_id FROM courses ORDER BY course_id")
+    cid <- df[s, "course_id"]
+    res <- api_call(paste0("/courses/", cid), method = "DELETE", auth_token = session_state$token)
+    if (!is.null(res)) {
+      course_refresh(course_refresh() + 1)
+      shinyalert::shinyalert("Deleted", paste("Course", cid, "removed."), type = "warning")
+      updateTextInput(session, "course_id_in",    value = "")
+      updateTextInput(session, "course_title_in", value = "")
+    }
+  })
   # ── CLASS MANAGEMENT ───────────────────────────────────────────────────────
   output$class_course_selector <- renderUI({
     course_refresh()
@@ -249,20 +400,63 @@ admin_server <- function(input, output, session, session_state) {
       LEFT JOIN lecturers l ON cl.lecturer_id = l.lecturer_id
       ORDER BY co.title, cl.class_id
     ")
-    DT::datatable(df, options = list(pageLength = 15, scrollX = TRUE), rownames = FALSE)
+    DT::datatable(df, selection = "single", options = list(pageLength = 15, scrollX = TRUE), rownames = FALSE)
+  })
+
+  observeEvent(input$admin_classes_table_rows_selected, {
+    s <- input$admin_classes_table_rows_selected
+    req(s)
+    df <- safe_db_get("
+      SELECT cl.class_id, cl.course_id, cl.lecturer_id
+      FROM classes cl
+      LEFT JOIN courses co ON cl.course_id = co.course_id
+      ORDER BY co.title, cl.class_id
+    ")
+    row <- df[s, ]
+    updateTextInput(session, "class_id_in", value = row$class_id)
+    updateSelectInput(session, "class_course_id_in", selected = row$course_id)
+    updateSelectInput(session, "class_lecturer_id_in", selected = row$lecturer_id)
   })
 
   observeEvent(input$class_submit, {
     req(input$class_id_in, input$class_course_id_in)
+
+    exists_df <- safe_db_get(paste0("SELECT class_id FROM classes WHERE class_id = '", input$class_id_in, "'"))
+    is_update <- nrow(exists_df) > 0
+
     body <- list(
       class_id    = input$class_id_in,
       course_id   = input$class_course_id_in,
       lecturer_id = input$class_lecturer_id_in
     )
-    res <- api_call("/courses/classes", method = "POST", body = body, auth_token = session_state$token)
+
+    if (is_update) {
+      res <- api_call(paste0("/courses/classes/", input$class_id_in), method = "PUT", body = body, auth_token = session_state$token)
+    } else {
+      res <- api_call("/courses/classes", method = "POST", body = body, auth_token = session_state$token)
+    }
+
     if (!is.null(res)) {
       class_refresh(class_refresh() + 1)
-      shinyalert::shinyalert("Success", paste("Class", input$class_id_in, "assigned."), type = "success")
+      shinyalert::shinyalert("Success", paste("Class", input$class_id_in, "saved."), type = "success")
+      updateTextInput(session, "class_id_in", value = "")
+    }
+  })
+
+  observeEvent(input$class_delete, {
+    s <- input$admin_classes_table_rows_selected
+    req(s)
+    df <- safe_db_get("
+      SELECT cl.class_id
+      FROM classes cl
+      LEFT JOIN courses co ON cl.course_id = co.course_id
+      ORDER BY co.title, cl.class_id
+    ")
+    cid <- df[s, "class_id"]
+    res <- api_call(paste0("/courses/classes/", cid), method = "DELETE", auth_token = session_state$token)
+    if (!is.null(res)) {
+      class_refresh(class_refresh() + 1)
+      shinyalert::shinyalert("Deleted", paste("Class", cid, "removed."), type = "warning")
       updateTextInput(session, "class_id_in", value = "")
     }
   })
@@ -712,81 +906,4 @@ admin_server <- function(input, output, session, session_state) {
     DT::datatable(df, options = list(pageLength = 10, scrollX = TRUE), rownames = FALSE)
   })
 
-  # ── DATABASE EXPLORER ──────────────────────────────────────────────────────
-  db_explorer_refresh <- reactiveVal(0)
-  
-  output$db_table_selector <- renderUI({
-    db_explorer_refresh()
-    # Query Postgres for all tables in the public schema
-    tables <- safe_db_get("
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public' 
-      ORDER BY table_name;
-    ")
-    if (nrow(tables) == 0) return(p("No tables found in public schema.", style = "color:#e74c3c;"))
-    selectInput("db_selected_table", "Select Table to View:", choices = tables$table_name)
-  })
-
-  observeEvent(input$db_refresh_schema_btn, {
-    db_explorer_refresh(db_explorer_refresh() + 1)
-  })
-
-  output$db_table_preview <- DT::renderDataTable({
-    req(input$db_selected_table)
-    db_explorer_refresh()
-    
-    # Safe query building since table name is from information schema
-    query <- paste0("SELECT * FROM \"", input$db_selected_table, "\" LIMIT 100")
-    df <- safe_db_get(query)
-    
-    if (nrow(df) == 0 && nchar(global_db_error()) > 0) {
-      # Show error if query failed
-      return(DT::datatable(data.frame(Error = global_db_error()), rownames = FALSE))
-    }
-    
-    DT::datatable(df, options = list(pageLength = 15, scrollX = TRUE), rownames = FALSE)
-  })
-
-  # SQL Executor Logic
-  observeEvent(input$db_execute_sql_btn, {
-    req(input$db_sql_query)
-    query <- trimws(input$db_sql_query)
-    if (nchar(query) == 0) return()
-    
-    # Simple heuristic to determine if it's a SELECT query or modifying query
-    is_select <- grepl("^(SELECT|WITH|EXPLAIN|SHOW)\\b", toupper(query), perl = TRUE)
-    
-    if (is_select) {
-      # It's a read query, use safe_db_get
-      df <- safe_db_get(query)
-      if (nchar(global_db_error()) > 0) {
-        shinyalert::shinyalert("SQL Error", global_db_error(), type = "error")
-        output$db_sql_results <- DT::renderDataTable({
-          DT::datatable(data.frame(Error = global_db_error()), rownames = FALSE)
-        })
-      } else {
-        shinyalert::shinyalert("Success", paste("Query returned", nrow(df), "rows."), type = "success")
-        output$db_sql_results <- DT::renderDataTable({
-          DT::datatable(df, options = list(pageLength = 10, scrollX = TRUE), rownames = FALSE)
-        })
-      }
-    } else {
-      # It's a modifying query, use safe_db_execute
-      rows <- safe_db_execute(query)
-      if (rows < 0 && nchar(global_db_error()) > 0) {
-        shinyalert::shinyalert("SQL Error", global_db_error(), type = "error")
-        output$db_sql_results <- DT::renderDataTable({
-          DT::datatable(data.frame(Error = global_db_error()), rownames = FALSE)
-        })
-      } else {
-        # Trigger refresh of table preview and schema just in case
-        db_explorer_refresh(db_explorer_refresh() + 1)
-        shinyalert::shinyalert("Executed successfully", paste("Rows affected:", rows), type = "success")
-        output$db_sql_results <- DT::renderDataTable({
-          DT::datatable(data.frame(Status = "Success", Rows_Affected = rows), rownames = FALSE)
-        })
-      }
-    }
-  })
 }
