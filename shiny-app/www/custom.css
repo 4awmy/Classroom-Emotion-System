@@ -33,25 +33,33 @@ html, body, .wrapper {
     min-height: 100%;
 }
 
-/* Allow page-level scrolling — override AdminLTE JS overflow:hidden */
+/* Allow page-level scrolling — override AdminLTE fixed-layout lock */
 html {
     overflow-y: auto !important;
     height: auto !important;
 }
 
-body {
+/* AdminLTE adds body.fixed (shinydashboard default) which sets overflow:hidden */
+body,
+body.fixed,
+body.skin-blue,
+body.skin-blue.fixed {
     overflow-y: visible !important;
     height: auto !important;
     min-height: 100vh !important;
 }
 
-.wrapper {
+.wrapper,
+body.fixed .wrapper {
     overflow: visible !important;
     height: auto !important;
     min-height: 100vh !important;
 }
 
-.content-wrapper, .right-side {
+.content-wrapper,
+.right-side,
+body.fixed .content-wrapper,
+body.fixed .right-side {
     overflow-y: visible !important;
     height: auto !important;
     min-height: calc(100vh - 56px) !important;
