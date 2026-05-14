@@ -58,7 +58,7 @@ async def video_feed(lecture_id: str):
 
 class SessionStartRequest(BaseModel):
     lecture_id: str
-    lecturer_id: str
+    lecturer_id: Optional[str] = None
     class_id: Optional[str] = None
     title: Optional[str] = None
     slide_url: Optional[str] = None
@@ -262,10 +262,56 @@ async def get_upcoming(
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
+    db: Session = SessionLocal()
     try:
         while True:
-            await websocket.receive_text()
+            raw = await websocket.receive_text()
+            try:
+                import json
+                data = json.loads(raw)
+            except Exception:
+                continue
+
+            msg_type = data.get("type")
+
+            if msg_type == "focus_strike":
+                student_id = data.get("student_id", "")
+                lecture_id = data.get("lecture_id", "")
+                strike_type = data.get("strike_type", "app_background")
+                context = data.get("context", "lecture")
+
+                if not student_id or not lecture_id:
+                    continue
+
+                if context == "exam":
+                    # Route app_background during exam to incidents table
+                    exam_id = lecture_id  # exam sessions use exam_id as lecture_id
+                    incident = models.Incident(
+                        student_id=student_id,
+                        exam_id=exam_id,
+                        timestamp=datetime.utcnow(),
+                        flag_type="app_background",
+                        severity=1,
+                    )
+                    db.add(incident)
+                else:
+                    strike = FocusStrike(
+                        student_id=student_id,
+                        lecture_id=lecture_id,
+                        timestamp=datetime.utcnow(),
+                        strike_type=strike_type,
+                    )
+                    db.add(strike)
+
+                try:
+                    db.commit()
+                except Exception as e:
+                    db.rollback()
+                    logger.warning(f"[WS] focus_strike DB error: {e}")
+
     except WebSocketDisconnect:
         manager.disconnect(websocket)
-    except:
+    except Exception:
         manager.disconnect(websocket)
+    finally:
+        db.close()

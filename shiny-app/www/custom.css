@@ -33,14 +33,24 @@ html, body, .wrapper {
     min-height: 100%;
 }
 
-/* Allow scrolling — override AdminLTE's overflow:hidden on .wrapper */
+/* Allow scrolling — override AdminLTE's overflow:hidden on html/body/.wrapper */
+html {
+    overflow-y: auto !important;
+}
+
+body {
+    overflow-y: auto !important;
+}
+
 .wrapper {
     overflow-y: auto !important;
     overflow-x: hidden !important;
+    min-height: 100% !important;
 }
 
 .content-wrapper, .right-side {
     overflow-y: visible !important;
+    min-height: calc(100vh - 56px) !important;
 }
 
 a { color: var(--navy-mid); text-decoration: none; }

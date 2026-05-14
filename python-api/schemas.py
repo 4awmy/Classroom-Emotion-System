@@ -7,7 +7,7 @@ import uuid
 class AdminBase(BaseModel):
     admin_id: str
     name: str
-    email: EmailStr
+    email: Optional[EmailStr] = None
     phone: Optional[str] = None
 
 class AdminCreate(AdminBase):
@@ -30,7 +30,7 @@ class AdminResponse(AdminBase):
 class LecturerBase(BaseModel):
     lecturer_id: str
     name: str
-    email: EmailStr
+    email: Optional[EmailStr] = None
     department: Optional[str] = None
     title: Optional[str] = None
     phone: Optional[str] = None

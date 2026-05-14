@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from typing import List
 
 from database import get_db
@@ -19,11 +20,15 @@ def get_classes(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
 
 @router.post("/classes", response_model=schemas.ClassResponse)
 def create_class(class_data: schemas.ClassCreate, db: Session = Depends(get_db)):
-    new_class = models.Class(**class_data.model_dump())
-    db.add(new_class)
-    db.commit()
-    db.refresh(new_class)
-    return new_class
+    try:
+        new_class = models.Class(**class_data.model_dump())
+        db.add(new_class)
+        db.commit()
+        db.refresh(new_class)
+        return new_class
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Class ID already exists or invalid foreign key")
 
 @router.get("/classes/{class_id}", response_model=schemas.ClassResponse)
 def get_class(class_id: str, db: Session = Depends(get_db)):
@@ -60,11 +65,15 @@ def get_schedules(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
 
 @router.post("/schedules", response_model=schemas.ClassScheduleResponse)
 def create_schedule(schedule: schemas.ClassScheduleCreate, db: Session = Depends(get_db)):
-    new_schedule = models.ClassSchedule(**schedule.model_dump())
-    db.add(new_schedule)
-    db.commit()
-    db.refresh(new_schedule)
-    return new_schedule
+    try:
+        new_schedule = models.ClassSchedule(**schedule.model_dump())
+        db.add(new_schedule)
+        db.commit()
+        db.refresh(new_schedule)
+        return new_schedule
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Schedule already exists or invalid foreign key")
 
 @router.get("/schedules/{schedule_id}", response_model=schemas.ClassScheduleResponse)
 def get_schedule(schedule_id: str, db: Session = Depends(get_db)):
@@ -101,11 +110,15 @@ def get_enrollments(skip: int = 0, limit: int = 100, db: Session = Depends(get_d
 
 @router.post("/enrollments", response_model=schemas.EnrollmentResponse)
 def create_enrollment(enrollment: schemas.EnrollmentCreate, db: Session = Depends(get_db)):
-    new_enrollment = models.Enrollment(**enrollment.model_dump())
-    db.add(new_enrollment)
-    db.commit()
-    db.refresh(new_enrollment)
-    return new_enrollment
+    try:
+        new_enrollment = models.Enrollment(**enrollment.model_dump())
+        db.add(new_enrollment)
+        db.commit()
+        db.refresh(new_enrollment)
+        return new_enrollment
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Student already enrolled in this class")
 
 @router.get("/enrollments/{enrollment_id}", response_model=schemas.EnrollmentResponse)
 def get_enrollment(enrollment_id: int, db: Session = Depends(get_db)):

@@ -67,7 +67,9 @@ async def get_clarifying_question(
         raise HTTPException(status_code=404, detail="Lecture not found")
 
     slide_text, material_title = await _fetch_material_text(db, lecture.class_id)
-    question = gemini_service.generate_fresh_brainer(slide_text)
+    question = await anyio.to_thread.run_sync(
+        lambda: gemini_service.generate_fresh_brainer(slide_text)
+    )
 
     # Broadcast to any connected student devices
     await manager.broadcast({
@@ -109,7 +111,7 @@ async def get_refresher(lecture_id: str, db: Session = Depends(get_db)):
     material = db.query(Material).filter(Material.lecture_id == prev_lecture.lecture_id).first()
     text = f"Recap of {prev_lecture.title}. Focused on {material.title if material else 'key concepts'}."
 
-    summary = gemini_service.generate_refresher(text)
+    summary = await anyio.to_thread.run_sync(lambda: gemini_service.generate_refresher(text))
     return {"summary": summary, "prev_lecture_id": prev_lecture.lecture_id}
 
 @router.post("/intervention/push")
@@ -135,7 +137,7 @@ async def generate_check(lecture_id: str, db: Session = Depends(get_db)):
     
     # Generate MCQ
     text = f"Lecture: {lecture_id}. Topics: {material.title if material else 'General session'}"
-    mcq = gemini_service.generate_comprehension_check(text)
+    mcq = await anyio.to_thread.run_sync(lambda: gemini_service.generate_comprehension_check(text))
     
     # Save to DB
     new_check = ComprehensionCheck(
