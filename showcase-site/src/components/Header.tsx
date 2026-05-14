@@ -25,7 +25,7 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           
           <div className="flex items-center">
             <a 
-              href="https://github.com/omarh/Classroom-Emotion-System" 
+              href="https://github.com/4awmy/Classroom-Emotion-System"
               target="_blank" 
               className="bg-gradient-to-r from-aast-gold to-aast-gold-light text-aast-navy px-5 py-2 rounded-lg font-bold hover:shadow-[0_0_20px_rgba(196,152,8,0.4)] hover:scale-105 transition-all text-sm sm:text-base"
             >
