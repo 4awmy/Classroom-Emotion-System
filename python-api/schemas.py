@@ -1,7 +1,21 @@
-from pydantic import BaseModel, EmailStr, ConfigDict
-from typing import List, Optional
+from pydantic import BaseModel, EmailStr, ConfigDict, field_validator
+from typing import List, Optional, Any
 from datetime import datetime, time
 import uuid
+
+def _coerce_uuid(v: Any) -> Optional[str]:
+    """Convert UUID objects to str; pass through str/None unchanged."""
+    if v is None:
+        return None
+    if isinstance(v, uuid.UUID):
+        return str(v)
+    return str(v)
+
+def _empty_to_none(v: Any) -> Any:
+    """Convert empty/whitespace-only strings to None before email validation."""
+    if isinstance(v, str) and not v.strip():
+        return None
+    return v
 
 # Admin
 class AdminBase(BaseModel):
@@ -10,9 +24,14 @@ class AdminBase(BaseModel):
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
 
+    @field_validator("email", mode="before")
+    @classmethod
+    def normalize_email(cls, v):
+        return _empty_to_none(v)
+
 class AdminCreate(AdminBase):
     auth_user_id: Optional[str] = None
-    password: Optional[str] = None # Added for local auth
+    password: Optional[str] = None
 
 class AdminUpdate(BaseModel):
     name: Optional[str] = None
@@ -20,11 +39,32 @@ class AdminUpdate(BaseModel):
     phone: Optional[str] = None
     password: Optional[str] = None
 
-class AdminResponse(AdminBase):
+    @field_validator("email", mode="before")
+    @classmethod
+    def normalize_email(cls, v):
+        return _empty_to_none(v)
+
+class AdminResponse(BaseModel):
+    admin_id: str
+    name: str
+    email: Optional[str] = None       # plain str — DB may have dirty data
+    phone: Optional[str] = None
     auth_user_id: Optional[str] = None
     needs_password_reset: Optional[bool] = False
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("auth_user_id", mode="before")
+    @classmethod
+    def coerce_uuid(cls, v):
+        return _coerce_uuid(v)
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def strip_email(cls, v):
+        if isinstance(v, str):
+            return v.strip() or None
+        return v
 
 # Lecturer
 class LecturerBase(BaseModel):
@@ -36,9 +76,14 @@ class LecturerBase(BaseModel):
     phone: Optional[str] = None
     photo_url: Optional[str] = None
 
+    @field_validator("email", mode="before")
+    @classmethod
+    def normalize_email(cls, v):
+        return _empty_to_none(v)
+
 class LecturerCreate(LecturerBase):
     auth_user_id: Optional[str] = None
-    password: Optional[str] = None # Added for local auth
+    password: Optional[str] = None
 
 class LecturerUpdate(BaseModel):
     name: Optional[str] = None
@@ -49,11 +94,35 @@ class LecturerUpdate(BaseModel):
     photo_url: Optional[str] = None
     password: Optional[str] = None
 
-class LecturerResponse(LecturerBase):
+    @field_validator("email", mode="before")
+    @classmethod
+    def normalize_email(cls, v):
+        return _empty_to_none(v)
+
+class LecturerResponse(BaseModel):
+    lecturer_id: str
+    name: str
+    email: Optional[str] = None       # plain str — DB may have dirty data
+    department: Optional[str] = None
+    title: Optional[str] = None
+    phone: Optional[str] = None
+    photo_url: Optional[str] = None
     auth_user_id: Optional[str] = None
     needs_password_reset: Optional[bool] = False
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("auth_user_id", mode="before")
+    @classmethod
+    def coerce_uuid(cls, v):
+        return _coerce_uuid(v)
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def strip_email(cls, v):
+        if isinstance(v, str):
+            return v.strip() or None
+        return v
 
 # Student
 class StudentBase(BaseModel):
@@ -64,11 +133,16 @@ class StudentBase(BaseModel):
     year: Optional[int] = None
     photo_url: Optional[str] = None
 
+    @field_validator("email", mode="before")
+    @classmethod
+    def normalize_email(cls, v):
+        return _empty_to_none(v)
+
 class StudentCreate(StudentBase):
     auth_user_id: Optional[str] = None
-    password: Optional[str] = None # Added for local auth
+    password: Optional[str] = None
     face_encoding: Optional[bytes] = None
-    photo_b64: Optional[str] = None # NEW: For generating encoding from UI upload
+    photo_b64: Optional[str] = None
 
 class StudentUpdate(BaseModel):
     name: Optional[str] = None
@@ -79,11 +153,34 @@ class StudentUpdate(BaseModel):
     face_encoding: Optional[bytes] = None
     password: Optional[str] = None
 
-class StudentResponse(StudentBase):
+    @field_validator("email", mode="before")
+    @classmethod
+    def normalize_email(cls, v):
+        return _empty_to_none(v)
+
+class StudentResponse(BaseModel):
+    student_id: str
+    name: str
+    email: Optional[str] = None       # plain str — DB may have dirty data
+    department: Optional[str] = None
+    year: Optional[int] = None
+    photo_url: Optional[str] = None
     auth_user_id: Optional[str] = None
     needs_password_reset: Optional[bool] = False
     enrolled_at: datetime
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("auth_user_id", mode="before")
+    @classmethod
+    def coerce_uuid(cls, v):
+        return _coerce_uuid(v)
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def strip_email(cls, v):
+        if isinstance(v, str):
+            return v.strip() or None
+        return v
 
 class PasswordResetRequest(BaseModel):
     old_password: str
