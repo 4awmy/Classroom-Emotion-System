@@ -4,9 +4,14 @@ import manualContent from '../docs/manual.md?raw';
 
 export default function Manual() {
   const credentials = [
-    { role: 'Administrator', email: 'admin@aast.edu', pass: 'admin123', icon: ShieldAlert, color: 'text-red-400' },
-    { role: 'Lecturer', email: 'omar@aast.edu', pass: 'omar123', icon: User, color: 'text-blue-400' },
-    { role: 'Student', email: 'student@aast.edu', pass: 'student123', icon: BookOpen, color: 'text-green-400' },
+    { role: 'Administrator',  id: 'admin',       email: 'admin@aast.edu',              pass: 'aast2026', icon: ShieldAlert, color: 'text-red-400'    },
+    { role: 'Lecturer',       id: 'omar',        email: 'omar@test.com',               pass: 'aast2026', icon: User,        color: 'text-blue-400'   },
+    { role: 'Lecturer',       id: 'prof_jones',  email: 'jones@aast.edu',              pass: 'aast2026', icon: User,        color: 'text-blue-400'   },
+    { role: 'Lecturer',       id: 'prof_smith',  email: 'smith@aast.edu',              pass: 'aast2026', icon: User,        color: 'text-blue-400'   },
+    { role: 'Student',        id: '231006101',   email: 's231006101@student.aast.edu', pass: 'aast2026', icon: BookOpen,    color: 'text-green-400'  },
+    { role: 'Student',        id: '231006102',   email: 's231006102@student.aast.edu', pass: 'aast2026', icon: BookOpen,    color: 'text-green-400'  },
+    { role: 'Student',        id: '231006103',   email: 's231006103@student.aast.edu', pass: 'aast2026', icon: BookOpen,    color: 'text-green-400'  },
+    { role: 'Student',        id: '231006104',   email: 's231006104@student.aast.edu', pass: 'aast2026', icon: BookOpen,    color: 'text-green-400'  },
   ];
 
   return (
@@ -24,22 +29,26 @@ export default function Manual() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-12">
           {credentials.map((cred, idx) => (
-            <div key={idx} className="glass-card p-6 rounded-2xl border border-white/5 hover:border-aast-gold/30 transition-all group">
-              <div className="flex items-center gap-3 mb-6">
+            <div key={idx} className="glass-card p-5 rounded-2xl border border-white/5 hover:border-aast-gold/30 transition-all group">
+              <div className="flex items-center gap-3 mb-4">
                 <div className={`p-2 bg-white/5 rounded-lg ${cred.color}`}>
-                  <cred.icon size={20} />
+                  <cred.icon size={18} />
                 </div>
                 <div className="text-xs font-bold text-white/40 uppercase tracking-widest">{cred.role}</div>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 <div className="flex items-center gap-2 text-white/80">
-                  <Mail size={14} className="text-aast-gold" />
-                  <span className="text-sm font-medium truncate">{cred.email}</span>
+                  <User size={13} className="text-aast-gold shrink-0" />
+                  <span className="text-sm font-mono bg-black/30 px-2 py-0.5 rounded border border-white/5 tracking-wider truncate">{cred.id}</span>
                 </div>
                 <div className="flex items-center gap-2 text-white/80">
-                  <Lock size={14} className="text-aast-gold" />
+                  <Mail size={13} className="text-aast-gold shrink-0" />
+                  <span className="text-xs text-white/60 truncate">{cred.email}</span>
+                </div>
+                <div className="flex items-center gap-2 text-white/80">
+                  <Lock size={13} className="text-aast-gold shrink-0" />
                   <span className="text-sm font-mono bg-black/30 px-2 py-0.5 rounded border border-white/5 tracking-wider">{cred.pass}</span>
                 </div>
               </div>

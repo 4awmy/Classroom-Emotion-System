@@ -86,18 +86,22 @@ export default function Home() {
       {/* Demo Video Section */}
       <section id="demo" className="relative">
         <div className="absolute inset-0 bg-aast-navy rounded-[3rem] -rotate-1 scale-105 opacity-5"></div>
-        <div className="bg-black rounded-[2rem] overflow-hidden shadow-2xl aspect-video relative group ring-12 ring-white">
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-tr from-aast-navy/80 to-transparent">
-            <div className="w-24 h-24 bg-aast-gold text-aast-navy rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-all cursor-pointer">
-              <div className="ml-2 border-y-[12px] border-y-transparent border-l-[20px] border-l-aast-navy"></div>
-            </div>
-          </div>
-          <div className="absolute top-8 left-8">
+        <div className="bg-black rounded-[2rem] overflow-hidden shadow-2xl relative ring-12 ring-white">
+          <div className="absolute top-8 left-8 z-10 pointer-events-none">
             <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 text-white text-sm font-medium">
               <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
               Live Demo Recording
             </div>
           </div>
+          <video
+            className="w-full rounded-[2rem]"
+            controls
+            preload="metadata"
+            poster=""
+          >
+            <source src="/demo.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
         </div>
       </section>
 
